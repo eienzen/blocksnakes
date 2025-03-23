@@ -85,6 +85,18 @@
             color: #e0e0e0;
             margin: 5px;
         }
+        #playerHistory {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        #playerHistory p {
+            margin: 5px 0;
+        }
     </style>
 </head>
 <body>
@@ -118,6 +130,13 @@
             <p id="reward">Rewards: 0 BST</p>
         </div>
         <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div id="playerHistory">
+            <h2>Player History</h2>
+            <p id="gamesPlayed">Games Played: 0</p>
+            <p id="levelsCompleted">Levels Completed: 0</p>
+            <p id="totalRewards">Total Rewards: 0 BST</p>
+            <p id="highestLevel">Highest Level: 0</p>
+        </div>
     </div>
 
     <div id="home">
