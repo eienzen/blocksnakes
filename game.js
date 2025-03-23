@@ -1,6 +1,8 @@
 document.addEventListener("DOMContentLoaded", () => {
     let account;
     let contract;
+    let isConnecting = false;
+    let isTransactionPending = false;
     const contractAddress = "0xbcf87e55cf18c6eb267607a5c7c5789de878b092"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
     const contractABI = [
 	{
@@ -262,21 +264,41 @@ document.addEventListener("DOMContentLoaded", () => {
 ]; // यहाँ नया ABI डालें
 
     async function connectWallet() {
-        if (window.ethereum) {
+        if (isConnecting) {
+            alert("Wallet connection is already in progress. Please wait.");
+            return;
+        }
+        if (account) {
+            alert("Wallet is already connected!");
+            return;
+        }
+        if (window.ethereum && window.ethereum.isMetaMask) {
             try {
+                isConnecting = true;
                 const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
                 account = accounts[0];
                 document.getElementById("connectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
                 contract = new ethers.Contract(contractAddress, contractABI, signer);
-                console.log("Contract initialized:", contract); // डिबगिंग के लिए
+                console.log("Contract initialized:", contract);
             } catch (error) {
                 alert("Error connecting wallet: " + error.message);
+            } finally {
+                isConnecting = false;
             }
         } else {
-            alert("Please install MetaMask!");
+            alert("Please install MetaMask! Other wallets are not supported.");
         }
+    }
+
+    function setTransactionPending(pending) {
+        isTransactionPending = pending;
+        const buttons = ["nextLevel", "stakeTokens", "claimReward", "unstakeTokens"];
+        buttons.forEach(buttonId => {
+            const button = document.getElementById(buttonId);
+            button.disabled = pending;
+        });
     }
 
     const canvas = document.getElementById("gameCanvas");
@@ -362,13 +384,20 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
+        if (isTransactionPending) {
+            alert("A transaction is already pending. Please wait.");
+            return;
+        }
         try {
+            setTransactionPending(true);
             const reward = 10; // 10 BST per level
             const tx = await contract.levelComplete(reward);
             await tx.wait();
             document.getElementById("reward").innerText = `Rewards: ${reward} BST`;
         } catch (error) {
             alert("Error completing level: " + error.message);
+        } finally {
+            setTransactionPending(false);
         }
     }
 
@@ -438,8 +467,13 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
+        if (isTransactionPending) {
+            alert("A transaction is already pending. Please wait.");
+            return;
+        }
         showLoading(true);
         try {
+            setTransactionPending(true);
             const tx = await contract.nextLevel();
             await tx.wait();
             level++;
@@ -448,6 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             alert("Error going to next level: " + error.message);
         } finally {
+            setTransactionPending(false);
             showLoading(false);
         }
     });
@@ -457,6 +492,10 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
+        if (isTransactionPending) {
+            alert("A transaction is already pending. Please wait.");
+            return;
+        }
         const stakeInput = document.getElementById("stakeInput");
         const amount = stakeInput.value;
         if (!amount || amount <= 0) {
@@ -464,13 +503,16 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         try {
+            setTransactionPending(true);
             const amountInWei = ethers.utils.parseUnits(amount.toString(), 18);
             const tx = await contract.stakeTokens(amountInWei);
             await tx.wait();
             alert("Tokens staked successfully!");
-            stakeInput.value = ""; // इनपुट फील्ड रीसेट करें
+            stakeInput.value = "";
         } catch (error) {
             alert("Error staking tokens: " + error.message);
+        } finally {
+            setTransactionPending(false);
         }
     });
 
@@ -479,12 +521,19 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
+        if (isTransactionPending) {
+            alert("A transaction is already pending. Please wait.");
+            return;
+        }
         try {
+            setTransactionPending(true);
             const tx = await contract.claimStakingReward();
             await tx.wait();
             alert("Staking reward claimed successfully!");
         } catch (error) {
             alert("Error claiming reward: " + error.message);
+        } finally {
+            setTransactionPending(false);
         }
     });
 
@@ -493,12 +542,19 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
+        if (isTransactionPending) {
+            alert("A transaction is already pending. Please wait.");
+            return;
+        }
         try {
+            setTransactionPending(true);
             const tx = await contract.unstakeTokens();
             await tx.wait();
             alert("Tokens unstaked successfully!");
         } catch (error) {
             alert("Error unstaking tokens: " + error.message);
+        } finally {
+            setTransactionPending(false);
         }
     });
 
