@@ -2,8 +2,21 @@ document.addEventListener("DOMContentLoaded", () => {
     let account;
     let contract;
     let isConnecting = false;
-    let isTransactionPending = false;
-    const contractAddress = "0x6699acf8d94d1a7b9740b7b7c1d51332620591c8"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
+    let transactionQueue = [];
+    let isProcessingTransaction = false;
+    let isGamePaused = false;
+
+    // Load player history from localStorage
+    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
+        gamesPlayed: 0,
+        levelsCompleted: 0,
+        totalRewards: 0,
+        highestLevel: 0,
+        score: 0,
+        rewards: 0
+    };
+
+    const contractAddress = "0x0e101f818d1089c512d9bfb1b35527e4ce2f0fd3"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
@@ -124,6 +137,11 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"internalType": "uint256",
 				"name": "reward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "level",
 				"type": "uint256"
 			}
 		],
@@ -322,16 +340,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 ]; // यहाँ नया ABI डालें
 
-    // Load player history from localStorage
-    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
-        gamesPlayed: 0,
-        levelsCompleted: 0,
-        totalRewards: 0,
-        highestLevel: 0,
-        score: 0,
-        rewards: 0
-    };
-
     async function connectWallet() {
         if (isConnecting) {
             alert("Wallet connection is already in progress. Please wait.");
@@ -387,13 +395,31 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("level").innerText = `Current Level: ${playerData.highestLevel + 1}`;
     }
 
-    function setTransactionPending(pending) {
-        isTransactionPending = pending;
-        const buttons = ["nextLevel", "stakeTokens", "claimReward", "unstakeTokens"];
-        buttons.forEach(buttonId => {
-            const button = document.getElementById(buttonId);
-            button.disabled = pending;
-        });
+    async function processTransactionQueue() {
+        if (isProcessingTransaction || transactionQueue.length === 0) return;
+        isProcessingTransaction = true;
+        const { fn, args } = transactionQueue.shift();
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const gasPrice = await provider.getGasPrice();
+            const increasedGasPrice = gasPrice.mul(2); // Double the gas price for faster processing
+            const tx = await fn(...args, { gasPrice: increasedGasPrice });
+            await tx.wait();
+        } catch (error) {
+            alert(`Transaction failed: ${error.message}`);
+        } finally {
+            isProcessingTransaction = false;
+            isGamePaused = false;
+            document.getElementById("pauseMessage").style.display = "none";
+            processTransactionQueue();
+        }
+    }
+
+    function queueTransaction(fn, args) {
+        transactionQueue.push({ fn, args });
+        isGamePaused = true;
+        document.getElementById("pauseMessage").style.display = "block";
+        processTransactionQueue();
     }
 
     const canvas = document.getElementById("gameCanvas");
@@ -408,8 +434,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         snake.forEach((segment, index) => {
             const gradient = ctx.createLinearGradient(segment.x * 20, segment.y * 20, (segment.x + 1) * 20, (segment.y + 1) * 20);
-            gradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ff88");
-            gradient.addColorStop(1, "#00b7eb");
+            gradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
+            gradient.addColorStop(1, "#ff66cc");
             ctx.fillStyle = gradient;
             ctx.fillRect(segment.x * 20, segment.y * 20, 18, 18);
             ctx.strokeStyle = "#000";
@@ -428,8 +454,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
         const foodGradient = ctx.createRadialGradient(food.x * 20 + 9, food.y * 20 + 9, 0, food.x * 20 + 9, food.y * 20 + 9, 9);
-        foodGradient.addColorStop(0, "#ff0000");
-        foodGradient.addColorStop(1, "#ff5555");
+        foodGradient.addColorStop(0, "#ffcc00");
+        foodGradient.addColorStop(1, "#ff6600");
         ctx.fillStyle = foodGradient;
         ctx.beginPath();
         ctx.arc(food.x * 20 + 9, food.y * 20 + 9, 9, 0, Math.PI * 2);
@@ -437,6 +463,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function move() {
+        if (isGamePaused) return;
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
         snake.unshift(head);
         if (head.x === food.x && head.y === food.y) {
@@ -476,28 +503,18 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
-        if (isTransactionPending) {
-            alert("A transaction is already pending. Please wait.");
-            return;
-        }
-        try {
-            setTransactionPending(true);
-            const reward = 10; // 10 BST per level
-            const tx = await contract.levelComplete(reward);
-            await tx.wait();
-            playerData.rewards += reward;
-            playerData.score = 0; // Reset score after level completion
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            await loadPlayerHistory(); // Refresh history from contract
-        } catch (error) {
-            alert("Error completing level: " + error.message);
-        } finally {
-            setTransactionPending(false);
-        }
+        const currentLevel = playerData.highestLevel + 1;
+        const reward = 10; // Base reward
+        queueTransaction(contract.levelComplete, [reward, currentLevel]);
+        playerData.rewards += reward * currentLevel;
+        playerData.score = 0;
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+        await loadPlayerHistory();
     }
 
     document.addEventListener("keydown", e => {
+        if (isGamePaused) return;
         if (e.key === "ArrowUp" && dy !== 1) { dx = 0; dy = -1; }
         if (e.key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
         if (e.key === "ArrowLeft" && dx !== 1) { dx = -1; dy = 0; }
@@ -508,11 +525,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let touchStartY = 0;
 
     canvas.addEventListener("touchstart", (e) => {
+        if (isGamePaused) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
     });
 
     canvas.addEventListener("touchmove", (e) => {
+        if (isGamePaused) return;
         e.preventDefault();
         const touchEndX = e.touches[0].clientX;
         const touchEndY = e.touches[0].clientY;
@@ -563,34 +582,16 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
-        if (isTransactionPending) {
-            alert("A transaction is already pending. Please wait.");
-            return;
-        }
-        showLoading(true);
-        try {
-            setTransactionPending(true);
-            const tx = await contract.nextLevel();
-            await tx.wait();
-            playerData.score = 0; // Reset score for new level
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            await loadPlayerHistory();
-        } catch (error) {
-            alert("Error going to next level: " + error.message);
-        } finally {
-            setTransactionPending(false);
-            showLoading(false);
-        }
+        queueTransaction(contract.nextLevel, []);
+        playerData.score = 0;
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+        await loadPlayerHistory();
     });
 
     document.getElementById("stakeTokens").addEventListener("click", async () => {
         if (!contract) {
             alert("Please connect your wallet first!");
-            return;
-        }
-        if (isTransactionPending) {
-            alert("A transaction is already pending. Please wait.");
             return;
         }
         const stakeInput = document.getElementById("stakeInput");
@@ -599,19 +600,10 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please enter a valid amount to stake!");
             return;
         }
-        try {
-            setTransactionPending(true);
-            const amountInWei = ethers.utils.parseUnits(amount.toString(), 18);
-            const tx = await contract.stakeTokens(amountInWei);
-            await tx.wait();
-            alert("Tokens staked successfully!");
-            stakeInput.value = "";
-            await loadPlayerHistory();
-        } catch (error) {
-            alert("Error staking tokens: " + error.message);
-        } finally {
-            setTransactionPending(false);
-        }
+        const amountInWei = ethers.utils.parseUnits(amount.toString(), 18);
+        queueTransaction(contract.stakeTokens, [amountInWei]);
+        stakeInput.value = "";
+        await loadPlayerHistory();
     });
 
     document.getElementById("claimReward").addEventListener("click", async () => {
@@ -619,21 +611,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
-        if (isTransactionPending) {
-            alert("A transaction is already pending. Please wait.");
-            return;
-        }
-        try {
-            setTransactionPending(true);
-            const tx = await contract.claimStakingReward();
-            await tx.wait();
-            alert("Staking reward claimed successfully!");
-            await loadPlayerHistory();
-        } catch (error) {
-            alert("Error claiming reward: " + error.message);
-        } finally {
-            setTransactionPending(false);
-        }
+        queueTransaction(contract.claimStakingReward, []);
+        await loadPlayerHistory();
     });
 
     document.getElementById("unstakeTokens").addEventListener("click", async () => {
@@ -641,21 +620,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
-        if (isTransactionPending) {
-            alert("A transaction is already pending. Please wait.");
-            return;
-        }
-        try {
-            setTransactionPending(true);
-            const tx = await contract.unstakeTokens();
-            await tx.wait();
-            alert("Tokens unstaked successfully!");
-            await loadPlayerHistory();
-        } catch (error) {
-            alert("Error unstaking tokens: " + error.message);
-        } finally {
-            setTransactionPending(false);
-        }
+        queueTransaction(contract.unstakeTokens, []);
+        await loadPlayerHistory();
     });
 
     document.getElementById("buyToken").addEventListener("click", () => {
