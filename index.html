@@ -72,6 +72,15 @@
         #gameInfo p {
             margin: 5px 0;
         }
+        #stakeInput {
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #00ff88;
+            background: #0a0a23;
+            color: #e0e0e0;
+            margin: 5px;
+        }
     </style>
 </head>
 <body>
@@ -93,7 +102,10 @@
         <button id="connectWallet">Connect Wallet</button>
         <button id="playGame">Play Game</button>
         <button id="nextLevel">Next Level</button>
-        <button id="stakeTokens">Stake Tokens</button>
+        <div>
+            <input type="number" id="stakeInput" placeholder="Enter amount to stake" />
+            <button id="stakeTokens">Stake Tokens</button>
+        </div>
         <button id="claimReward">Claim Staking Reward</button>
         <button id="unstakeTokens">Unstake Tokens</button>
         <div id="gameInfo">
