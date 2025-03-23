@@ -270,6 +270,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
                 contract = new ethers.Contract(contractAddress, contractABI, signer);
+                console.log("Contract initialized:", contract); // डिबगिंग के लिए
             } catch (error) {
                 alert("Error connecting wallet: " + error.message);
             }
@@ -290,17 +291,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // स्नेक ड्रा करें
         snake.forEach((segment, index) => {
-            // ग्रेडिएंट स्नेक डिज़ाइन
             const gradient = ctx.createLinearGradient(segment.x * 20, segment.y * 20, (segment.x + 1) * 20, (segment.y + 1) * 20);
-            gradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ff88"); // हेड के लिए पिंक, बॉडी के लिए ग्रीन
+            gradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ff88");
             gradient.addColorStop(1, "#00b7eb");
             ctx.fillStyle = gradient;
             ctx.fillRect(segment.x * 20, segment.y * 20, 18, 18);
             ctx.strokeStyle = "#000";
             ctx.strokeRect(segment.x * 20, segment.y * 20, 18, 18);
-            // आँखें (सिर्फ हेड पर)
             if (index === 0) {
                 ctx.fillStyle = "#fff";
                 ctx.beginPath();
@@ -314,7 +312,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.fill();
             }
         });
-        // फूड ड्रा करें
         const foodGradient = ctx.createRadialGradient(food.x * 20 + 9, food.y * 20 + 9, 0, food.x * 20 + 9, food.y * 20 + 9, 9);
         foodGradient.addColorStop(0, "#ff0000");
         foodGradient.addColorStop(1, "#ff5555");
@@ -361,6 +358,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function levelComplete() {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
         try {
             const reward = 10; // 10 BST per level
             await contract.levelComplete(reward).send();
@@ -432,6 +433,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("nextLevel").addEventListener("click", async () => {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
         showLoading(true);
         try {
             await contract.nextLevel().send();
@@ -446,6 +451,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("stakeTokens").addEventListener("click", async () => {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
         try {
             const amount = prompt("Enter amount to stake:");
             await contract.stakeTokens(amount).send();
@@ -456,6 +465,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("claimReward").addEventListener("click", async () => {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
         try {
             await contract.claimStakingReward().send();
             alert("Staking reward claimed successfully!");
@@ -465,6 +478,10 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.getElementById("unstakeTokens").addEventListener("click", async () => {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
         try {
             await contract.unstakeTokens().send();
             alert("Tokens unstaked successfully!");
