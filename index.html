@@ -4,53 +4,73 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.ethers.io; style-src 'self' 'unsafe-inline';">
-    <title>BlockSnakes</title>
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-    <script src="game.js"></script>
+    <title>BlockSnakes - Play & Earn</title>
+    <script src="https://cdn.ethers.io/lib/ethers-5.5.0.umd.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(to right, #00ff00, #00b7eb);
-            color: white;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
             text-align: center;
             margin: 0;
             padding: 0;
+            overflow-x: hidden;
         }
         nav {
-            background: #333;
-            padding: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
         }
         nav a {
-            color: white;
-            margin: 0 15px;
+            color: #00ff88;
+            margin: 0 20px;
             text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
         }
         nav a:hover {
-            text-decoration: underline;
+            color: #ff00ff;
         }
         h1 {
-            margin-top: 20px;
+            margin-top: 30px;
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        h2 {
+            font-size: 2rem;
+            margin: 20px 0;
+        }
+        p {
+            font-size: 1.2rem;
+            margin: 10px 0;
         }
         button {
-            padding: 10px 20px;
-            font-size: 16px;
-            margin: 5px;
-            border-radius: 5px;
-            background-color: #28a745;
-            color: white;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            margin: 8px;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #00ff88, #00b7eb);
+            color: #000;
             border: none;
             cursor: pointer;
+            transition: transform 0.1s, background 0.3s;
         }
         button:hover {
-            background-color: #218838;
+            transform: scale(1.05);
+            background: linear-gradient(45deg, #00b7eb, #00ff88);
         }
         canvas {
-            border: 2px solid white;
-            background: #000;
+            border: 3px solid #00ff88;
+            background: #0a0a23;
             margin-top: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
         }
         #gameInfo {
-            margin-top: 10px;
+            margin-top: 15px;
+            font-size: 1.1rem;
+        }
+        #gameInfo p {
+            margin: 5px 0;
         }
     </style>
 </head>
@@ -60,7 +80,7 @@
         <a href="#game">Play Game</a>
         <a href="#how-to-play">How to Play</a>
         <a href="#roadmap">Roadmap</a>
-        <a href="#whitepaper">Whitepaper</a>
+        <a href="whitepaper.html">Whitepaper</a>
     </nav>
 
     <div id="home">
@@ -88,5 +108,7 @@
         <p>Join the ultimate 3D snake game and earn BST tokens by completing levels! Token launch date: 1st May 2025</p>
         <button id="buyToken">Buy Token</button>
     </div>
+
+    <script src="game.js"></script>
 </body>
 </html>
