@@ -1,6 +1,6 @@
 let account;
 let contract;
-const contractAddress = "0xb7a6f357ac2385cfc0863b53ada86855b393d589"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
+const contractAddress = "0x2ba5fcad65a538900311eb55e31e6f74b15555da"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
 const contractABI = [[
 	{
 		"inputs": [
