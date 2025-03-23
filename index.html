@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline';">
     <title>BlockSnakes</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <style>
         body {
@@ -742,7 +742,7 @@
         document.getElementById("playGame").addEventListener("click", () => {
             resetGame();
             if (!gameInterval) {
-                gameInterval = setInterval(move, 300); // गेम स्पीड को धीमा किया (300 मिलीसेकंड)
+                gameInterval = setInterval(move, 300);
             }
         });
 
