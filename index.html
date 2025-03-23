@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline';">
     <title>BlockSnakes - Play & Earn</title>
-    <script src="https://unpkg.com/ethers@5.4.7/dist/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -58,6 +58,10 @@
         button:hover {
             transform: scale(1.05);
             background: linear-gradient(45deg, #00b7eb, #00ff88);
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
         }
         canvas {
             border: 3px solid #00ff88;
