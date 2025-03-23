@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: linear-gradient(135deg, #2a1a4e 0%, #1e2a6e 50%, #1a4a8e 100%);
             color: #e0e0e0;
             text-align: center;
             margin: 0;
@@ -68,6 +68,8 @@
             background: #0a0a23;
             margin-top: 20px;
             box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+            max-width: 100%;
+            height: auto;
         }
         #gameInfo {
             margin-top: 15px;
@@ -84,6 +86,7 @@
             background: #0a0a23;
             color: #e0e0e0;
             margin: 5px;
+            width: 150px;
         }
         #playerHistory {
             margin-top: 20px;
@@ -96,6 +99,42 @@
         }
         #playerHistory p {
             margin: 5px 0;
+        }
+        #pauseMessage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #ff5555;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            z-index: 1000;
+        }
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            button {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+            #stakeInput {
+                width: 120px;
+            }
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            #gameInfo, #playerHistory {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -130,6 +169,7 @@
             <p id="reward">Rewards: 0 BST</p>
         </div>
         <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <div id="pauseMessage">Game Paused: Transaction Pending...</div>
         <div id="playerHistory">
             <h2>Player History</h2>
             <p id="gamesPlayed">Games Played: 0</p>
