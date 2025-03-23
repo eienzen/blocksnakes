@@ -3,128 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockSnakes - Play & Earn BST</title>
+    <title>BlockSnakes</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.10.0/dist/web3.min.js"></script>
     <style>
         body {
-            margin: 0;
             font-family: Arial, sans-serif;
-            background-color: #1a1a1a;
-            color: #fff;
-        }
-        header {
-            background: linear-gradient(90deg, #4CAF50, #2196F3);
-            padding: 20px;
-            text-align: center;
-        }
-        header h1 {
-            margin: 0;
-            font-size: 48px;
-        }
-        nav {
-            background-color: #333;
-            padding: 10px;
-            text-align: center;
-        }
-        nav a {
-            color: #fff;
-            margin: 0 15px;
-            text-decoration: none;
-            font-size: 18px;
-        }
-        nav a:hover {
-            color: #4CAF50;
-        }
-        .hero {
-            text-align: center;
-            padding: 50px 20px;
-            background: url('https://example.com/background.jpg') no-repeat center;
-            background-size: cover;
-        }
-        .hero h2 {
-            font-size: 36px;
-            margin-bottom: 20px;
-        }
-        .hero p {
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-        .btn {
-            background-color: #4CAF50;
+            background: linear-gradient(to right, #00ff00, #00b7eb);
             color: white;
-            padding: 15px 30px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 18px;
-            text-decoration: none;
-        }
-        .btn:hover {
-            background-color: #45a049;
-        }
-        .section {
-            padding: 50px 20px;
             text-align: center;
-        }
-        .section h2 {
-            font-size: 32px;
-            margin-bottom: 20px;
-        }
-        .guide-steps, .roadmap-timeline {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap;
-        }
-        .step, .timeline-item {
-            background-color: #333;
-            padding: 20px;
-            border-radius: 10px;
-            width: 200px;
-            text-align: center;
-        }
-        .leaderboard {
-            background-color: #222;
-            padding: 20px;
-            border-radius: 10px;
-            width: 50%;
-            margin: 0 auto;
-        }
-        .leaderboard ul {
-            list-style: none;
+            margin: 0;
             padding: 0;
         }
-        .leaderboard li {
-            background-color: #444;
+        nav {
+            background: #333;
             padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
         }
-        #gameCanvas {
-            display: block;
-            margin: 0 auto;
-        }
-        footer {
-            background-color: #333;
-            padding: 20px;
-            text-align: center;
-            position: relative;
-            bottom: 0;
-            width: 100%;
-        }
-        footer a {
-            color: #4CAF50;
+        nav a {
+            color: white;
+            margin: 0 15px;
             text-decoration: none;
+        }
+        nav a:hover {
+            text-decoration: underline;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            margin: 5px;
+            border-radius: 5px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        canvas {
+            border: 2px solid white;
+            background: #000;
+            margin-top: 20px;
+        }
+        #gameInfo {
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <header>
-        <h1>BlockSnakes</h1>
-        <p>Play, Earn, and Stake with BST Token</p>
-    </header>
-
-    <!-- Navigation -->
     <nav>
         <a href="#home">Home</a>
         <a href="#game">Play Game</a>
@@ -133,106 +62,36 @@
         <a href="#whitepaper">Whitepaper</a>
     </nav>
 
-    <!-- Hero Section -->
-    <div class="hero" id="home">
-        <h2>Welcome to BlockSnakes</h2>
-        <p>Join the ultimate 3D snake game and earn BST tokens by completing levels! Token launch date: <strong>1st May 2025</strong></p>
-        <a href="https://pancakeswap.finance" class="btn">Buy Token</a>
+    <div id="home">
+        <h1>BlockSnakes</h1>
+        <p>Play, Earn, and Stake with BST Token</p>
     </div>
 
-    <!-- Game Section -->
-    <div class="section" id="game">
+    <div id="game">
         <h2>Play BlockSnakes 3D</h2>
-        <button id="connectWallet" class="btn">Connect Wallet</button>
-        <button id="playGame" class="btn">Play Game</button>
-        <button id="nextLevel" class="btn">Next Level</button>
-        <button id="stakeTokens" class="btn">Stake Tokens</button>
-        <button id="claimReward" class="btn">Claim Staking Reward</button>
-        <button id="unstakeTokens" class="btn">Unstake Tokens</button>
+        <button id="connectWallet">Connect Wallet</button>
+        <button id="playGame">Play Game</button>
+        <button id="nextLevel">Next Level</button>
+        <button id="stakeTokens">Stake Tokens</button>
+        <button id="claimReward">Claim Staking Reward</button>
+        <button id="unstakeTokens">Unstake Tokens</button>
         <div id="gameInfo">
-            <p>Current Level: <span id="currentLevel">1</span></p>
-            <p>Score: <span id="score">0</span></p>
-            <p>Rewards: <span id="rewards">0</span> BST</p>
+            <p id="level">Current Level: 1</p>
+            <p id="score">Score: 0</p>
+            <p id="reward">Rewards: 0 BST</p>
         </div>
-        <canvas id="gameCanvas"></canvas>
+        <canvas id="gameCanvas" width="600" height="400"></canvas>
     </div>
 
-    <!-- How to Play Section -->
-    <div class="section" id="how-to-play">
-        <h2>How to Play & Earn</h2>
-        <div class="guide-steps">
-            <div class="step">
-                <h3>Step 1</h3>
-                <p>Connect your MetaMask wallet to start playing.</p>
-            </div>
-            <div class="step">
-                <h3>Step 2</h3>
-                <p>Play the 3D snake game, collect food, and complete levels.</p>
-            </div>
-            <div class="step">
-                <h3>Step 3</h3>
-                <p>Earn BST tokens for each level (e.g., 10 BST for Level 1).</p>
-            </div>
-            <div class="step">
-                <h3>Step 4</h3>
-                <p>Stake your BST tokens to earn more rewards.</p>
-            </div>
-        </div>
+    <div id="home">
+        <p>Join the ultimate 3D snake game and earn BST tokens by completing levels! Token launch date: 1st May 2025</p>
+        <button id="buyToken">Buy Token</button>
     </div>
 
-    <!-- Roadmap Section -->
-    <div class="section" id="roadmap">
-        <h2>Roadmap</h2>
-        <div class="roadmap-timeline">
-            <div class="timeline-item">
-                <h3>Q1 2025</h3>
-                <p>Token Development & Testing</p>
-            </div>
-            <div class="timeline-item">
-                <h3>Q2 2025</h3>
-                <p>Token Launch & PancakeSwap Listing</p>
-            </div>
-            <div class="timeline-item">
-                <h3>Q3 2025</h3>
-                <p>Game Feature Updates</p>
-            </div>
-            <div class="timeline-item">
-                <h3>Q4 2025</h3>
-                <p>Community Expansion & Partnerships</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Leaderboard Section -->
-    <div class="section">
-        <h2>Leaderboard</h2>
-        <div class="leaderboard">
-            <ul id="leaderboardList">
-                <!-- Leaderboard will be populated dynamically -->
-            </ul>
-        </div>
-    </div>
-
-    <!-- Whitepaper Section -->
-    <div class="section" id="whitepaper">
-        <h2>Whitepaper</h2>
-        <p>Learn more about BlockSnakes and BST token in our detailed whitepaper.</p>
-        <a href="#whitepaper-link" class="btn">Download Whitepaper</a>
-    </div>
-
-    <!-- Footer -->
-    <footer>
-        <p>&copy; 2025 BlockSnakes. All rights reserved.</p>
-        <p><a href="https://x.com/BlockSnakesOfficial">Twitter</a> | <a href="https://t.me/BlockSnakesCommunity">Telegram</a></p>
-    </footer>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/web3@1.5.2/dist/web3.min.js"></script>
     <script>
-        let web3;
-        let accounts;
+        let account;
         let contract;
-        const contractAddress = "0xb7a6f357ac2385cfc0863b53ada86855b393d589"; // Replace with actual address
+        const contractAddress = "0xb7a6f357ac2385cfc0863b53ada86855b393d589"; // यहाँ अपना कॉन्ट्रैक्ट अड्रेस डालें
         const contractABI = [[
 	{
 		"anonymous": false,
@@ -711,178 +570,202 @@
 		"stateMutability": "view",
 		"type": "function"
 	}
-]]; // Replace with actual ABI
+]]; // यहाँ अपना ABI डालें
 
-        let currentLevel = 1;
-        let score = 0;
-        let rewards = 0;
-        const levelRewards = {
-            1: 10, // 10 BST for Level 1
-            2: 20, // 20 BST for Level 2
-            3: 30  // 30 BST for Level 3
-        };
-
-        // Connect Wallet
-        document.getElementById("connectWallet").addEventListener("click", async () => {
+        async function connectWallet() {
             if (window.ethereum) {
-                web3 = new Web3(window.ethereum);
-                accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-                contract = new web3.eth.Contract(contractABI, contractAddress);
-                alert("Wallet connected: " + accounts[0]);
+                try {
+                    const accounts = await ethereum.request({ method: "eth_requestAccounts" });
+                    account = accounts[0];
+                    document.getElementById("connectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
+                    const web3 = new Web3(window.ethereum);
+                    contract = new web3.eth.Contract(contractABI, contractAddress);
+                } catch (error) {
+                    alert("Error connecting wallet: " + error.message);
+                }
             } else {
                 alert("Please install MetaMask!");
             }
-        });
-
-        // Three.js Game Setup
-        const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("gameCanvas") });
-        renderer.setSize(window.innerWidth * 0.8, window.innerHeight * 0.6);
-
-        const snakeGeometry = new THREE.BoxGeometry(1, 1, 1);
-        const snakeMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        const snake = new THREE.Mesh(snakeGeometry, snakeMaterial);
-        scene.add(snake);
-
-        const foodGeometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
-        const foodMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-        const food = new THREE.Mesh(foodGeometry, foodMaterial);
-        food.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, 0);
-        scene.add(food);
-
-        camera.position.z = 15;
-
-        let snakeDirection = { x: 0.1, y: 0 };
-        let snakeBody = [{ x: 0, y: 0, z: 0 }];
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Move snake
-            let head = { x: snakeBody[0].x + snakeDirection.x, y: snakeBody[0].y + snakeDirection.y, z: 0 };
-            snakeBody.unshift(head);
-            snakeBody.pop();
-
-            snake.position.set(head.x, head.y, head.z);
-
-            // Check for food collision
-            if (Math.abs(snake.position.x - food.position.x) < 0.5 && Math.abs(snake.position.y - food.position.y) < 0.5) {
-                score += 10;
-                document.getElementById("score").textContent = score;
-                snakeBody.push({ x: head.x, y: head.y, z: 0 });
-                food.position.set(Math.random() * 10 - 5, Math.random() * 10 - 5, 0);
-
-                // Check if level is complete
-                if (score >= currentLevel * 100) {
-                    alert(`Level ${currentLevel} completed! You earned ${levelRewards[currentLevel]} BST.`);
-                    contract.methods.rewardPlayer(accounts[0], web3.utils.toWei(levelRewards[currentLevel].toString(), "ether"))
-                        .send({ from: accounts[0] });
-                    rewards += levelRewards[currentLevel];
-                    document.getElementById("rewards").textContent = rewards;
-                }
-            }
-
-            renderer.render(scene, camera);
         }
-        animate();
 
-        // Control snake direction
-        document.addEventListener("keydown", (event) => {
-            switch (event.key) {
-                case "ArrowUp":
-                    snakeDirection = { x: 0, y: 0.1 };
-                    break;
-                case "ArrowDown":
-                    snakeDirection = { x: 0, y: -0.1 };
-                    break;
-                case "ArrowLeft":
-                    snakeDirection = { x: -0.1, y: 0 };
-                    break;
-                case "ArrowRight":
-                    snakeDirection = { x: 0.1, y: 0 };
-                    break;
-            }
-        });
+        const canvas = document.getElementById("gameCanvas");
+        const ctx = canvas.getContext("2d");
+        let snake = [{ x: 10, y: 10 }];
+        let food = { x: 15, y: 15 };
+        let dx = 1;
+        let dy = 0;
+        let score = 0;
+        let level = 1;
+        let gameInterval = null;
 
-        // Play Game
-        document.getElementById("playGame").addEventListener("click", async () => {
-            if (!accounts) {
-                alert("Please connect your wallet first!");
-                return;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            snake.forEach(segment => {
+                ctx.fillStyle = "limegreen";
+                ctx.fillRect(segment.x * 20, segment.y * 20, 18, 18);
+                ctx.strokeStyle = "darkgreen";
+                ctx.strokeRect(segment.x * 20, segment.y * 20, 18, 18);
+            });
+            ctx.fillStyle = "red";
+            ctx.fillRect(food.x * 20, food.y * 20, 18, 18);
+            ctx.strokeStyle = "darkred";
+            ctx.strokeRect(food.x * 20, food.y * 20, 18, 18);
+        }
+
+        function move() {
+            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                score += 10;
+                document.getElementById("score").innerText = `Score: ${score}`;
+                food = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
+            } else {
+                snake.pop();
             }
+            if (score >= 100) {
+                levelComplete();
+            }
+            if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20) {
+                alert("Game Over! Your score: " + score);
+                resetGame();
+            }
+            draw();
+        }
+
+        function resetGame() {
+            if (gameInterval) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+            }
+            snake = [{ x: 10, y: 10 }];
+            food = { x: 15, y: 15 };
+            dx = 1;
+            dy = 0;
             score = 0;
-            currentLevel = 1;
-            document.getElementById("score").textContent = score;
-            document.getElementById("currentLevel").textContent = currentLevel;
-            alert("Game started! Collect food to increase your score.");
+            document.getElementById("score").innerText = `Score: ${score}`;
+            document.getElementById("level").innerText = `Current Level: ${level}`;
+            document.getElementById("reward").innerText = `Rewards: 0 BST`;
+            draw();
+        }
+
+        async function levelComplete() {
+            try {
+                const reward = 10; // 10 BST per level
+                await contract.methods.levelComplete(reward).send({ from: account });
+                document.getElementById("reward").innerText = `Rewards: ${reward} BST`;
+            } catch (error) {
+                alert("Error completing level: " + error.message);
+            }
+        }
+
+        document.addEventListener("keydown", e => {
+            if (e.key === "ArrowUp" && dy !== 1) { dx = 0; dy = -1; }
+            if (e.key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
+            if (e.key === "ArrowLeft" && dx !== 1) { dx = -1; dy = 0; }
+            if (e.key === "ArrowRight" && dx !== -1) { dx = 1; dy = 0; }
         });
 
-        // Next Level
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        canvas.addEventListener("touchstart", (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        });
+
+        canvas.addEventListener("touchmove", (e) => {
+            e.preventDefault();
+            const touchEndX = e.touches[0].clientX;
+            const touchEndY = e.touches[0].clientY;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                if (diffX > 0 && dx !== -1) { dx = 1; dy = 0; }
+                else if (dx !== 1) { dx = -1; dy = 0; }
+            } else {
+                if (diffY > 0 && dy !== -1) { dx = 0; dy = 1; }
+                else if (dy !== 1) { dx = 0; dy = -1; }
+            }
+            touchStartX = touchEndX;
+            touchStartY = touchEndY;
+        });
+
+        async function showLoading(show) {
+            const loading = document.createElement("div");
+            loading.id = "loading";
+            loading.innerText = "Loading...";
+            loading.style.position = "fixed";
+            loading.style.top = "50%";
+            loading.style.left = "50%";
+            loading.style.transform = "translate(-50%, -50%)";
+            loading.style.background = "rgba(0, 0, 0, 0.7)";
+            loading.style.color = "white";
+            loading.style.padding = "20px";
+            loading.style.borderRadius = "10px";
+            if (show) {
+                document.body.appendChild(loading);
+            } else {
+                document.getElementById("loading")?.remove();
+            }
+        }
+
+        document.getElementById("connectWallet").addEventListener("click", connectWallet);
+
+        document.getElementById("playGame").addEventListener("click", () => {
+            resetGame();
+            if (!gameInterval) {
+                gameInterval = setInterval(move, 100);
+            }
+        });
+
         document.getElementById("nextLevel").addEventListener("click", async () => {
-            if (!accounts) {
-                alert("Please connect your wallet first!");
-                return;
+            showLoading(true);
+            try {
+                await contract.methods.nextLevel().send({ from: account });
+                level++;
+                document.getElementById("level").innerText = `Current Level: ${level}`;
+                resetGame();
+            } catch (error) {
+                alert("Error going to next level: " + error.message);
+            } finally {
+                showLoading(false);
             }
-            if (score < currentLevel * 100) {
-                alert("Complete the current level first!");
-                return;
-            }
-            await contract.methods.deductTokens(accounts[0]).send({ from: accounts[0] });
-            rewards -= (rewards * 2) / 100; // 2% deduction
-            document.getElementById("rewards").textContent = rewards;
-            currentLevel++;
-            score = 0;
-            document.getElementById("currentLevel").textContent = currentLevel;
-            document.getElementById("score").textContent = score;
-            alert(`Proceeding to Level ${currentLevel}! 2% of your rewards were deducted.`);
         });
 
-        // Stake Tokens
         document.getElementById("stakeTokens").addEventListener("click", async () => {
-            if (!accounts) {
-                alert("Please connect your wallet first!");
-                return;
-            }
-            const amount = prompt("Enter amount to stake (in BST):");
-            if (amount) {
-                await contract.methods.stake(web3.utils.toWei(amount, "ether")).send({ from: accounts[0] });
-                alert(`Successfully staked ${amount} BST!`);
+            try {
+                const amount = prompt("Enter amount to stake:");
+                await contract.methods.stakeTokens(amount).send({ from: account });
+                alert("Tokens staked successfully!");
+            } catch (error) {
+                alert("Error staking tokens: " + error.message);
             }
         });
 
-        // Claim Staking Reward
         document.getElementById("claimReward").addEventListener("click", async () => {
-            if (!accounts) {
-                alert("Please connect your wallet first!");
-                return;
+            try {
+                await contract.methods.claimStakingReward().send({ from: account });
+                alert("Staking reward claimed successfully!");
+            } catch (error) {
+                alert("Error claiming reward: " + error.message);
             }
-            await contract.methods.claimRewards().send({ from: accounts[0] });
-            alert("Staking rewards claimed!");
         });
 
-        // Unstake Tokens
         document.getElementById("unstakeTokens").addEventListener("click", async () => {
-            if (!accounts) {
-                alert("Please connect your wallet first!");
-                return;
+            try {
+                await contract.methods.unstakeTokens().send({ from: account });
+                alert("Tokens unstaked successfully!");
+            } catch (error) {
+                alert("Error unstaking tokens: " + error.message);
             }
-            await contract.methods.unstake().send({ from: accounts[0] });
-            alert("Tokens unstaked!");
         });
 
-        // Leaderboard (simulated for now)
-        const leaderboardList = document.getElementById("leaderboardList");
-        const topPlayers = [
-            { address: "0x123...", score: 1000 },
-            { address: "0x456...", score: 800 },
-            { address: "0x789...", score: 600 },
-        ];
-        topPlayers.forEach(player => {
-            const li = document.createElement("li");
-            li.textContent = `${player.address}: ${player.score} points`;
-            leaderboardList.appendChild(li);
+        document.getElementById("buyToken").addEventListener("click", () => {
+            alert("Token sale will start on 1st May 2025!");
         });
+
+        draw();
     </script>
 </body>
 </html>
