@@ -3,8 +3,33 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract;
     let isConnecting = false;
     let isTransactionPending = false;
-    const contractAddress = "0xbcf87e55cf18c6eb267607a5c7c5789de878b092"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
+    const contractAddress = "0x6699acf8d94d1a7b9740b7b7c1d51332620591c8"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
     const contractABI = [
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "level",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
+			}
+		],
+		"name": "LevelCompleted",
+		"type": "event"
+	},
 	{
 		"anonymous": false,
 		"inputs": [
@@ -205,6 +230,40 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			}
 		],
+		"name": "playerHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "gamesPlayed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "levelsCompleted",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "highestLevel",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
 		"name": "rewards",
 		"outputs": [
 			{
@@ -263,6 +322,16 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 ]; // यहाँ नया ABI डालें
 
+    // Load player history from localStorage
+    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
+        gamesPlayed: 0,
+        levelsCompleted: 0,
+        totalRewards: 0,
+        highestLevel: 0,
+        score: 0,
+        rewards: 0
+    };
+
     async function connectWallet() {
         if (isConnecting) {
             alert("Wallet connection is already in progress. Please wait.");
@@ -282,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const signer = provider.getSigner();
                 contract = new ethers.Contract(contractAddress, contractABI, signer);
                 console.log("Contract initialized:", contract);
+                await loadPlayerHistory();
             } catch (error) {
                 alert("Error connecting wallet: " + error.message);
             } finally {
@@ -290,6 +360,31 @@ document.addEventListener("DOMContentLoaded", () => {
         } else {
             alert("Please install MetaMask! Other wallets are not supported.");
         }
+    }
+
+    async function loadPlayerHistory() {
+        if (!contract || !account) return;
+        try {
+            const history = await contract.playerHistory(account);
+            playerData.gamesPlayed = Number(history.gamesPlayed);
+            playerData.levelsCompleted = Number(history.levelsCompleted);
+            playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
+            playerData.highestLevel = Number(history.highestLevel);
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+        } catch (error) {
+            console.error("Error loading player history:", error);
+        }
+    }
+
+    function updatePlayerHistoryUI() {
+        document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed}`;
+        document.getElementById("levelsCompleted").innerText = `Levels Completed: ${playerData.levelsCompleted}`;
+        document.getElementById("totalRewards").innerText = `Total Rewards: ${playerData.totalRewards} BST`;
+        document.getElementById("highestLevel").innerText = `Highest Level: ${playerData.highestLevel}`;
+        document.getElementById("score").innerText = `Score: ${playerData.score}`;
+        document.getElementById("reward").innerText = `Rewards: ${playerData.rewards} BST`;
+        document.getElementById("level").innerText = `Current Level: ${playerData.highestLevel + 1}`;
     }
 
     function setTransactionPending(pending) {
@@ -307,8 +402,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let food = { x: 15, y: 15 };
     let dx = 1;
     let dy = 0;
-    let score = 0;
-    let level = 1;
     let gameInterval = null;
 
     function draw() {
@@ -347,17 +440,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
         snake.unshift(head);
         if (head.x === food.x && head.y === food.y) {
-            score += 10;
-            document.getElementById("score").innerText = `Score: ${score}`;
+            playerData.score += 10;
+            updatePlayerHistoryUI();
             food = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
         } else {
             snake.pop();
         }
-        if (score >= 100) {
+        if (playerData.score >= 100) {
             levelComplete();
         }
         if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20) {
-            alert("Game Over! Your score: " + score);
+            alert("Game Over! Your score: " + playerData.score);
             resetGame();
         }
         draw();
@@ -372,10 +465,9 @@ document.addEventListener("DOMContentLoaded", () => {
         food = { x: 15, y: 15 };
         dx = 1;
         dy = 0;
-        score = 0;
-        document.getElementById("score").innerText = `Score: ${score}`;
-        document.getElementById("level").innerText = `Current Level: ${level}`;
-        document.getElementById("reward").innerText = `Rewards: 0 BST`;
+        playerData.gamesPlayed += 1;
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
     }
 
@@ -393,7 +485,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const reward = 10; // 10 BST per level
             const tx = await contract.levelComplete(reward);
             await tx.wait();
-            document.getElementById("reward").innerText = `Rewards: ${reward} BST`;
+            playerData.rewards += reward;
+            playerData.score = 0; // Reset score after level completion
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            await loadPlayerHistory(); // Refresh history from contract
         } catch (error) {
             alert("Error completing level: " + error.message);
         } finally {
@@ -476,9 +572,10 @@ document.addEventListener("DOMContentLoaded", () => {
             setTransactionPending(true);
             const tx = await contract.nextLevel();
             await tx.wait();
-            level++;
-            document.getElementById("level").innerText = `Current Level: ${level}`;
-            resetGame();
+            playerData.score = 0; // Reset score for new level
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            await loadPlayerHistory();
         } catch (error) {
             alert("Error going to next level: " + error.message);
         } finally {
@@ -509,6 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await tx.wait();
             alert("Tokens staked successfully!");
             stakeInput.value = "";
+            await loadPlayerHistory();
         } catch (error) {
             alert("Error staking tokens: " + error.message);
         } finally {
@@ -530,6 +628,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.claimStakingReward();
             await tx.wait();
             alert("Staking reward claimed successfully!");
+            await loadPlayerHistory();
         } catch (error) {
             alert("Error claiming reward: " + error.message);
         } finally {
@@ -551,6 +650,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.unstakeTokens();
             await tx.wait();
             alert("Tokens unstaked successfully!");
+            await loadPlayerHistory();
         } catch (error) {
             alert("Error unstaking tokens: " + error.message);
         } finally {
@@ -562,5 +662,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Token sale will start on 1st May 2025!");
     });
 
+    // Initial UI update
+    updatePlayerHistoryUI();
     draw();
 });
