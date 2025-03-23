@@ -364,7 +364,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             const reward = 10; // 10 BST per level
-            await contract.levelComplete(reward).send();
+            const tx = await contract.levelComplete(reward);
+            await tx.wait();
             document.getElementById("reward").innerText = `Rewards: ${reward} BST`;
         } catch (error) {
             alert("Error completing level: " + error.message);
@@ -439,7 +440,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         showLoading(true);
         try {
-            await contract.nextLevel().send();
+            const tx = await contract.nextLevel();
+            await tx.wait();
             level++;
             document.getElementById("level").innerText = `Current Level: ${level}`;
             resetGame();
@@ -455,10 +457,18 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet first!");
             return;
         }
+        const stakeInput = document.getElementById("stakeInput");
+        const amount = stakeInput.value;
+        if (!amount || amount <= 0) {
+            alert("Please enter a valid amount to stake!");
+            return;
+        }
         try {
-            const amount = prompt("Enter amount to stake:");
-            await contract.stakeTokens(amount).send();
+            const amountInWei = ethers.utils.parseUnits(amount.toString(), 18);
+            const tx = await contract.stakeTokens(amountInWei);
+            await tx.wait();
             alert("Tokens staked successfully!");
+            stakeInput.value = ""; // इनपुट फील्ड रीसेट करें
         } catch (error) {
             alert("Error staking tokens: " + error.message);
         }
@@ -470,7 +480,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         try {
-            await contract.claimStakingReward().send();
+            const tx = await contract.claimStakingReward();
+            await tx.wait();
             alert("Staking reward claimed successfully!");
         } catch (error) {
             alert("Error claiming reward: " + error.message);
@@ -483,7 +494,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
         try {
-            await contract.unstakeTokens().send();
+            const tx = await contract.unstakeTokens();
+            await tx.wait();
             alert("Tokens unstaked successfully!");
         } catch (error) {
             alert("Error unstaking tokens: " + error.message);
