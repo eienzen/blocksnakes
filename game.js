@@ -363,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Wallet is already connected!");
             return;
         }
-        if (window.ethereum && window.ethereum.isMetaMask) {
+        if (window.ethereum) { // सभी Web3 वॉलेट्स (MetaMask, Trust Wallet, Phantom, आदि) को सपोर्ट करता है
             try {
                 isConnecting = true;
                 const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -380,7 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 isConnecting = false;
             }
         } else {
-            alert("Please install MetaMask! Other wallets are not supported.");
+            alert("Please install a Web3 wallet like MetaMask, Trust Wallet, or Phantom!");
         }
     }
 
@@ -403,10 +403,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function updatePlayerHistoryUI() {
         document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed}`;
         document.getElementById("levelsCompleted").innerText = `Levels Completed: ${playerData.levelsCompleted}`;
-        document.getElementById("totalRewards").innerText = `Total Rewards: ${playerData.totalRewards} BST`;
+        document.getElementById("totalGameRewards").innerText = `Total Game Rewards: ${playerData.totalRewards} BST`;
         document.getElementById("highestLevel").innerText = `Highest Level: ${playerData.highestLevel}`;
         document.getElementById("score").innerText = `Score: ${playerData.score}`;
-        document.getElementById("reward").innerText = `Rewards: ${playerData.rewards} BST`;
+        document.getElementById("gameRewards").innerText = `Game Rewards: ${playerData.rewards} BST`;
         document.getElementById("level").innerText = `Current Level: ${playerData.currentLevel}`;
         document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards} BST`;
         document.getElementById("pendingLevelsText").innerText = `Pending Levels: ${playerData.pendingLevels.length}`;
@@ -476,7 +476,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-    let snake = [{ x: 10, y: 10 }];
+    let snake = [{ x: 10, y: 10 }]; // स्नेक को इनिशियलाइज़ किया
     let food = { x: 15, y: 15 };
     let dx = 1;
     let dy = 0;
@@ -567,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
             resetGame();
         } else {
             const levelMessage = document.getElementById("levelMessage");
-            levelMessage.innerText = `Level ${playerData.currentLevel - 1} Completed! Reward: ${reward} BST. Click 'Claim Rewards' to sync to blockchain.`;
+            levelMessage.innerText = `Level ${playerData.currentLevel - 1} Completed! Reward: ${reward} BST. Click 'Claim Game Rewards' to sync to blockchain.`;
             levelMessage.style.display = "block";
             setTimeout(() => {
                 levelMessage.style.display = "none";
@@ -685,7 +685,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await loadPlayerHistory();
     });
 
-    document.getElementById("claimRewards").addEventListener("click", claimPendingRewards);
+    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
 
     document.getElementById("stakeTokens").addEventListener("click", async () => {
         if (!contract) {
