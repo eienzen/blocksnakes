@@ -363,7 +363,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Wallet is already connected!");
             return;
         }
-        if (window.ethereum) { // सभी Web3 वॉलेट्स (MetaMask, Trust Wallet, Phantom, आदि) को सपोर्ट करता है
+        if (window.ethereum) {
             try {
                 isConnecting = true;
                 const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -477,50 +477,86 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     let snake = [{ x: 10, y: 10 }]; // स्नेक को इनिशियलाइज़ किया
-    let food = { x: 15, y: 15 };
+    let box = { x: 15, y: 15 }; // बॉक्स (फूड की जगह)
     let dx = 1;
     let dy = 0;
     let gameInterval = null;
 
     function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 3D बैकग्राउंड
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, "#0a0a23");
+        gradient.addColorStop(1, "#1f2a44");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 3D स्नेक
         snake.forEach((segment, index) => {
-            const gradient = ctx.createLinearGradient(segment.x * 20, segment.y * 20, (segment.x + 1) * 20, (segment.y + 1) * 20);
-            gradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
-            gradient.addColorStop(1, "#ff66cc");
-            ctx.fillStyle = gradient;
-            ctx.fillRect(segment.x * 20, segment.y * 20, 18, 18);
+            const segmentGradient = ctx.createLinearGradient(segment.x * 20, segment.y * 20, (segment.x + 1) * 20, (segment.y + 1) * 20);
+            segmentGradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
+            segmentGradient.addColorStop(1, "#ff66cc");
+            ctx.fillStyle = segmentGradient;
+            ctx.shadowColor = "rgba(255, 0, 255, 0.5)";
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+            ctx.beginPath();
+            ctx.roundRect(segment.x * 20, segment.y * 20, 18, 18, 5);
+            ctx.fill();
             ctx.strokeStyle = "#000";
-            ctx.strokeRect(segment.x * 20, segment.y * 20, 18, 18);
+            ctx.stroke();
             if (index === 0) {
+                // 3D आंखें
                 ctx.fillStyle = "#fff";
+                ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
+                ctx.shadowBlur = 5;
                 ctx.beginPath();
-                ctx.arc(segment.x * 20 + 5, segment.y * 20 + 5, 2, 0, Math.PI * 2);
-                ctx.arc(segment.x * 20 + 13, segment.y * 20 + 5, 2, 0, Math.PI * 2);
+                ctx.arc(segment.x * 20 + 5, segment.y * 20 + 5, 3, 0, Math.PI * 2);
+                ctx.arc(segment.x * 20 + 13, segment.y * 20 + 5, 3, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = "#000";
+                ctx.shadowBlur = 0;
                 ctx.beginPath();
                 ctx.arc(segment.x * 20 + 5, segment.y * 20 + 5, 1, 0, Math.PI * 2);
                 ctx.arc(segment.x * 20 + 13, segment.y * 20 + 5, 1, 0, Math.PI * 2);
                 ctx.fill();
             }
         });
-        const foodGradient = ctx.createRadialGradient(food.x * 20 + 9, food.y * 20 + 9, 0, food.x * 20 + 9, food.y * 20 + 9, 9);
-        foodGradient.addColorStop(0, "#ffcc00");
-        foodGradient.addColorStop(1, "#ff6600");
-        ctx.fillStyle = foodGradient;
+
+        // 3D बॉक्स (फूड की जगह)
+        const boxGradient = ctx.createLinearGradient(box.x * 20, box.y * 20, (box.x + 1) * 20, (box.y + 1) * 20);
+        boxGradient.addColorStop(0, "#ff5555");
+        boxGradient.addColorStop(1, "#ffaa00");
+        ctx.fillStyle = boxGradient;
+        ctx.shadowColor = "rgba(255, 85, 85, 0.5)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
+        ctx.fillRect(box.x * 20, box.y * 20, 18, 18);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(box.x * 20, box.y * 20, 18, 18);
+        // 3D इफेक्ट के लिए हाइलाइट लाइन्स
         ctx.beginPath();
-        ctx.arc(food.x * 20 + 9, food.y * 20 + 9, 9, 0, Math.PI * 2);
-        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.moveTo(box.x * 20, box.y * 20);
+        ctx.lineTo(box.x * 20 + 5, box.y * 20 + 5);
+        ctx.moveTo(box.x * 20 + 18, box.y * 20);
+        ctx.lineTo(box.x * 20 + 13, box.y * 20 + 5);
+        ctx.moveTo(box.x * 20 + 18, box.y * 20 + 18);
+        ctx.lineTo(box.x * 20 + 13, box.y * 20 + 13);
+        ctx.moveTo(box.x * 20, box.y * 20 + 18);
+        ctx.lineTo(box.x * 20 + 5, box.y * 20 + 13);
+        ctx.stroke();
     }
 
     function move() {
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
         snake.unshift(head);
-        if (head.x === food.x && head.y === food.y) {
+        if (head.x === box.x && head.y === box.y) {
             playerData.score += 10;
             updatePlayerHistoryUI();
-            food = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
+            box = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
         } else {
             snake.pop();
         }
@@ -540,7 +576,7 @@ document.addEventListener("DOMContentLoaded", () => {
             gameInterval = null;
         }
         snake = [{ x: 10, y: 10 }];
-        food = { x: 15, y: 15 };
+        box = { x: 15, y: 15 };
         dx = 1;
         dy = 0;
         playerData.gamesPlayed += 1;
