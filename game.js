@@ -4,27 +4,23 @@ document.addEventListener("DOMContentLoaded", () => {
     let isConnecting = false;
     let transactionQueue = [];
     let isProcessingTransaction = false;
-    const MAX_LEVEL = 100;
 
     // Load player history from localStorage
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
-        levelsCompleted: 0,
         totalRewards: 0,
-        highestLevel: 0,
         score: 0,
         rewards: 0,
         pendingRewards: 0,
         pendingLevels: [],
-        currentLevel: 1
+        lastGameScore: 0,
+        lastGameRewards: 0
     };
 
-    // Ensure pendingLevels and currentLevel are properly initialized
+    // Ensure pendingLevels is properly initialized
     playerData.pendingLevels = playerData.pendingLevels || [];
-    playerData.currentLevel = playerData.currentLevel || 1;
-    playerData.rewards = playerData.rewards || 0;
 
-    const contractAddress = "0xe8d1f063e641d95908ddabfa58b9f79c4d71d11e"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
+    const contractAddress = "0xca9361708db63ab85dc5c8af3a8b4ac744719371"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
@@ -394,10 +390,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const history = await contract.playerHistory(account);
             playerData.gamesPlayed = Number(history.gamesPlayed);
-            playerData.levelsCompleted = Number(history.levelsCompleted);
             playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
-            playerData.highestLevel = Number(history.highestLevel);
-            playerData.currentLevel = playerData.highestLevel + 1 > MAX_LEVEL ? MAX_LEVEL : playerData.highestLevel + 1;
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
@@ -407,31 +400,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updatePlayerHistoryUI() {
         document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed}`;
-        document.getElementById("levelsCompleted").innerText = `Levels Completed: ${playerData.levelsCompleted}`;
         document.getElementById("totalGameRewards").innerText = `Total Game Rewards: ${playerData.totalRewards} BST`;
-        document.getElementById("highestLevel").innerText = `Highest Level: ${playerData.highestLevel}`;
+        document.getElementById("lastGameScore").innerText = `Last Game Score: ${playerData.lastGameScore || 0}`;
+        document.getElementById("lastGameRewards").innerText = `Last Game Rewards: ${playerData.lastGameRewards || 0} BST`;
         document.getElementById("score").innerText = `Score: ${playerData.score}`;
         document.getElementById("gameRewards").innerText = `Game Rewards: ${playerData.rewards} BST`;
-        document.getElementById("level").innerText = `Current Level: ${playerData.currentLevel}`;
         document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards} BST`;
-        document.getElementById("pendingLevelsText").innerText = `Pending Levels: ${playerData.pendingLevels.length}`;
-        updateLevelInfo();
-    }
-
-    function getSnakeSpeed(level) {
-        if (level <= 10) return 300;
-        const speedReduction = Math.floor((level - 1) / 10) * 10;
-        return 300 - speedReduction;
-    }
-
-    function getRewardForLevel(level) {
-        return 5 + (level - 1) * 2;
-    }
-
-    function updateLevelInfo() {
-        const speed = getSnakeSpeed(playerData.currentLevel);
-        const reward = getRewardForLevel(playerData.currentLevel);
-        document.getElementById("levelDetails").innerText = `Level ${playerData.currentLevel}: Required Score: 100, Speed: ${speed}ms, Reward: ${reward} BST`;
+        document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels.length}`;
     }
 
     async function estimateGasFee() {
@@ -441,9 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             const totalReward = playerData.pendingRewards;
-            const levelCount = playerData.pendingLevels.length;
-            const highestLevel = playerData.highestLevel;
-            const gasEstimate = await contract.estimateGas.batchLevelComplete(totalReward, levelCount, highestLevel);
+            const milestoneCount = playerData.pendingLevels.length;
+            const gasEstimate = await contract.estimateGas.batchLevelComplete(totalReward, milestoneCount, 0);
             const gasPrice = await (new ethers.providers.Web3Provider(window.ethereum)).getGasPrice();
             const gasCost = gasEstimate.mul(gasPrice);
             const gasCostInBNB = ethers.utils.formatEther(gasCost);
@@ -486,6 +460,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let dx = 1;
     let dy = 0;
     let gameInterval = null;
+    const SNAKE_SPEED = 300; // डिफिकल्टी वही रखी (300ms)
 
     function draw() {
         // 3D बैकग्राउंड
@@ -560,13 +535,22 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             playerData.score += 10;
+            // स्कोर के आधार पर रिवॉर्ड
+            if (playerData.score > 0 && playerData.score % 100 === 0) {
+                const reward = 5; // 100 स्कोर के लिए 5 BST
+                playerData.pendingRewards += reward;
+                playerData.pendingLevels.push({ score: playerData.score, reward });
+                const levelMessage = document.getElementById("levelMessage");
+                levelMessage.innerText = `Milestone Reached! Score: ${playerData.score}, Reward: ${reward} BST.`;
+                levelMessage.style.display = "block";
+                setTimeout(() => {
+                    levelMessage.style.display = "none";
+                }, 3000);
+            }
             updatePlayerHistoryUI();
             box = { x: Math.floor(Math.random() * 30), y: Math.floor(Math.random() * 20) };
         } else {
             snake.pop();
-        }
-        if (playerData.score >= 100) {
-            levelComplete();
         }
         if (head.x < 0 || head.x >= 30 || head.y < 0 || head.y >= 20) {
             alert("Game Over! Your score: " + playerData.score);
@@ -580,6 +564,9 @@ document.addEventListener("DOMContentLoaded", () => {
             clearInterval(gameInterval);
             gameInterval = null;
         }
+        // गेम ओवर होने पर स्कोर और रिवॉर्ड्स हिस्ट्री में जोड़ें
+        playerData.lastGameScore = playerData.score;
+        playerData.lastGameRewards = playerData.pendingRewards;
         snake = [{ x: 10, y: 10 }];
         box = { x: 15, y: 15 };
         dx = 1;
@@ -591,40 +578,6 @@ document.addEventListener("DOMContentLoaded", () => {
         draw();
     }
 
-    function levelComplete() {
-        const reward = getRewardForLevel(playerData.currentLevel);
-        playerData.pendingRewards += reward;
-        playerData.pendingLevels.push({ level: playerData.currentLevel, reward });
-        playerData.score = 0;
-        playerData.currentLevel += 1;
-
-        if (playerData.currentLevel > playerData.highestLevel) {
-            playerData.highestLevel = playerData.currentLevel - 1;
-        }
-
-        if (playerData.currentLevel > MAX_LEVEL) {
-            alert("Game Completed! You've reached the highest level!");
-            playerData.currentLevel = MAX_LEVEL;
-            resetGame();
-        } else {
-            const levelMessage = document.getElementById("levelMessage");
-            levelMessage.innerText = `Level ${playerData.currentLevel - 1} Completed! Reward: ${reward} BST. Click 'Claim Game Rewards' to sync to blockchain.`;
-            levelMessage.style.display = "block";
-            setTimeout(() => {
-                levelMessage.style.display = "none";
-            }, 3000);
-        }
-
-        if (gameInterval) {
-            clearInterval(gameInterval);
-            gameInterval = setInterval(move, getSnakeSpeed(playerData.currentLevel));
-        }
-
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-        estimateGasFee();
-    }
-
     async function claimPendingRewards() {
         if (!contract) {
             alert("Please connect your wallet first!");
@@ -634,15 +587,18 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("No rewards to claim!");
             return;
         }
+        // मिनिमम विड्रॉल लिमिट चेक
+        if (playerData.pendingRewards < 50) {
+            alert("Minimum withdrawal limit is 50 BST. You need more rewards to claim!");
+            return;
+        }
 
         const totalReward = playerData.pendingRewards;
-        const levelCount = playerData.pendingLevels.length;
-        const highestLevel = playerData.highestLevel;
+        const milestoneCount = playerData.pendingLevels.length;
 
-        queueTransaction(contract.batchLevelComplete, [totalReward, levelCount, highestLevel]);
+        queueTransaction(contract.batchLevelComplete, [totalReward, milestoneCount, 0]);
 
         playerData.rewards += totalReward;
-        playerData.levelsCompleted += levelCount;
         playerData.totalRewards += totalReward;
         playerData.pendingRewards = 0;
         playerData.pendingLevels = [];
@@ -710,20 +666,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("playGame").addEventListener("click", () => {
         resetGame();
         if (!gameInterval) {
-            gameInterval = setInterval(move, getSnakeSpeed(playerData.currentLevel));
+            gameInterval = setInterval(move, SNAKE_SPEED);
         }
-    });
-
-    document.getElementById("nextLevel").addEventListener("click", async () => {
-        if (!contract) {
-            alert("Please connect your wallet first!");
-            return;
-        }
-        queueTransaction(contract.nextLevel, []);
-        playerData.score = 0;
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-        await loadPlayerHistory();
     });
 
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
