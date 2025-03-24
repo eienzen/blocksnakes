@@ -73,7 +73,7 @@
             transform: rotateX(15deg);
         }
         .section {
-            max-width: 100%; /* पूरी चौड़ाई */
+            max-width: 100%;
             margin: 0 auto 40px auto;
             padding: 20px;
         }
@@ -81,9 +81,12 @@
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             padding: 20px;
-            display: flex; /* केंद्र में रखने के लिए */
+            display: flex;
             justify-content: center;
             align-items: center;
+            min-height: 400px; /* कैनवास की न्यूनतम ऊंचाई */
+            max-width: 90%; /* स्क्रीन की 90% चौड़ाई */
+            margin: 0 auto;
         }
         #gameInfo, #playerHistory, #pendingRewards, #stakingActions {
             font-size: 1.1rem;
@@ -126,6 +129,7 @@
             #stakeInput { width: 100px; }
             canvas { width: 100%; height: auto; }
             .section { margin: 0 10px 30px 10px; padding: 15px; }
+            .boxed-section { min-height: 300px; max-width: 95%; }
             #gameInfo, #playerHistory, #pendingRewards, #stakingActions { font-size: 0.9rem; }
         }
     </style>
@@ -154,7 +158,7 @@
     <div class="section" id="game">
         <h2>Play BlockSnakes 3D</h2>
         <div class="boxed-section">
-            <canvas id="gameCanvas"></canvas> <!-- फिक्स्ड साइज़ हटाया -->
+            <canvas id="gameCanvas"></canvas>
         </div>
         <div id="gameInfo">
             <p id="score">Score: 0</p>
