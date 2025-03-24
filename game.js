@@ -4,7 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let isConnecting = false;
     let transactionQueue = [];
     let isProcessingTransaction = false;
-    let isGamePaused = false;
+    const MAX_LEVEL = 100;
 
     // Load player history from localStorage
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
@@ -13,10 +13,13 @@ document.addEventListener("DOMContentLoaded", () => {
         totalRewards: 0,
         highestLevel: 0,
         score: 0,
-        rewards: 0
+        rewards: 0,
+        pendingRewards: 0,
+        pendingLevels: [],
+        currentLevel: 1
     };
 
-    const contractAddress = "0x0e101f818d1089c512d9bfb1b35527e4ce2f0fd3"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
+    const contractAddress = "0xe8d1f063e641d95908ddabfa58b9f79c4d71d11e"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
@@ -30,17 +33,23 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "level",
+				"name": "totalReward",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "reward",
+				"name": "levelCount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "highestLevel",
 				"type": "uint256"
 			}
 		],
-		"name": "LevelCompleted",
+		"name": "BatchLevelCompleted",
 		"type": "event"
 	},
 	{
@@ -126,26 +135,31 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "claimStakingReward",
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "levelCount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "highestLevel",
+				"type": "uint256"
+			}
+		],
+		"name": "batchLevelComplete",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "reward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "level",
-				"type": "uint256"
-			}
-		],
-		"name": "levelComplete",
+		"inputs": [],
+		"name": "claimStakingReward",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -378,6 +392,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.levelsCompleted = Number(history.levelsCompleted);
             playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
             playerData.highestLevel = Number(history.highestLevel);
+            playerData.currentLevel = playerData.highestLevel + 1 > MAX_LEVEL ? MAX_LEVEL : playerData.highestLevel + 1;
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
@@ -392,7 +407,48 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("highestLevel").innerText = `Highest Level: ${playerData.highestLevel}`;
         document.getElementById("score").innerText = `Score: ${playerData.score}`;
         document.getElementById("reward").innerText = `Rewards: ${playerData.rewards} BST`;
-        document.getElementById("level").innerText = `Current Level: ${playerData.highestLevel + 1}`;
+        document.getElementById("level").innerText = `Current Level: ${playerData.currentLevel}`;
+        document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards} BST`;
+        document.getElementById("pendingLevelsText").innerText = `Pending Levels: ${playerData.pendingLevels.length}`;
+        updateLevelInfo();
+    }
+
+    function getSnakeSpeed(level) {
+        if (level <= 10) return 300;
+        const speedReduction = Math.floor((level - 1) / 10) * 10;
+        return 300 - speedReduction;
+    }
+
+    function getRewardForLevel(level) {
+        return 5 + (level - 1) * 2;
+    }
+
+    function updateLevelInfo() {
+        const speed = getSnakeSpeed(playerData.currentLevel);
+        const reward = getRewardForLevel(playerData.currentLevel);
+        document.getElementById("levelDetails").innerText = `Level ${playerData.currentLevel}: Required Score: 100, Speed: ${speed}ms, Reward: ${reward} BST`;
+    }
+
+    async function estimateGasFee() {
+        if (!contract || !account || playerData.pendingRewards === 0) {
+            document.getElementById("gasEstimate").innerText = "";
+            return;
+        }
+        try {
+            const totalReward = playerData.pendingRewards;
+            const levelCount = playerData.pendingLevels.length;
+            const highestLevel = playerData.highestLevel;
+            const gasEstimate = await contract.estimateGas.batchLevelComplete(totalReward, levelCount, highestLevel);
+            const gasPrice = await (new ethers.providers.Web3Provider(window.ethereum)).getGasPrice();
+            const gasCost = gasEstimate.mul(gasPrice);
+            const gasCostInBNB = ethers.utils.formatEther(gasCost);
+            const bnbPrice = 600; // Assume 1 BNB = $600 (as of March 2025)
+            const gasCostInUSD = (parseFloat(gasCostInBNB) * bnbPrice).toFixed(2);
+            document.getElementById("gasEstimate").innerText = `Estimated Gas Fee: ${gasCostInBNB} BNB (approx $${gasCostInUSD})`;
+        } catch (error) {
+            console.error("Error estimating gas fee:", error);
+            document.getElementById("gasEstimate").innerText = "Unable to estimate gas fee.";
+        }
     }
 
     async function processTransactionQueue() {
@@ -402,23 +458,19 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const gasPrice = await provider.getGasPrice();
-            const increasedGasPrice = gasPrice.mul(2); // Double the gas price for faster processing
+            const increasedGasPrice = gasPrice.mul(2);
             const tx = await fn(...args, { gasPrice: increasedGasPrice });
             await tx.wait();
         } catch (error) {
             alert(`Transaction failed: ${error.message}`);
         } finally {
             isProcessingTransaction = false;
-            isGamePaused = false;
-            document.getElementById("pauseMessage").style.display = "none";
             processTransactionQueue();
         }
     }
 
     function queueTransaction(fn, args) {
         transactionQueue.push({ fn, args });
-        isGamePaused = true;
-        document.getElementById("pauseMessage").style.display = "block";
         processTransactionQueue();
     }
 
@@ -463,7 +515,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function move() {
-        if (isGamePaused) return;
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
         snake.unshift(head);
         if (head.x === food.x && head.y === food.y) {
@@ -493,28 +544,75 @@ document.addEventListener("DOMContentLoaded", () => {
         dx = 1;
         dy = 0;
         playerData.gamesPlayed += 1;
+        playerData.score = 0;
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
     }
 
-    async function levelComplete() {
+    function levelComplete() {
+        const reward = getRewardForLevel(playerData.currentLevel);
+        playerData.pendingRewards += reward;
+        playerData.pendingLevels.push({ level: playerData.currentLevel, reward });
+        playerData.score = 0;
+        playerData.currentLevel += 1;
+
+        if (playerData.currentLevel > playerData.highestLevel) {
+            playerData.highestLevel = playerData.currentLevel - 1;
+        }
+
+        if (playerData.currentLevel > MAX_LEVEL) {
+            alert("Game Completed! You've reached the highest level!");
+            playerData.currentLevel = MAX_LEVEL;
+            resetGame();
+        } else {
+            const levelMessage = document.getElementById("levelMessage");
+            levelMessage.innerText = `Level ${playerData.currentLevel - 1} Completed! Reward: ${reward} BST. Click 'Claim Rewards' to sync to blockchain.`;
+            levelMessage.style.display = "block";
+            setTimeout(() => {
+                levelMessage.style.display = "none";
+            }, 3000);
+        }
+
+        if (gameInterval) {
+            clearInterval(gameInterval);
+            gameInterval = setInterval(move, getSnakeSpeed(playerData.currentLevel));
+        }
+
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+        estimateGasFee();
+    }
+
+    async function claimPendingRewards() {
         if (!contract) {
             alert("Please connect your wallet first!");
             return;
         }
-        const currentLevel = playerData.highestLevel + 1;
-        const reward = 10; // Base reward
-        queueTransaction(contract.levelComplete, [reward, currentLevel]);
-        playerData.rewards += reward * currentLevel;
-        playerData.score = 0;
+        if (playerData.pendingRewards === 0) {
+            alert("No rewards to claim!");
+            return;
+        }
+
+        const totalReward = playerData.pendingRewards;
+        const levelCount = playerData.pendingLevels.length;
+        const highestLevel = playerData.highestLevel;
+
+        queueTransaction(contract.batchLevelComplete, [totalReward, levelCount, highestLevel]);
+
+        playerData.rewards += totalReward;
+        playerData.levelsCompleted += levelCount;
+        playerData.totalRewards += totalReward;
+        playerData.pendingRewards = 0;
+        playerData.pendingLevels = [];
+
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         await loadPlayerHistory();
+        estimateGasFee();
     }
 
     document.addEventListener("keydown", e => {
-        if (isGamePaused) return;
         if (e.key === "ArrowUp" && dy !== 1) { dx = 0; dy = -1; }
         if (e.key === "ArrowDown" && dy !== -1) { dx = 0; dy = 1; }
         if (e.key === "ArrowLeft" && dx !== 1) { dx = -1; dy = 0; }
@@ -525,13 +623,11 @@ document.addEventListener("DOMContentLoaded", () => {
     let touchStartY = 0;
 
     canvas.addEventListener("touchstart", (e) => {
-        if (isGamePaused) return;
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
     });
 
     canvas.addEventListener("touchmove", (e) => {
-        if (isGamePaused) return;
         e.preventDefault();
         const touchEndX = e.touches[0].clientX;
         const touchEndY = e.touches[0].clientY;
@@ -573,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("playGame").addEventListener("click", () => {
         resetGame();
         if (!gameInterval) {
-            gameInterval = setInterval(move, 300);
+            gameInterval = setInterval(move, getSnakeSpeed(playerData.currentLevel));
         }
     });
 
@@ -588,6 +684,8 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
         await loadPlayerHistory();
     });
+
+    document.getElementById("claimRewards").addEventListener("click", claimPendingRewards);
 
     document.getElementById("stakeTokens").addEventListener("click", async () => {
         if (!contract) {
@@ -606,7 +704,7 @@ document.addEventListener("DOMContentLoaded", () => {
         await loadPlayerHistory();
     });
 
-    document.getElementById("claimReward").addEventListener("click", async () => {
+    document.getElementById("claimStakingReward").addEventListener("click", async () => {
         if (!contract) {
             alert("Please connect your wallet first!");
             return;
@@ -631,4 +729,5 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initial UI update
     updatePlayerHistoryUI();
     draw();
+    estimateGasFee();
 });
