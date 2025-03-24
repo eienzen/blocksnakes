@@ -18,7 +18,10 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
 
-    const contractAddress = "0x08e72a6bdfcf66ca6d43d45e8e65ff1772564938";
+    // कॉन्ट्रैक्ट एड्रेस यहाँ डालें (रीमिक्स से नया कॉन्ट्रैक्ट एड्रेस लें)
+    const contractAddress = "0x08e72a6bdfcf66ca6d43d45e8e65ff1772564938"; // यहाँ नया कॉन्ट्रैक्ट एड्रेस डालें
+
+    // कॉन्ट्रैक्ट ABI यहाँ डालें (रीमिक्स से नया ABI लें)
     const contractABI = [
 	{
 		"anonymous": false,
@@ -319,7 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+]; // यहाँ नया ABI डालें
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
