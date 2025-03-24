@@ -9,7 +9,7 @@
     <style>
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            background: #2d2d2d; /* साधारण डार्क ग्रे बैकग्राउंड */
             color: #e0e0e0;
             text-align: center;
             margin: 0;
@@ -17,28 +17,29 @@
             overflow-x: hidden;
         }
         nav {
-            background: rgba(0, 0, 0, 0.8);
+            background: #1f2a44; /* साधारण डार्क ब्लू */
             padding: 15px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
         nav a {
-            color: #00ff88;
+            color: #1abc9c;
             margin: 0 20px;
             text-decoration: none;
             font-weight: bold;
             transition: color 0.3s;
         }
         nav a:hover {
-            color: #ff00ff;
+            color: #16a085;
         }
         h1 {
             margin-top: 30px;
             font-size: 3rem;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            color: #1abc9c;
         }
         h2 {
             font-size: 2rem;
             margin: 20px 0;
+            color: #1abc9c;
         }
         p {
             font-size: 1.2rem;
@@ -48,29 +49,99 @@
             padding: 12px 25px;
             font-size: 1.1rem;
             margin: 8px;
-            border-radius: 25px;
-            background: linear-gradient(45deg, #00ff88, #00b7eb);
-            color: #000;
+            border-radius: 5px;
+            background: #1abc9c; /* साधारण हल्का हरा */
+            color: #fff;
             border: none;
             cursor: pointer;
-            transition: transform 0.1s, background 0.3s;
+            transition: background 0.3s, transform 0.3s;
         }
         button:hover {
+            background: #16a085; /* होवर पर डार्क शेड */
             transform: scale(1.05);
-            background: linear-gradient(45deg, #00b7eb, #00ff88);
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
         }
         canvas {
             border: 3px solid #00ff88;
             background: #0a0a23;
             margin-top: 20px;
-            box-shadow: 0 0 15px rgba(0, 255, 136, 0.5);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.7);
+            perspective: 1000px; /* 3D इफेक्ट */
+            transform: rotateX(15deg); /* 3D झुकाव */
         }
-        #gameInfo {
-            margin-top: 15px;
+        .section {
+            max-width: 800px;
+            margin: 0 auto 40px auto;
+            padding: 20px;
+        }
+        .boxed-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        #gameInfo, #playerHistory, #pendingRewards, #levelInfo, #stakingActions {
             font-size: 1.1rem;
         }
-        #gameInfo p {
+        #gameInfo p, #playerHistory p, #pendingRewards p, #levelInfo p, #stakingActions p {
             margin: 5px 0;
+        }
+        #stakeInput {
+            padding: 8px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            border: 1px solid #1abc9c;
+            background: #3a3a3a;
+            color: #e0e0e0;
+            margin: 5px;
+            width: 120px;
+        }
+        #gasEstimate {
+            font-size: 0.9rem;
+            color: #ff5555;
+            margin-top: 5px;
+        }
+        #levelMessage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #1abc9c;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            z-index: 1000;
+        }
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+            button {
+                padding: 8px 15px;
+                font-size: 0.9rem;
+            }
+            #stakeInput {
+                width: 100px;
+            }
+            canvas {
+                width: 100%;
+                height: auto;
+            }
+            .section {
+                margin: 0 10px 30px 10px;
+                padding: 15px;
+            }
+            #gameInfo, #playerHistory, #pendingRewards, #levelInfo, #stakingActions {
+                font-size: 0.9rem;
+            }
         }
     </style>
 </head>
@@ -83,30 +154,68 @@
         <a href="whitepaper.html">Whitepaper</a>
     </nav>
 
-    <div id="home">
+    <div id="home" class="section">
         <h1>BlockSnakes</h1>
         <p>Play, Earn, and Stake with BST Token</p>
+        <p>Join the ultimate 3D snake game and earn BST tokens by completing levels! Token launch date: 1st May 2025</p>
+        <button id="buyToken">Buy Token</button>
     </div>
 
-    <div id="game">
-        <h2>Play BlockSnakes 3D</h2>
+    <!-- Token Actions Section -->
+    <div class="section" id="tokenActions">
+        <h2>Token Actions</h2>
         <button id="connectWallet">Connect Wallet</button>
-        <button id="playGame">Play Game</button>
-        <button id="nextLevel">Next Level</button>
-        <button id="stakeTokens">Stake Tokens</button>
-        <button id="claimReward">Claim Staking Reward</button>
-        <button id="unstakeTokens">Unstake Tokens</button>
+    </div>
+
+    <!-- Game Section -->
+    <div class="section" id="game">
+        <h2>Play BlockSnakes 3D</h2>
+        <div class="boxed-section">
+            <canvas id="gameCanvas" width="600" height="400"></canvas>
+        </div>
         <div id="gameInfo">
             <p id="level">Current Level: 1</p>
             <p id="score">Score: 0</p>
-            <p id="reward">Rewards: 0 BST</p>
+            <p id="gameRewards">Game Rewards: 0 BST</p>
         </div>
-        <canvas id="gameCanvas" width="600" height="400"></canvas>
+        <button id="playGame">Play Game</button>
+        <button id="nextLevel">Next Level</button>
+        <button id="claimGameRewards">Claim Game Rewards</button>
+        <div id="levelMessage"></div>
     </div>
 
-    <div id="home">
-        <p>Join the ultimate 3D snake game and earn BST tokens by completing levels! Token launch date: 1st May 2025</p>
-        <button id="buyToken">Buy Token</button>
+    <!-- Player Info Section -->
+    <div class="section" id="playerInfoColumn">
+        <div id="playerHistory">
+            <h2>Player History</h2>
+            <p id="gamesPlayed">Games Played: 0</p>
+            <p id="levelsCompleted">Levels Completed: 0</p>
+            <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
+            <p id="highestLevel">Highest Level: 0</p>
+        </div>
+        <div id="pendingRewards">
+            <h2>Pending Game Rewards</h2>
+            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
+            <p id="pendingLevelsText">Pending Levels: 0</p>
+        </div>
+        <div id="levelInfo">
+            <h2>Level Info</h2>
+            <p id="levelDetails">Level 1: Required Score: 100, Speed: 300ms, Reward: 5 BST</p>
+        </div>
+    </div>
+
+    <!-- Staking Actions Section -->
+    <div class="section" id="stakingActionsColumn">
+        <div id="stakingActions" class="boxed-section">
+            <h2>Staking Actions</h2>
+            <div>
+                <input type="number" id="stakeInput" placeholder="Enter amount to stake" />
+                <button id="stakeTokens">Stake Tokens</button>
+            </div>
+            <button id="claimStakingReward">Claim Staking Reward</button>
+            <button id="unstakeTokens">Unstake Tokens</button>
+            <div id="gasEstimate"></div>
+        </div>
     </div>
 
     <script src="game.js"></script>
