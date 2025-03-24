@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     playerData.pendingLevels = playerData.pendingLevels || [];
 
     const contractAddress = "0x08e72a6bdfcf66ca6d43d45e8e65ff1772564938";
-    const contractABI = [[
+    const contractABI = [
 	{
 		"anonymous": false,
 		"inputs": [
@@ -163,15 +163,15 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [],
 		"name": "unstakeTokens",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -319,7 +319,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"stateMutability": "view",
 		"type": "function"
 	}
-]];
+];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -334,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = 'right';
     let score = 0;
     let gameRewards = 0;
-    const SNAKE_SPEED = 300; // डिफिकल्टी फिक्स्ड
+    const SNAKE_SPEED = 300;
 
     // कैनवास साइज़ डायनामिकली अपडेट करें
     function updateCanvasSize() {
@@ -558,25 +558,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // वॉलेट और स्टेकिंग फंक्शन्स
     async function connectWallet() {
-        if (isConnecting) return alert("Wallet connection in progress.");
+        if (isConnecting) return alert("Wallet connection in progress. Please wait.");
         if (account) return alert("Wallet already connected!");
-        if (window.ethereum) {
-            try {
-                isConnecting = true;
-                const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-                account = accounts[0];
-                document.getElementById("connectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
-                const provider = new ethers.providers.Web3Provider(window.ethereum);
-                const signer = provider.getSigner();
-                contract = new ethers.Contract(contractAddress, contractABI, signer);
-                await loadPlayerHistory();
-            } catch (error) {
+        if (!window.ethereum) {
+            alert("No Web3 wallet detected. Please install MetaMask or another Web3 wallet to continue.");
+            return;
+        }
+        try {
+            isConnecting = true;
+            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            account = accounts[0];
+            document.getElementById("connectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+            await loadPlayerHistory();
+        } catch (error) {
+            if (error.code === 4001) {
+                alert("User rejected the request. Please connect your wallet to continue.");
+            } else if (error.code === -32002) {
+                alert("A wallet connection request is already pending. Please check your MetaMask extension.");
+            } else {
                 alert("Error connecting wallet: " + error.message);
-            } finally {
-                isConnecting = false;
             }
-        } else {
-            alert("Please install a Web3 wallet!");
+        } finally {
+            isConnecting = false;
         }
     }
 
