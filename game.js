@@ -18,195 +18,308 @@ document.addEventListener("DOMContentLoaded", () => {
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
 
-    const contractAddress = "0xca9361708db63ab85dc5c8af3a8b4ac744719371";
-    const contractABI = [
-        {
-            "anonymous": false,
-            "inputs": [
-                { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-                { "indexed": false, "internalType": "uint256", "name": "totalReward", "type": "uint256" },
-                { "indexed": false, "internalType": "uint256", "name": "levelCount", "type": "uint256" },
-                { "indexed": false, "internalType": "uint256", "name": "highestLevel", "type": "uint256" }
-            ],
-            "name": "BatchLevelCompleted",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-                { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-            ],
-            "name": "RewardClaimed",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-                { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-            ],
-            "name": "Staked",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                { "indexed": true, "internalType": "address", "name": "from", "type": "address" },
-                { "indexed": true, "internalType": "address", "name": "to", "type": "address" },
-                { "indexed": false, "internalType": "uint256", "name": "value", "type": "uint256" }
-            ],
-            "name": "Transfer",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                { "indexed": true, "internalType": "address", "name": "user", "type": "address" },
-                { "indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256" }
-            ],
-            "name": "Unstaked",
-            "type": "event"
-        },
-        {
-            "inputs": [
-                { "internalType": "uint256", "name": "totalReward", "type": "uint256" },
-                { "internalType": "uint256", "name": "levelCount", "type": "uint256" },
-                { "internalType": "uint256", "name": "highestLevel", "type": "uint256" }
-            ],
-            "name": "batchLevelComplete",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "claimStakingReward",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "nextLevel",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "uint256", "name": "amount", "type": "uint256" }
-            ],
-            "name": "stakeTokens",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "unstakeTokens",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
-        {
-            "inputs": [
-                { "internalType": "address", "name": "", "type": "address" }
-            ],
-            "name": "balanceOf",
-            "outputs": [
-                { "internalType": "uint256", "name": "", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "decimals",
-            "outputs": [
-                { "internalType": "uint8", "name": "", "type": "uint8" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "name",
-            "outputs": [
-                { "internalType": "string", "name": "", "type": "string" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "owner",
-            "outputs": [
-                { "internalType": "address", "name": "", "type": "address" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "address", "name": "", "type": "address" }
-            ],
-            "name": "playerHistory",
-            "outputs": [
-                { "internalType": "uint256", "name": "gamesPlayed", "type": "uint256" },
-                { "internalType": "uint256", "name": "levelsCompleted", "type": "uint256" },
-                { "internalType": "uint256", "name": "totalRewards", "type": "uint256" },
-                { "internalType": "uint256", "name": "highestLevel", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "address", "name": "", "type": "address" }
-            ],
-            "name": "rewards",
-            "outputs": [
-                { "internalType": "uint256", "name": "", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                { "internalType": "address", "name": "", "type": "address" }
-            ],
-            "name": "stakedBalance",
-            "outputs": [
-                { "internalType": "uint256", "name": "", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "symbol",
-            "outputs": [
-                { "internalType": "string", "name": "", "type": "string" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [],
-            "name": "totalSupply",
-            "outputs": [
-                { "internalType": "uint256", "name": "", "type": "uint256" }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        }
-    ];
+    const contractAddress = "0x08e72a6bdfcf66ca6d43d45e8e65ff1772564938";
+    const contractABI = [[
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardsAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Staked",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Unstaked",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			}
+		],
+		"name": "addRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "claimStakingReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "incrementGamesPlayed",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "unstakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "playerHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "gamesPlayed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalRewards",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "rewards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "stakedBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -221,6 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = 'right';
     let score = 0;
     let gameRewards = 0;
+    const SNAKE_SPEED = 300; // डिफिकल्टी फिक्स्ड
 
     // कैनवास साइज़ डायनामिकली अपडेट करें
     function updateCanvasSize() {
@@ -256,18 +370,71 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // ड्रॉइंग फंक्शन
     function draw() {
-        // बैकग्राउंड साफ करें
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // 3D बैकग्राउंड
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, "#0a0a23");
+        gradient.addColorStop(1, "#1f2a44");
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // स्नेक ड्रा करें
-        ctx.fillStyle = '#1abc9c';
-        snake.forEach(segment => {
-            ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+        // 3D स्नेक
+        snake.forEach((segment, index) => {
+            const segmentGradient = ctx.createLinearGradient(segment.x * gridSize, segment.y * gridSize, (segment.x + 1) * gridSize, (segment.y + 1) * gridSize);
+            segmentGradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
+            segmentGradient.addColorStop(1, "#ff66cc");
+            ctx.fillStyle = segmentGradient;
+            ctx.shadowColor = "rgba(255, 0, 255, 0.5)";
+            ctx.shadowBlur = 10;
+            ctx.shadowOffsetX = 5;
+            ctx.shadowOffsetY = 5;
+            ctx.beginPath();
+            ctx.roundRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2, 5);
+            ctx.fill();
+            ctx.strokeStyle = "#000";
+            ctx.stroke();
+            if (index === 0) {
+                // 3D आँखें
+                ctx.fillStyle = "#fff";
+                ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
+                ctx.shadowBlur = 5;
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 3, 0, Math.PI * 2);
+                ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = "#000";
+                ctx.shadowBlur = 0;
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 1, 0, Math.PI * 2);
+                ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 1, 0, Math.PI * 2);
+                ctx.fill();
+            }
         });
 
-        // बॉक्स ड्रा करें
-        ctx.fillStyle = '#ff5555';
+        // 3D बॉक्स
+        const boxGradient = ctx.createLinearGradient(box.x * gridSize, box.y * gridSize, (box.x + 1) * gridSize, (box.y + 1) * gridSize);
+        boxGradient.addColorStop(0, "#ff5555");
+        boxGradient.addColorStop(1, "#ffaa00");
+        ctx.fillStyle = boxGradient;
+        ctx.shadowColor = "rgba(255, 85, 85, 0.5)";
+        ctx.shadowBlur = 10;
+        ctx.shadowOffsetX = 5;
+        ctx.shadowOffsetY = 5;
         ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
+        // हाइलाइट लाइन्स
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.moveTo(box.x * gridSize, box.y * gridSize);
+        ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + 5);
+        ctx.moveTo(box.x * gridSize + (gridSize - 2), box.y * gridSize);
+        ctx.lineTo(box.x * gridSize + (gridSize - 7), box.y * gridSize + 5);
+        ctx.moveTo(box.x * gridSize + (gridSize - 2), box.y * gridSize + (gridSize - 2));
+        ctx.lineTo(box.x * gridSize + (gridSize - 7), box.y * gridSize + (gridSize - 7));
+        ctx.moveTo(box.x * gridSize, box.y * gridSize + (gridSize - 2));
+        ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + (gridSize - 7));
+        ctx.stroke();
 
         // स्कोर और रिवॉर्ड्स अपडेट करें
         document.getElementById('score').textContent = `Score: ${score}`;
@@ -307,10 +474,11 @@ document.addEventListener("DOMContentLoaded", () => {
             score += 10;
             gameRewards += 2;
             if (score > 0 && score % 100 === 0) {
-                playerData.pendingRewards += 5;
-                playerData.pendingLevels.push({ score, reward: 5 });
+                const reward = 5;
+                playerData.pendingRewards += reward;
+                playerData.pendingLevels.push({ score, reward });
                 const levelMessage = document.getElementById("levelMessage");
-                levelMessage.innerText = `Milestone Reached! Score: ${score}, Reward: 5 BST`;
+                levelMessage.innerText = `Milestone Reached! Score: ${score}, Reward: ${reward} BST`;
                 levelMessage.style.display = "block";
                 setTimeout(() => levelMessage.style.display = "none", 3000);
             }
@@ -384,7 +552,7 @@ document.addEventListener("DOMContentLoaded", () => {
         enterFullscreen();
         resetGame();
         if (!gameInterval) {
-            gameInterval = setInterval(move, 200);
+            gameInterval = setInterval(move, SNAKE_SPEED);
         }
     });
 
@@ -401,7 +569,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const provider = new ethers.providers.Web3Provider(window.ethereum);
                 const signer = provider.getSigner();
                 contract = new ethers.Contract(contractAddress, contractABI, signer);
-                loadPlayerHistory();
+                await loadPlayerHistory();
             } catch (error) {
                 alert("Error connecting wallet: " + error.message);
             } finally {
@@ -438,15 +606,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract) return alert("Connect your wallet first!");
         if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
         const totalReward = playerData.pendingRewards;
-        const milestoneCount = playerData.pendingLevels.length;
-        queueTransaction(contract.batchLevelComplete, [totalReward, milestoneCount, 0]);
+        queueTransaction(contract.addRewards, [totalReward]);
         playerData.rewards += totalReward;
         playerData.totalRewards += totalReward;
         playerData.pendingRewards = 0;
         playerData.pendingLevels = [];
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
-        loadPlayerHistory();
+        await loadPlayerHistory();
     }
 
     async function processTransactionQueue() {
@@ -480,17 +647,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const amountInWei = ethers.utils.parseUnits(amount, 18);
         queueTransaction(contract.stakeTokens, [amountInWei]);
         document.getElementById("stakeInput").value = "";
-        loadPlayerHistory();
+        await loadPlayerHistory();
     });
     document.getElementById("claimStakingReward").addEventListener("click", async () => {
         if (!contract) return alert("Connect your wallet first!");
         queueTransaction(contract.claimStakingReward, []);
-        loadPlayerHistory();
+        await loadPlayerHistory();
     });
     document.getElementById("unstakeTokens").addEventListener("click", async () => {
         if (!contract) return alert("Connect your wallet first!");
         queueTransaction(contract.unstakeTokens, []);
-        loadPlayerHistory();
+        await loadPlayerHistory();
     });
     document.getElementById("buyToken").addEventListener("click", () => {
         alert("Token sale starts on 1st May 2025!");
