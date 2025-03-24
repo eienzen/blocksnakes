@@ -19,6 +19,11 @@ document.addEventListener("DOMContentLoaded", () => {
         currentLevel: 1
     };
 
+    // Ensure pendingLevels and currentLevel are properly initialized
+    playerData.pendingLevels = playerData.pendingLevels || [];
+    playerData.currentLevel = playerData.currentLevel || 1;
+    playerData.rewards = playerData.rewards || 0;
+
     const contractAddress = "0xe8d1f063e641d95908ddabfa58b9f79c4d71d11e"; // यहाँ नया कॉन्ट्रैक्ट अड्रेस डालें
     const contractABI = [
 	{
