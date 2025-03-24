@@ -82,10 +82,10 @@
             border-radius: 10px;
             padding: 20px;
         }
-        #gameInfo, #playerHistory, #pendingRewards, #levelInfo, #stakingActions {
+        #gameInfo, #playerHistory, #pendingRewards, #stakingActions {
             font-size: 1.1rem;
         }
-        #gameInfo p, #playerHistory p, #pendingRewards p, #levelInfo p, #stakingActions p {
+        #gameInfo p, #playerHistory p, #pendingRewards p, #stakingActions p {
             margin: 5px 0;
         }
         #stakeInput {
@@ -139,7 +139,7 @@
                 margin: 0 10px 30px 10px;
                 padding: 15px;
             }
-            #gameInfo, #playerHistory, #pendingRewards, #levelInfo, #stakingActions {
+            #gameInfo, #playerHistory, #pendingRewards, #stakingActions {
                 font-size: 0.9rem;
             }
         }
@@ -157,7 +157,7 @@
     <div id="home" class="section">
         <h1>BlockSnakes</h1>
         <p>Play, Earn, and Stake with BST Token</p>
-        <p>Join the ultimate 3D snake game and earn BST tokens by completing levels! Token launch date: 1st May 2025</p>
+        <p>Join the ultimate 3D snake game and earn BST tokens by reaching score milestones! Token launch date: 1st May 2025</p>
         <button id="buyToken">Buy Token</button>
     </div>
 
@@ -174,12 +174,10 @@
             <canvas id="gameCanvas" width="600" height="400"></canvas>
         </div>
         <div id="gameInfo">
-            <p id="level">Current Level: 1</p>
             <p id="score">Score: 0</p>
             <p id="gameRewards">Game Rewards: 0 BST</p>
         </div>
         <button id="playGame">Play Game</button>
-        <button id="nextLevel">Next Level</button>
         <button id="claimGameRewards">Claim Game Rewards</button>
         <div id="levelMessage"></div>
     </div>
@@ -189,18 +187,15 @@
         <div id="playerHistory">
             <h2>Player History</h2>
             <p id="gamesPlayed">Games Played: 0</p>
-            <p id="levelsCompleted">Levels Completed: 0</p>
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
-            <p id="highestLevel">Highest Level: 0</p>
+            <p id="lastGameScore">Last Game Score: 0</p>
+            <p id="lastGameRewards">Last Game Rewards: 0 BST</p>
         </div>
         <div id="pendingRewards">
             <h2>Pending Game Rewards</h2>
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <p id="pendingLevelsText">Pending Levels: 0</p>
-        </div>
-        <div id="levelInfo">
-            <h2>Level Info</h2>
-            <p id="levelDetails">Level 1: Required Score: 100, Speed: 300ms, Reward: 5 BST</p>
+            <p id="pendingLevelsText">Pending Milestones: 0</p>
+            <p>Minimum Withdrawal: 50 BST</p>
         </div>
     </div>
 
