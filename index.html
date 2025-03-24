@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io;">
     <title>BlockSnakes - Play & Earn</title>
     <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <style>
@@ -84,8 +84,8 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            min-height: 400px; /* कैनवास की न्यूनतम ऊंचाई */
-            max-width: 90%; /* स्क्रीन की 90% चौड़ाई */
+            min-height: 400px;
+            max-width: 90%;
             margin: 0 auto;
         }
         #gameInfo, #playerHistory, #pendingRewards, #stakingActions {
