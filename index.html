@@ -1,155 +1,224 @@
-// SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
-
-contract BlockSnakesToken {
-    string public name = "BlockSnakes Token";
-    string public symbol = "BST";
-    uint256 public totalSupply = 1000000 * 10 ** 18;
-    uint8 public decimals = 18;
-    mapping(address => uint256) public balanceOf;
-    mapping(address => uint256) public stakedBalance;
-    mapping(address => uint256) public rewards;
-    address public owner;
-
-    struct RewardEntry {
-        uint256 amount;
-        uint256 timestamp;
-        string rewardType; // "Game", "Referral", "Claim"
-        address referee; // रेफरल के लिए, रेफरी का एड्रेस (अगर लागू हो)
-    }
-
-    struct PlayerHistory {
-        uint256 gamesPlayed;
-        uint256 totalRewards;
-        uint256 totalReferrals;
-        uint256 referralRewards;
-        RewardEntry[] rewardHistory; // हिस्ट्री स्टोर करने के लिए
-    }
-    mapping(address => PlayerHistory) public playerHistory;
-
-    mapping(address => address) public referredBy;
-    mapping(address => bool) public hasBeenReferred;
-
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Staked(address indexed user, uint256 amount);
-    event Unstaked(address indexed user, uint256 amount);
-    event RewardClaimed(address indexed user, uint256 amount);
-    event RewardsAdded(address indexed user, uint256 totalReward, string rewardType);
-    event ReferralAdded(address indexed referrer, address indexed referee, uint256 reward);
-
-    constructor() {
-        owner = msg.sender;
-        balanceOf[msg.sender] = totalSupply;
-    }
-
-    function addRewards(uint256 totalReward) external {
-        require(totalReward > 0, "Reward must be greater than 0");
-        uint256 totalRewardInWei = totalReward * 10 ** 18;
-        balanceOf[msg.sender] += totalRewardInWei;
-        playerHistory[msg.sender].totalRewards += totalRewardInWei;
-        playerHistory[msg.sender].rewardHistory.push(RewardEntry({
-            amount: totalRewardInWei,
-            timestamp: block.timestamp,
-            rewardType: "Game",
-            referee: address(0)
-        }));
-        emit Transfer(address(0), msg.sender, totalRewardInWei);
-        emit RewardsAdded(msg.sender, totalRewardInWei, "Game");
-    }
-
-    function incrementGamesPlayed() external {
-        playerHistory[msg.sender].gamesPlayed += 1;
-    }
-
-    function referUser(address referrer, address referee) internal {
-        if (hasBeenReferred[referee] || referee == referrer || referee == address(0) || referrer == address(0)) {
-            return; // डुप्लिकेशन रोकने के लिए
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io;">
+    <title>BlockSnakes - Play & Earn</title>
+    <script src="https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #2d2d2d;
+            color: #e0e0e0;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
-        referredBy[referee] = referrer;
-        hasBeenReferred[referee] = true;
-        playerHistory[referrer].totalReferrals += 1;
-    }
-
-    function addReferralReward(address user, uint256 reward, address referee) internal {
-        if (reward == 0) return;
-        uint256 rewardInWei = reward * 10 ** 18;
-        balanceOf[user] += rewardInWei;
-        playerHistory[user].referralRewards += rewardInWei;
-        playerHistory[user].totalRewards += rewardInWei;
-        playerHistory[user].rewardHistory.push(RewardEntry({
-            amount: rewardInWei,
-            timestamp: block.timestamp,
-            rewardType: "Referral",
-            referee: referee
-        }));
-        emit ReferralAdded(user, referee, rewardInWei);
-    }
-
-    function claimAllRewards(
-        uint256 totalReward,
-        address referrer,
-        address referee,
-        uint256 referrerReward,
-        uint256 refereeReward
-    ) external {
-        // गेम रिवॉर्ड्स जोड़ें
-        if (totalReward > 0) {
-            uint256 totalRewardInWei = totalReward * 10 ** 18;
-            balanceOf[msg.sender] += totalRewardInWei;
-            playerHistory[msg.sender].totalRewards += totalRewardInWei;
-            playerHistory[msg.sender].rewardHistory.push(RewardEntry({
-                amount: totalRewardInWei,
-                timestamp: block.timestamp,
-                rewardType: "Claim",
-                referee: address(0)
-            }));
-            emit RewardsAdded(msg.sender, totalRewardInWei, "Claim");
+        nav {
+            background: #1f2a44;
+            padding: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         }
-
-        // रेफरल रजिस्ट्रेशन और रिवॉर्ड्स
-        if (referrer != address(0) && referee != address(0)) {
-            referUser(referrer, referee);
-            if (referrerReward > 0) {
-                addReferralReward(referrer, referrerReward, referee);
-            }
-            if (refereeReward > 0) {
-                addReferralReward(referee, refereeReward, address(0));
-            }
+        nav a {
+            color: #1abc9c;
+            margin: 0 20px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: color 0.3s;
         }
-    }
+        nav a:hover {
+            color: #16a085;
+        }
+        h1 {
+            margin-top: 30px;
+            font-size: 3rem;
+            color: #1abc9c;
+        }
+        h2 {
+            font-size: 2rem;
+            margin: 20px 0;
+            color: #1abc9c;
+        }
+        p {
+            font-size: 1.2rem;
+            margin: 10px 0;
+        }
+        button {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            margin: 8px;
+            border-radius: 5px;
+            background: #1abc9c;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.3s;
+        }
+        button:hover {
+            background: #16a085;
+            transform: scale(1.05);
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        canvas {
+            border: 3px solid #00ff88;
+            background: #0a0a23;
+            margin-top: 20px;
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.7);
+            perspective: 1000px;
+            transform: rotateX(15deg);
+        }
+        .section {
+            max-width: 100%;
+            margin: 0 auto 40px auto;
+            padding: 20px;
+        }
+        .boxed-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 400px;
+            max-width: 90%;
+            margin: 0 auto;
+        }
+        #gameInfo, #playerHistory, #pendingRewards, #stakingActions, #rewardHistory {
+            font-size: 1.1rem;
+        }
+        #gameInfo p, #playerHistory p, #pendingRewards p, #stakingActions p, #rewardHistory p {
+            margin: 5px 0;
+        }
+        #stakeInput {
+            padding: 8px;
+            font-size: 0.9rem;
+            border-radius: 5px;
+            border: 1px solid #1abc9c;
+            background: #3a3a3a;
+            color: #e0e0e0;
+            margin: 5px;
+            width: 120px;
+        }
+        #gasEstimate {
+            font-size: 0.9rem;
+            color: #ff5555;
+            margin-top: 5px;
+        }
+        #levelMessage {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: #1abc9c;
+            padding: 20px;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            z-index: 1000;
+        }
+        #rewardHistory ul {
+            list-style: none;
+            padding: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #rewardHistory li {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        @media (max-width: 768px) {
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            button { padding: 8px 15px; font-size: 0.9rem; }
+            #stakeInput { width: 100px; }
+            canvas { width: 100%; height: auto; }
+            .section { margin: 0 10px 30px 10px; padding: 15px; }
+            .boxed-section { min-height: 300px; max-width: 95%; }
+            #gameInfo, #playerHistory, #pendingRewards, #stakingActions, #rewardHistory { font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#home">Home</a>
+        <a href="#game">Play Game</a>
+        <a href="#how-to-play">How to Play</a>
+        <a href="#roadmap">Roadmap</a>
+        <a href="whitepaper.html">Whitepaper</a>
+    </nav>
 
-    function getRewardHistory(address user) external view returns (RewardEntry[] memory) {
-        return playerHistory[user].rewardHistory;
-    }
+    <div id="home" class="section">
+        <h1>BlockSnakes</h1>
+        <p>Play, Earn, and Stake with BST Token</p>
+        <p>Join the ultimate 3D snake game and earn BST tokens by reaching score milestones! Token launch date: 1st May 2025</p>
+        <button id="buyToken">Buy Token</button>
+    </div>
 
-    function stakeTokens(uint256 amount) external {
-        require(amount > 0, "Amount must be greater than 0");
-        require(balanceOf[msg.sender] >= amount, "Insufficient balance");
-        balanceOf[msg.sender] -= amount;
-        stakedBalance[msg.sender] += amount;
-        emit Staked(msg.sender, amount);
-    }
+    <div class="section" id="tokenActions">
+        <h2>Token Actions</h2>
+        <button id="connectWallet">Connect Wallet</button>
+        <button id="getReferralLink">Get Referral Link</button>
+    </div>
 
-    function claimStakingReward() external {
-        uint256 reward = stakedBalance[msg.sender] / 10;
-        require(reward > 0, "No rewards to claim");
-        rewards[msg.sender] = 0;
-        balanceOf[msg.sender] += reward;
-        playerHistory[msg.sender].totalRewards += reward;
-        playerHistory[msg.sender].rewardHistory.push(RewardEntry({
-            amount: reward,
-            timestamp: block.timestamp,
-            rewardType: "Staking",
-            referee: address(0)
-        }));
-        emit RewardClaimed(msg.sender, reward);
-    }
+    <div class="section" id="game">
+        <h2>Play BlockSnakes 3D</h2>
+        <div class="boxed-section">
+            <canvas id="gameCanvas"></canvas>
+        </div>
+        <div id="gameInfo">
+            <p id="score">Score: 0</p>
+            <p id="gameRewards">Game Rewards: 0 BST</p>
+        </div>
+        <button id="playGame">Play Game</button>
+        <button id="claimGameRewards">Claim Game Rewards</button>
+        <div id="gasEstimate"></div>
+        <div id="levelMessage"></div>
+    </div>
 
-    function unstakeTokens() external {
-        uint256 amount = stakedBalance[msg.sender];
-        require(amount > 0, "No tokens to unstake");
-        stakedBalance[msg.sender] = 0;
-        balanceOf[msg.sender] += amount;
-        emit Unstaked(msg.sender, amount);
-    }
-}
+    <div class="section" id="playerInfoColumn">
+        <div id="playerHistory">
+            <h2>Player History</h2>
+            <p id="gamesPlayed">Games Played: 0</p>
+            <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
+            <p id="lastGameScore">Last Game Score: 0</p>
+            <p id="lastGameRewards">Last Game Rewards: 0 BST</p>
+            <p id="totalReferrals">Total Referrals: 0</p>
+            <p id="referralRewards">Referral Rewards: 0 BST</p>
+        </div>
+        <div id="pendingRewards">
+            <h2>Pending Game Rewards</h2>
+            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
+            <p id="pendingLevelsText">Pending Milestones: 0</p>
+            <p>Minimum Withdrawal: 50 BST</p>
+        </div>
+    </div>
+
+    <div class="section" id="rewardHistory">
+        <h2>Reward History</h2>
+        <ul id="rewardHistoryList"></ul>
+    </div>
+
+    <div class="section" id="stakingActionsColumn">
+        <div id="stakingActions" class="boxed-section">
+            <h2>Staking Actions</h2>
+            <div>
+                <input type="number" id="stakeInput" placeholder="Enter amount to stake" />
+                <button id="stakeTokens">Stake Tokens</button>
+            </div>
+            <button id="claimStakingReward">Claim Staking Reward</button>
+            <button id="unstakeTokens">Unstake Tokens</button>
+            <div id="gasEstimate"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
