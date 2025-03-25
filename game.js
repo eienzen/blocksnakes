@@ -20,7 +20,7 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingReferral: null,
         pendingReferrerReward: 0,
         pendingRefereeReward: 0,
-        rewardHistory: [] // नया: ऑफ-चेन हिस्ट्री
+        rewardHistory: []
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
     playerData.rewardHistory = playerData.rewardHistory || [];
@@ -33,8 +33,8 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    // कॉन्ट्रैक्ट एड्रेस और ABI (आपको रीमिक्स से डालना होगा)
-    const contractAddress = "0x9d127F882C546A861a8Ad523d12746989F282f56";
+    // कॉन्ट्रैक्ट एड्रेस और ABI (रीमिक्स से डालें)
+    const contractAddress = "0xcb70fe198788708b640a6ba0684869f8faca3a7f"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [[
 	{
 		"anonymous": false,
@@ -488,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"stateMutability": "view",
 		"type": "function"
 	}
-]];
+]]; // यहाँ रीमिक्स से कॉन्ट्रैक्ट ABI डालें
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -605,7 +605,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function checkReferralRewards() {
         if (!account) return;
 
-        // रेफरी के लिए वेलकम रिवॉर्ड (50 स्कोर पर)
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
             playerData.pendingRefereeReward += 5;
@@ -614,7 +613,6 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.totalReferrals += 1;
             playerData.pendingRewards += 5;
 
-            // ऑफ-चेन हिस्ट्री में जोड़ें
             playerData.rewardHistory.push({
                 amount: 5,
                 timestamp: Date.now(),
@@ -632,13 +630,11 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
         }
 
-        // रेफरर के लिए अतिरिक्त रिवॉर्ड (100 स्कोर पर)
         if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
             playerData.pendingReferrerReward += 2;
             playerData.referralRewards += 2;
 
-            // ऑफ-चेन हिस्ट्री में जोड़ें
             playerData.rewardHistory.push({
                 amount: 2,
                 timestamp: Date.now(),
@@ -685,7 +681,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.pendingRewards += reward;
                 playerData.pendingLevels.push({ score, reward });
 
-                // ऑफ-चेन हिस्ट्री में जोड़ें
                 playerData.rewardHistory.push({
                     amount: reward,
                     timestamp: Date.now(),
@@ -696,7 +691,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 const levelMessage = document.getElementById("levelMessage");
                 levelMessage.innerText = `Milestone Reached! Score: ${score}, Reward: ${reward} BST`;
                 levelMessage.style.display = "block";
-                setTimeout(() => levelMessage.style.display = "none", 3000);
+                setTimeout(() => {
+                    levelMessage.style.display = "none";
+                }, 3000);
             }
             checkReferralRewards();
             generateBox();
@@ -780,11 +777,11 @@ document.addEventListener("DOMContentLoaded", () => {
     async function estimateGas(fn, args) {
         if (!contract) return;
         try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const gasEstimate = await fn(...args, { gasLimit: 0 }).then(tx => tx.estimateGas());
-            const gasPrice = await provider.getGasPrice();
-            const gasCost = gasEstimate.mul(gasPrice);
-            const gasCostInBNB = ethers.utils.formatEther(gasCost);
+            const gasEstimate = await fn(...args).estimateGas();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const gasPrice = await provider.getFeeData();
+            const gasCost = gasEstimate * gasPrice.gasPrice;
+            const gasCostInBNB = ethers.formatEther(gasCost);
             document.getElementById("gasEstimate").innerText = `Estimated Gas Fee: ${gasCostInBNB} BNB`;
         } catch (error) {
             document.getElementById("gasEstimate").innerText = "Gas estimation failed.";
@@ -794,25 +791,38 @@ document.addEventListener("DOMContentLoaded", () => {
     async function connectWallet() {
         if (isConnecting) return alert("Wallet connection in progress. Please wait.");
         if (account) return alert("Wallet already connected!");
-        if (!window.ethereum) {
-            alert("No Web3 wallet detected. Please install MetaMask or another Web3 wallet to continue.");
+
+        // विभिन्न वॉलेट प्रोवाइडर को चेक करें
+        let provider;
+        if (window.ethereum) {
+            provider = window.ethereum;
+        } else if (window.web3) {
+            provider = window.web3.currentProvider;
+        } else {
+            alert("No Web3 wallet detected. Please install MetaMask, Trust Wallet, or another Web3 wallet to continue.");
             return;
         }
+
         try {
             isConnecting = true;
-            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+
+            // वॉलेट कनेक्ट करें
+            const accounts = await provider.request({ method: "eth_requestAccounts" });
             account = accounts[0];
             document.getElementById("connectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = provider.getSigner();
+
+            // ethers.js के साथ प्रोवाइडर सेट करें
+            const ethersProvider = new ethers.BrowserProvider(provider);
+            const signer = await ethersProvider.getSigner();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
+
             await loadPlayerHistory();
             updateRewardHistoryUI();
         } catch (error) {
             if (error.code === 4001) {
                 alert("User rejected the request. Please connect your wallet to continue.");
             } else if (error.code === -32002) {
-                alert("A wallet connection request is already pending. Please check your MetaMask extension.");
+                alert("A wallet connection request is already pending. Please check your wallet.");
             } else {
                 alert("Error connecting wallet: " + error.message);
             }
@@ -830,7 +840,6 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
 
-            // ऑन-चेन हिस्ट्री लोड करें
             const rewardHistory = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewardHistory.map(entry => ({
                 amount: Number(entry.amount) / 10 ** 18,
@@ -879,7 +888,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const referrerReward = playerData.pendingReferrerReward;
         const refereeReward = playerData.pendingRefereeReward;
 
-        // गैस फीस का अनुमान
         await estimateGas(contract.claimAllRewards, [
             totalReward,
             referrer,
@@ -904,7 +912,6 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferrerReward = 0;
         playerData.pendingRefereeReward = 0;
 
-        // ऑफ-चेन हिस्ट्री में जोड़ें
         playerData.rewardHistory.push({
             amount: totalReward,
             timestamp: Date.now(),
@@ -923,9 +930,9 @@ document.addEventListener("DOMContentLoaded", () => {
         isProcessingTransaction = true;
         const { fn, args } = transactionQueue.shift();
         try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const gasPrice = await provider.getGasPrice();
-            const tx = await fn(...args, { gasPrice: gasPrice.mul(2) });
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const gasPrice = (await provider.getFeeData()).gasPrice;
+            const tx = await fn(...args, { gasPrice });
             await tx.wait();
         } catch (error) {
             alert(`Transaction failed: ${error.message}`);
@@ -947,7 +954,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract) return alert("Connect your wallet first!");
         const amount = document.getElementById("stakeInput").value;
         if (!amount || amount <= 0) return alert("Enter a valid amount!");
-        const amountInWei = ethers.utils.parseUnits(amount, 18);
+        const amountInWei = ethers.parseUnits(amount, 18);
         await estimateGas(contract.stakeTokens, [amountInWei]);
         queueTransaction(contract.stakeTokens, [amountInWei]);
         document.getElementById("stakeInput").value = "";
