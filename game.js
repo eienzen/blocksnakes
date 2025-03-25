@@ -534,12 +534,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
+        // कैनवस को साफ करें
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // बैकग्राउंड ग्रेडिएंट
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, "#0a0a23");
         gradient.addColorStop(1, "#1f2a44");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // स्नेक को ड्रा करें
         snake.forEach((segment, index) => {
             const segmentGradient = ctx.createLinearGradient(segment.x * gridSize, segment.y * gridSize, (segment.x + 1) * gridSize, (segment.y + 1) * gridSize);
             segmentGradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
@@ -555,6 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.strokeStyle = "#000";
             ctx.stroke();
             if (index === 0) {
+                // स्नेक की आँखें ड्रा करें
                 ctx.fillStyle = "#fff";
                 ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
                 ctx.shadowBlur = 5;
@@ -571,6 +577,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        // बॉक्स (फूड) को ड्रा करें
         const boxGradient = ctx.createLinearGradient(box.x * gridSize, box.y * gridSize, (box.x + 1) * gridSize, (box.y + 1) * gridSize);
         boxGradient.addColorStop(0, "#ff5555");
         boxGradient.addColorStop(1, "#ffaa00");
@@ -595,6 +602,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + (gridSize - 7));
         ctx.stroke();
 
+        // स्कोर और रिवॉर्ड्स अपडेट करें
         document.getElementById('score').textContent = `Score: ${score}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
