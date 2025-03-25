@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // कॉन्ट्रैक्ट एड्रेस और ABI (रीमिक्स से डालें)
     const contractAddress = "0xcb70fe198788708b640a6ba0684869f8faca3a7f"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
-    const contractABI = [[
+    const contractABI = [
 	{
 		"anonymous": false,
 		"inputs": [
@@ -488,7 +488,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"stateMutability": "view",
 		"type": "function"
 	}
-]]; // यहाँ रीमिक्स से कॉन्ट्रैक्ट ABI डालें
+]; // यहाँ रीमिक्स से कॉन्ट्रैक्ट ABI डालें
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -559,7 +559,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
                 ctx.shadowBlur = 5;
                 ctx.beginPath();
-                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 3, 0, Math.PI * 2);
+                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 3,A 0, Math.PI * 2);
                 ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 3, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = "#000";
@@ -862,120 +862,3 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("lastGameScore").innerText = `Last Game Score: ${playerData.lastGameScore}`;
         document.getElementById("lastGameRewards").innerText = `Last Game Rewards: ${playerData.lastGameRewards} BST`;
         document.getElementById("totalReferrals").innerText = `Total Referrals: ${playerData.totalReferrals}`;
-        document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards} BST`;
-        document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards} BST`;
-        document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels.length}`;
-    }
-
-    function updateRewardHistoryUI() {
-        const historyList = document.getElementById("rewardHistoryList");
-        historyList.innerHTML = "";
-        playerData.rewardHistory.forEach(entry => {
-            const date = new Date(entry.timestamp).toLocaleString();
-            const li = document.createElement("li");
-            li.innerText = `${entry.rewardType}: ${entry.amount} BST on ${date} ${entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""}`;
-            historyList.appendChild(li);
-        });
-    }
-
-    async function claimPendingRewards() {
-        if (!contract) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
-
-        const totalReward = playerData.pendingRewards;
-        const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
-        const referee = account;
-        const referrerReward = playerData.pendingReferrerReward;
-        const refereeReward = playerData.pendingRefereeReward;
-
-        await estimateGas(contract.claimAllRewards, [
-            totalReward,
-            referrer,
-            referee,
-            referrerReward,
-            refereeReward
-        ]);
-
-        queueTransaction(contract.claimAllRewards, [
-            totalReward,
-            referrer,
-            referee,
-            referrerReward,
-            refereeReward
-        ]);
-
-        playerData.rewards += totalReward;
-        playerData.totalRewards += totalReward;
-        playerData.pendingRewards = 0;
-        playerData.pendingLevels = [];
-        playerData.pendingReferral = null;
-        playerData.pendingReferrerReward = 0;
-        playerData.pendingRefereeReward = 0;
-
-        playerData.rewardHistory.push({
-            amount: totalReward,
-            timestamp: Date.now(),
-            rewardType: "Claim",
-            referee: "N/A"
-        });
-
-        updatePlayerHistoryUI();
-        updateRewardHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-        await loadPlayerHistory();
-    }
-
-    async function processTransactionQueue() {
-        if (isProcessingTransaction || transactionQueue.length === 0) return;
-        isProcessingTransaction = true;
-        const { fn, args } = transactionQueue.shift();
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const gasPrice = (await provider.getFeeData()).gasPrice;
-            const tx = await fn(...args, { gasPrice });
-            await tx.wait();
-        } catch (error) {
-            alert(`Transaction failed: ${error.message}`);
-        } finally {
-            isProcessingTransaction = false;
-            processTransactionQueue();
-        }
-    }
-
-    function queueTransaction(fn, args) {
-        transactionQueue.push({ fn, args });
-        processTransactionQueue();
-    }
-
-    document.getElementById("connectWallet").addEventListener("click", connectWallet);
-    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
-    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
-    document.getElementById("stakeTokens").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        const amount = document.getElementById("stakeInput").value;
-        if (!amount || amount <= 0) return alert("Enter a valid amount!");
-        const amountInWei = ethers.parseUnits(amount, 18);
-        await estimateGas(contract.stakeTokens, [amountInWei]);
-        queueTransaction(contract.stakeTokens, [amountInWei]);
-        document.getElementById("stakeInput").value = "";
-        await loadPlayerHistory();
-    });
-    document.getElementById("claimStakingReward").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        await estimateGas(contract.claimStakingReward, []);
-        queueTransaction(contract.claimStakingReward, []);
-        await loadPlayerHistory();
-    });
-    document.getElementById("unstakeTokens").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        await estimateGas(contract.unstakeTokens, []);
-        queueTransaction(contract.unstakeTokens, []);
-        await loadPlayerHistory();
-    });
-    document.getElementById("buyToken").addEventListener("click", () => {
-        alert("Token sale starts on 1st May 2025!");
-    });
-
-    updatePlayerHistoryUI();
-    updateRewardHistoryUI();
-});
