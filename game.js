@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // कॉन्ट्रैक्ट एड्रेस और ABI (रीमिक्स से डालें)
-    const contractAddress = "0xcb70fe198788708b640a6ba0684869f8faca3a7f"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xe9f9b82bfa2f58bd10f061b2f7e4312700f2ef2c"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
