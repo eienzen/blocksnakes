@@ -1,6 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
-    let account;
-    let contract;
+    let account = null;
+    let contract = null;
     let isConnecting = false;
     let transactionQueue = [];
     let isProcessingTransaction = false;
@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // कॉन्ट्रैक्ट एड्रेस और ABI (रीमिक्स से डालें)
-    const contractAddress = "0xe9f9b82bfa2f58bd10f061b2f7e4312700f2ef2c"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x67968b712e32125ba34e6b915be333b947c2f321"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
@@ -562,7 +562,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (index === 0) {
                 // स्नेक की आँखें ड्रा करें
                 ctx.fillStyle = "#fff";
-                ctx.shadowColor = "rgba(255, 255, 255, 0.5)";
+                ctx.shadowColor = "rgba(255, 255, 0, 0.5)";
                 ctx.shadowBlur = 5;
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 3, 0, Math.PI * 2);
@@ -613,44 +613,52 @@ document.addEventListener("DOMContentLoaded", () => {
     function checkReferralRewards() {
         if (!account) return;
 
+        // स्कोर 50 पर रेफरी और रेफरर को रिवॉर्ड
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            playerData.pendingRefereeReward += 5;
-            playerData.pendingReferrerReward += 3;
-            playerData.referralRewards += 3;
-            playerData.totalReferrals += 1;
-            playerData.pendingRewards += 5;
+            playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + 5; // रेफरी को 5 BST
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 3; // रेफरर को 3 BST
+            playerData.referralRewards = (playerData.referralRewards || 0) + 3; // रेफरर के रिवॉर्ड्स अपडेट
+            playerData.totalReferrals = (playerData.totalReferrals || 0) + 1; // रेफरल काउंट बढ़ाएँ
+            playerData.pendingRewards = (playerData.pendingRewards || 0) + 5; // रेफरी के पेंडिंग रिवॉर्ड्स
 
+            // रिवॉर्ड हिस्ट्री में रेफरी का रिवॉर्ड
             playerData.rewardHistory.push({
                 amount: 5,
                 timestamp: Date.now(),
-                rewardType: "Referral (Welcome)",
+                rewardType: "Referral (Welcome - Referee)",
                 referee: "N/A"
             });
+
+            // रिवॉर्ड हिस्ट्री में रेफरर का रिवॉर्ड
             playerData.rewardHistory.push({
                 amount: 3,
                 timestamp: Date.now(),
-                rewardType: "Referral (Referrer)",
+                rewardType: "Referral (Welcome - Referrer)",
                 referee: playerData.pendingReferral
             });
 
             updatePlayerHistoryUI();
+            updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         }
 
+        // स्कोर 100 पर रेफरर को अतिरिक्त रिवॉर्ड
         if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            playerData.pendingReferrerReward += 2;
-            playerData.referralRewards += 2;
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 2; // रेफरर को 2 BST
+            playerData.referralRewards = (playerData.referralRewards || 0) + 2; // रेफरर के रिवॉर्ड्स अपडेट
 
+            // रिवॉर्ड हिस्ट्री में रेफरर का अतिरिक्त रिवॉर्ड
             playerData.rewardHistory.push({
                 amount: 2,
                 timestamp: Date.now(),
-                rewardType: "Referral (Extra)",
+                rewardType: "Referral (Extra - Referrer)",
                 referee: playerData.pendingReferral
             });
 
             updatePlayerHistoryUI();
+            updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         }
     }
@@ -686,7 +694,7 @@ document.addEventListener("DOMContentLoaded", () => {
             gameRewards += 2;
             if (score > 0 && score % 100 === 0) {
                 const reward = 5;
-                playerData.pendingRewards += reward;
+                playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
                 playerData.pendingLevels.push({ score, reward });
 
                 playerData.rewardHistory.push({
@@ -719,7 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         playerData.lastGameScore = score;
         playerData.lastGameRewards = gameRewards;
-        playerData.gamesPlayed += 1;
+        playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
         score = 0;
         gameRewards = 0;
         hasReceivedWelcomeReward = false;
@@ -767,6 +775,10 @@ document.addEventListener("DOMContentLoaded", () => {
     draw();
 
     document.getElementById('playGame').addEventListener('click', () => {
+        if (!account) {
+            alert("Please connect your wallet to play the game!");
+            return;
+        }
         enterFullscreen();
         resetGame();
         if (!gameInterval) {
@@ -817,7 +829,9 @@ document.addEventListener("DOMContentLoaded", () => {
             // वॉलेट कनेक्ट करें
             const accounts = await provider.request({ method: "eth_requestAccounts" });
             account = accounts[0];
-            document.getElementById("connectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
+            document.getElementById("connectWallet").style.display = "none";
+            document.getElementById("disconnectWallet").style.display = "inline-block";
+            document.getElementById("disconnectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
 
             // ethers.js के साथ प्रोवाइडर सेट करें
             const ethersProvider = new ethers.BrowserProvider(provider);
@@ -837,6 +851,15 @@ document.addEventListener("DOMContentLoaded", () => {
         } finally {
             isConnecting = false;
         }
+    }
+
+    function disconnectWallet() {
+        account = null;
+        contract = null;
+        document.getElementById("connectWallet").style.display = "inline-block";
+        document.getElementById("disconnectWallet").style.display = "none";
+        document.getElementById("connectWallet").innerText = "Connect Wallet";
+        alert("Wallet disconnected successfully!");
     }
 
     async function loadPlayerHistory() {
@@ -865,14 +888,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updatePlayerHistoryUI() {
-        document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed}`;
-        document.getElementById("totalGameRewards").innerText = `Total Game Rewards: ${playerData.totalRewards} BST`;
-        document.getElementById("lastGameScore").innerText = `Last Game Score: ${playerData.lastGameScore}`;
-        document.getElementById("lastGameRewards").innerText = `Last Game Rewards: ${playerData.lastGameRewards} BST`;
-        document.getElementById("totalReferrals").innerText = `Total Referrals: ${playerData.totalReferrals}`;
-        document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards} BST`;
-        document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards} BST`;
-        document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels.length}`;
+        document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed || 0}`;
+        document.getElementById("totalGameRewards").innerText = `Total Game Rewards: ${playerData.totalRewards || 0} BST`;
+        document.getElementById("lastGameScore").innerText = `Last Game Score: ${playerData.lastGameScore || 0}`;
+        document.getElementById("lastGameRewards").innerText = `Last Game Rewards: ${playerData.lastGameRewards || 0} BST`;
+        document.getElementById("totalReferrals").innerText = `Total Referrals: ${playerData.totalReferrals || 0}`;
+        document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards || 0} BST`;
+        document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards || 0} BST`;
+        document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels?.length || 0}`;
     }
 
     function updateRewardHistoryUI() {
@@ -893,8 +916,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const totalReward = playerData.pendingRewards;
         const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
         const referee = account;
-        const referrerReward = playerData.pendingReferrerReward;
-        const refereeReward = playerData.pendingRefereeReward;
+        const referrerReward = playerData.pendingReferrerReward || 0;
+        const refereeReward = playerData.pendingRefereeReward || 0;
 
         await estimateGas(contract.claimAllRewards, [
             totalReward,
@@ -912,8 +935,8 @@ document.addEventListener("DOMContentLoaded", () => {
             refereeReward
         ]);
 
-        playerData.rewards += totalReward;
-        playerData.totalRewards += totalReward;
+        playerData.rewards = (playerData.rewards || 0) + totalReward;
+        playerData.totalRewards = (playerData.totalRewards || 0) + totalReward;
         playerData.pendingRewards = 0;
         playerData.pendingLevels = [];
         playerData.pendingReferral = null;
@@ -955,7 +978,33 @@ document.addEventListener("DOMContentLoaded", () => {
         processTransactionQueue();
     }
 
+    // ऑटोमेटिक वॉलेट कनेक्शन चेक
+    if (window.ethereum) {
+        window.ethereum.on('accountsChanged', (accounts) => {
+            if (accounts.length > 0) {
+                account = accounts[0];
+                document.getElementById("connectWallet").style.display = "none";
+                document.getElementById("disconnectWallet").style.display = "inline-block";
+                document.getElementById("disconnectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
+            } else {
+                disconnectWallet();
+            }
+        });
+
+        window.ethereum.on('chainChanged', () => {
+            window.location.reload();
+        });
+
+        // ऑटोमेटिक कनेक्शन चेक करें
+        window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
+            if (accounts.length > 0) {
+                connectWallet();
+            }
+        });
+    }
+
     document.getElementById("connectWallet").addEventListener("click", connectWallet);
+    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
     document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
     document.getElementById("stakeTokens").addEventListener("click", async () => {
