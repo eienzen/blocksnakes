@@ -812,22 +812,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (isConnecting) return alert("Wallet connection in progress. Please wait.");
         if (account) return alert("Wallet already connected!");
 
-        // विभिन्न वॉलेट प्रोवाइडर को चेक करें
-        let provider;
-        if (window.ethereum) {
-            provider = window.ethereum;
-        } else if (window.web3) {
-            provider = window.web3.currentProvider;
-        } else {
+        // प्रोवाइडर चेक करें
+        if (!window.ethereum && !window.web3) {
             alert("No Web3 wallet detected. Please install MetaMask, Trust Wallet, or another Web3 wallet to continue.");
             return;
         }
+
+        let provider = window.ethereum || (window.web3 && window.web3.currentProvider);
 
         try {
             isConnecting = true;
 
             // वॉलेट कनेक्ट करें
             const accounts = await provider.request({ method: "eth_requestAccounts" });
+            if (!accounts || accounts.length === 0) {
+                throw new Error("No accounts found. Please ensure your wallet is unlocked.");
+            }
             account = accounts[0];
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "inline-block";
@@ -1000,6 +1000,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (accounts.length > 0) {
                 connectWallet();
             }
+        }).catch(error => {
+            console.error("Error checking connected accounts:", error);
         });
     }
 
