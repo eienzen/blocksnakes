@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSP सेटिंग अपडेट की गई -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io; img-src 'self';">
-    <!-- Favicon सेट किया गया -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>BlockSnakes - Play & Earn</title>
-    <!-- ethers.js का लेटेस्ट वर्जन -->
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <style>
         body {
@@ -26,7 +23,6 @@
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
             position: relative;
         }
-        /* बैनर को हेडर में सेट करने के लिए स्टाइल */
         .header-banner {
             width: 100%;
             max-height: 150px;
@@ -135,6 +131,31 @@
             font-size: 1.2rem;
             z-index: 1000;
         }
+        /* गेम ओवर पॉपअप के लिए स्टाइल */
+        #gameOverPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: #e0e0e0;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+            z-index: 1000;
+            text-align: center;
+        }
+        #gameOverPopup h3 {
+            color: #ff5555;
+            margin: 0 0 15px 0;
+        }
+        #gameOverPopup p {
+            margin: 10px 0;
+        }
+        #gameOverPopup button {
+            margin: 10px;
+        }
         #rewardHistory ul {
             list-style: none;
             padding: 0;
@@ -157,12 +178,12 @@
             .boxed-section { min-height: 300px; max-width: 95%; }
             #gameInfo, #playerHistory, #pendingRewards, #stakingActions, #rewardHistory { font-size: 0.9rem; }
             .header-banner { max-height: 100px; }
+            #gameOverPopup { width: 90%; padding: 20px; }
         }
     </style>
 </head>
 <body>
     <nav>
-        <!-- बैनर को हेडर में जोड़ा गया -->
         <img src="/banner.jpg" alt="BlockSnakes Banner" class="header-banner">
         <a href="#home">Home</a>
         <a href="#game">Play Game</a>
@@ -199,6 +220,15 @@
         <button id="claimGameRewards">Claim Game Rewards</button>
         <div id="gasEstimate"></div>
         <div id="levelMessage"></div>
+        <!-- गेम ओवर पॉपअप -->
+        <div id="gameOverPopup">
+            <h3>Game Over!</h3>
+            <p id="finalScore">Score: 0</p>
+            <p id="finalRewards">Rewards: 0 BST</p>
+            <p>Continue from where you left off by paying 5 BST tokens!</p>
+            <button id="continueWithTokens">Continue with Tokens (5 BST)</button>
+            <button id="startNewGame">Start New Game</button>
+        </div>
     </div>
 
     <div class="section" id="playerInfoColumn">
