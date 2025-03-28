@@ -35,7 +35,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // कॉन्ट्रैक्ट एड्रेस और ABI
     const contractAddress = "0x685cc3a3b71558312224542bf9fc94d2c52e8ae1"; // यहाँ डिप्लॉय किया हुआ कॉन्ट्रैक्ट एड्रेस डालें
-    const contractABI = [
+    const contractABI = [[
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
 	{
 		"anonymous": false,
 		"inputs": [
@@ -184,6 +189,25 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "uint256",
 				"name": "totalReward",
 				"type": "uint256"
@@ -219,57 +243,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"name": "claimStakingReward",
 		"outputs": [],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "incrementGamesPlayed",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "stakeTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unstakeTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -347,6 +320,13 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
+		"name": "incrementGamesPlayed",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "name",
 		"outputs": [
 			{
@@ -369,6 +349,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "payToContinue",
+		"outputs": [],
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -446,6 +433,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
 				"name": "",
 				"type": "address"
@@ -487,8 +487,15 @@ document.addEventListener("DOMContentLoaded", () => {
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "unstakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
 	}
-];
+]];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -635,8 +642,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            const referrerAmount = ethers.parseUnits("3", 18);
-            const refereeAmount = ethers.parseUnits("5", 18);
+            const referrerAmount = ethers.utils.parseUnits("3", 18);
+            const refereeAmount = ethers.utils.parseUnits("5", 18);
 
             playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + 5;
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 3;
@@ -672,7 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            const referrerAmount = ethers.parseUnits("2", 18);
+            const referrerAmount = ethers.utils.parseUnits("2", 18);
 
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 2;
             playerData.referralRewards = (playerData.referralRewards || 0) + 2;
@@ -733,7 +740,6 @@ document.addEventListener("DOMContentLoaded", () => {
             gameRewards += 2;
             if (score > 0 && score % 100 === 0) {
                 const reward = 5;
-                const rewardInWei = ethers.parseUnits(reward.toString(), 18);
                 playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
                 playerData.pendingLevels.push({ score, reward });
 
@@ -745,7 +751,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 try {
-                    await contract.addGameReward(account, rewardInWei);
+                    await contract.addRewards(reward); // addGameReward की जगह addRewards
                 } catch (error) {
                     console.error("Error adding game reward:", error);
                 }
@@ -779,7 +785,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const amount = ethers.parseUnits("5", 18); // 5 BST टोकन
+        const amount = ethers.utils.parseUnits("5", 18); // 5 BST टोकन
         try {
             const balance = await contract.balanceOf(account);
             if (balance < amount) {
@@ -787,7 +793,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            await contract.payToContinue(amount);
+            const tx = await contract.payToContinue({ value: amount });
+            await tx.wait();
+
             playerData.rewardHistory.push({
                 amount: 5,
                 timestamp: Date.now(),
@@ -817,6 +825,13 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.lastGameScore = score;
         playerData.lastGameRewards = gameRewards;
         playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
+
+        try {
+            await contract.incrementGamesPlayed();
+        } catch (error) {
+            console.error("Error incrementing games played:", error);
+        }
+
         score = 0;
         gameRewards = 0;
         hasReceivedWelcomeReward = false;
@@ -895,7 +910,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const gasPrice = await provider.getFeeData();
             const gasCost = gasEstimate * gasPrice.gasPrice;
-            const gasCostInBNB = ethers.formatEther(gasCost);
+            const gasCostInBNB = ethers.utils.formatEther(gasCost);
             document.getElementById("gasEstimate").innerText = `Estimated Gas Fee: ${gasCostInBNB} BNB`;
         } catch (error) {
             document.getElementById("gasEstimate").innerText = "Gas estimation failed.";
@@ -1003,11 +1018,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract) return alert("Connect your wallet first!");
         if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
 
-        const totalReward = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
+        const totalReward = ethers.utils.parseUnits(playerData.pendingRewards.toString(), 18);
         const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
         const referee = account;
-        const referrerReward = ethers.parseUnits(playerData.pendingReferrerReward.toString(), 18);
-        const refereeReward = ethers.parseUnits(playerData.pendingRefereeReward.toString(), 18);
+        const referrerReward = ethers.utils.parseUnits(playerData.pendingReferrerReward.toString(), 18);
+        const refereeReward = ethers.utils.parseUnits(playerData.pendingRefereeReward.toString(), 18);
 
         await estimateGas(contract.claimAllRewards, [
             totalReward,
@@ -1045,7 +1060,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract) return alert("Connect your wallet first!");
         const amount = document.getElementById("stakeInput").value;
         if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
-        const amountInWei = ethers.parseUnits(amount.toString(), 18);
+        const amountInWei = ethers.utils.parseUnits(amount.toString(), 18);
         await estimateGas(contract.stakeTokens, [amountInWei]);
         queueTransaction(contract.stakeTokens, [amountInWei]);
     });
