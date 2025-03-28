@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- CSP सेटिंग -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io;">
-    <!-- फेविकॉन जोड़ा -->
-    <link rel="icon" type="image/png" href="https://via.placeholder.com/32" />
+    <!-- CSP सेटिंग अपडेट की गई -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io; img-src 'self';">
+    <!-- Favicon सेट किया गया -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>BlockSnakes - Play & Earn</title>
     <!-- ethers.js का लेटेस्ट वर्जन -->
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
@@ -24,6 +24,15 @@
             background: #1f2a44;
             padding: 15px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+        /* बैनर को हेडर में सेट करने के लिए स्टाइल */
+        .header-banner {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            display: block;
+            margin: 0 auto;
         }
         nav a {
             color: #1abc9c;
@@ -147,11 +156,14 @@
             .section { margin: 0 10px 30px 10px; padding: 15px; }
             .boxed-section { min-height: 300px; max-width: 95%; }
             #gameInfo, #playerHistory, #pendingRewards, #stakingActions, #rewardHistory { font-size: 0.9rem; }
+            .header-banner { max-height: 100px; }
         }
     </style>
 </head>
 <body>
     <nav>
+        <!-- बैनर को हेडर में जोड़ा गया -->
+        <img src="/banner.jpg" alt="BlockSnakes Banner" class="header-banner">
         <a href="#home">Home</a>
         <a href="#game">Play Game</a>
         <a href="#how-to-play">How to Play</a>
