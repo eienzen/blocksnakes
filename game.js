@@ -33,14 +33,9 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    // कॉन्ट्रैक्ट एड्रेस और ABI
-    const contractAddress = "0x685cc3a3b71558312224542bf9fc94d2c52e8ae1"; // यहाँ डिप्लॉय किया हुआ कॉन्ट्रैक्ट एड्रेस डालें
-    const contractABI = [[
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
+    // कॉन्ट्रैक्ट एड्रेस और ABI को यहीं डालें
+    const contractAddress = "0x3114c61c8f37980c2669e8d2261087e361c51431"; // यहाँ अपना कॉन्ट्रैक्ट एड्रेस डालें
+    const contractABI = [
 	{
 		"anonymous": false,
 		"inputs": [
@@ -189,25 +184,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "uint256",
 				"name": "totalReward",
 				"type": "uint256"
@@ -247,12 +223,104 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
+		"name": "incrementGamesPlayed",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "payToContinue",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "unstakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "decimals",
 		"outputs": [
 			{
 				"internalType": "uint8",
 				"name": "",
 				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "getPlayerHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -320,13 +388,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "incrementGamesPlayed",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "name",
 		"outputs": [
 			{
@@ -349,13 +410,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "payToContinue",
-		"outputs": [],
-		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -433,19 +487,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "stakeTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "address",
 				"name": "",
 				"type": "address"
@@ -487,15 +528,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		],
 		"stateMutability": "view",
 		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unstakeTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
 	}
-]];
+];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -642,8 +676,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            const referrerAmount = ethers.utils.parseUnits("3", 18);
-            const refereeAmount = ethers.utils.parseUnits("5", 18);
+            const referrerAmount = ethers.parseUnits("3", 18);
+            const refereeAmount = ethers.parseUnits("5", 18);
 
             playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + 5;
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 3;
@@ -679,7 +713,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            const referrerAmount = ethers.utils.parseUnits("2", 18);
+            const referrerAmount = ethers.parseUnits("2", 18);
 
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 2;
             playerData.referralRewards = (playerData.referralRewards || 0) + 2;
@@ -751,7 +785,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 try {
-                    await contract.addRewards(reward); // addGameReward की जगह addRewards
+                    await contract.addRewards(reward);
                 } catch (error) {
                     console.error("Error adding game reward:", error);
                 }
@@ -785,7 +819,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const amount = ethers.utils.parseUnits("5", 18); // 5 BST टोकन
+        const amount = ethers.parseUnits("5", 18); // 5 BST टोकन
         try {
             const balance = await contract.balanceOf(account);
             if (balance < amount) {
@@ -880,20 +914,26 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCanvasSize();
     draw();
 
-    document.getElementById('playGame').addEventListener('click', () => {
-        if (!account) {
-            alert("Please connect your wallet to play the game!");
-            return;
-        }
-        enterFullscreen();
-        resetGame();
-        if (!gameInterval) {
-            gameInterval = setInterval(move, SNAKE_SPEED);
-        }
-    });
+    document
+        .getElementById('playGame')
+        .addEventListener('click', () => {
+            if (!account) {
+                alert("Please connect your wallet to play the game!");
+                return;
+            }
+            enterFullscreen();
+            resetGame();
+            if (!gameInterval) {
+                gameInterval = setInterval(move, SNAKE_SPEED);
+            }
+        });
 
-    document.getElementById('continueWithTokens').addEventListener('click', continueWithTokens);
-    document.getElementById('startNewGame').addEventListener('click', resetGame);
+    document
+        .getElementById('continueWithTokens')
+        .addEventListener('click', continueWithTokens);
+    document
+        .getElementById('startNewGame')
+        .addEventListener('click', resetGame);
 
     function generateReferralLink() {
         if (!account) return alert("Connect your wallet first!");
@@ -910,46 +950,65 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const gasPrice = await provider.getFeeData();
             const gasCost = gasEstimate * gasPrice.gasPrice;
-            const gasCostInBNB = ethers.utils.formatEther(gasCost);
-            document.getElementById("gasEstimate").innerText = `Estimated Gas Fee: ${gasCostInBNB} BNB`;
+            const gasCostInBNB = ethers.formatEther(gasCost);
+            document.getElementById(
+                "gasEstimate"
+            ).innerText = `Estimated Gas Fee: ${gasCostInBNB} BNB`;
         } catch (error) {
-            document.getElementById("gasEstimate").innerText = "Gas estimation failed.";
+            document.getElementById("gasEstimate").innerText =
+                "Gas estimation failed.";
         }
     }
 
     async function connectWallet() {
-        if (isConnecting) return alert("Wallet connection in progress. Please wait.");
+        if (isConnecting)
+            return alert("Wallet connection in progress. Please wait.");
         if (account) return alert("Wallet already connected!");
 
         if (!window.ethereum && !window.web3) {
-            alert("No Web3 wallet detected. Please install MetaMask, Trust Wallet, or another Web3 wallet to continue.");
+            alert(
+                "No Web3 wallet detected. Please install MetaMask, Trust Wallet, or another Web3 wallet to continue."
+            );
             return;
         }
 
-        let provider = window.ethereum || (window.web3 && window.web3.currentProvider);
+        let provider =
+            window.ethereum || (window.web3 && window.web3.currentProvider);
 
         try {
             isConnecting = true;
-            const accounts = await provider.request({ method: "eth_requestAccounts" });
+            const accounts = await provider.request({
+                method: "eth_requestAccounts",
+            });
             if (!accounts || accounts.length === 0) {
-                throw new Error("No accounts found. Please ensure your wallet is unlocked.");
+                throw new Error(
+                    "No accounts found. Please ensure your wallet is unlocked."
+                );
             }
             account = accounts[0];
             document.getElementById("connectWallet").style.display = "none";
-            document.getElementById("disconnectWallet").style.display = "inline-block";
-            document.getElementById("disconnectWallet").innerText = `Connected: ${account.substring(0, 6)}...`;
+            document.getElementById("disconnectWallet").style.display =
+                "inline-block";
+            document.getElementById(
+                "disconnectWallet"
+            ).innerText = `Connected: ${account.substring(0, 6)}...`;
 
             const ethersProvider = new ethers.BrowserProvider(provider);
             const signer = await ethersProvider.getSigner();
+            // यहाँ contract को इनिशियलाइज़ करें
             contract = new ethers.Contract(contractAddress, contractABI, signer);
 
             await loadPlayerHistory();
             updateRewardHistoryUI();
         } catch (error) {
             if (error.code === 4001) {
-                alert("User rejected the request. Please connect your wallet to continue.");
+                alert(
+                    "User rejected the request. Please connect your wallet to continue."
+                );
             } else if (error.code === -32002) {
-                alert("A wallet connection request is already pending. Please check your wallet.");
+                alert(
+                    "A wallet connection request is already pending. Please check your wallet."
+                );
             } else {
                 alert("Error connecting wallet: " + error.message);
             }
@@ -970,18 +1029,27 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadPlayerHistory() {
         if (!contract || !account) return;
         try {
-            const history = await contract.playerHistory(account);
-            playerData.gamesPlayed = Number(history.gamesPlayed);
-            playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
-            playerData.totalReferrals = Number(history.totalReferrals);
-            playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
+            const [
+                gamesPlayed,
+                totalRewards,
+                totalReferrals,
+                referralRewards,
+            ] = await contract.getPlayerHistory(account);
+            playerData.gamesPlayed = Number(gamesPlayed);
+            playerData.totalRewards = Number(totalRewards) / 10 ** 18;
+            playerData.totalReferrals = Number(totalReferrals);
+            playerData.referralRewards = Number(referralRewards) / 10 ** 18;
 
             const rewardHistory = await contract.getRewardHistory(account);
-            playerData.rewardHistory = rewardHistory.map(entry => ({
+            playerData.rewardHistory = rewardHistory.map((entry) => ({
                 amount: Number(entry.amount) / 10 ** 18,
                 timestamp: Number(entry.timestamp) * 1000,
                 rewardType: entry.rewardType,
-                referee: entry.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : entry.referee
+                referee:
+                    entry.referee ===
+                    "0x0000000000000000000000000000000000000000"
+                        ? "N/A"
+                        : entry.referee,
             }));
 
             updatePlayerHistoryUI();
@@ -993,43 +1061,73 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updatePlayerHistoryUI() {
-        document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed || 0}`;
-        document.getElementById("totalGameRewards").innerText = `Total Game Rewards: ${playerData.totalRewards || 0} BST`;
-        document.getElementById("lastGameScore").innerText = `Last Game Score: ${playerData.lastGameScore || 0}`;
-        document.getElementById("lastGameRewards").innerText = `Last Game Rewards: ${playerData.lastGameRewards || 0} BST`;
-        document.getElementById("totalReferrals").innerText = `Total Referrals: ${playerData.totalReferrals || 0}`;
-        document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards || 0} BST`;
-        document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards || 0} BST`;
-        document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels?.length || 0}`;
+        document.getElementById(
+            "gamesPlayed"
+        ).innerText = `Games Played: ${playerData.gamesPlayed || 0}`;
+        document.getElementById(
+            "totalGameRewards"
+        ).innerText = `Total Game Rewards: ${playerData.totalRewards || 0} BST`;
+        document.getElementById(
+            "lastGameScore"
+        ).innerText = `Last Game Score: ${playerData.lastGameScore || 0}`;
+        document.getElementById(
+            "lastGameRewards"
+        ).innerText = `Last Game Rewards: ${playerData.lastGameRewards || 0} BST`;
+        document.getElementById(
+            "totalReferrals"
+        ).innerText = `Total Referrals: ${playerData.totalReferrals || 0}`;
+        document.getElementById(
+            "referralRewards"
+        ).innerText = `Referral Rewards: ${playerData.referralRewards || 0} BST`;
+        document.getElementById(
+            "pendingRewardsText"
+        ).innerText = `Pending Rewards: ${playerData.pendingRewards || 0} BST`;
+        document.getElementById(
+            "pendingLevelsText"
+        ).innerText = `Pending Milestones: ${playerData.pendingLevels?.length || 0}`;
     }
 
     function updateRewardHistoryUI() {
         const historyList = document.getElementById("rewardHistoryList");
         historyList.innerHTML = "";
-        playerData.rewardHistory.forEach(entry => {
+        playerData.rewardHistory.forEach((entry) => {
             const date = new Date(entry.timestamp).toLocaleString();
             const li = document.createElement("li");
-            li.innerText = `${entry.rewardType}: ${entry.amount} BST on ${date} ${entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""}`;
+            li.innerText = `${entry.rewardType}: ${entry.amount} BST on ${date} ${
+                entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""
+            }`;
             historyList.appendChild(li);
         });
     }
 
     async function claimPendingRewards() {
         if (!contract) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
+        if (playerData.pendingRewards < 50)
+            return alert("Minimum withdrawal is 50 BST!");
 
-        const totalReward = ethers.utils.parseUnits(playerData.pendingRewards.toString(), 18);
-        const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
+        const totalReward = ethers.parseUnits(
+            playerData.pendingRewards.toString(),
+            18
+        );
+        const referrer =
+            playerData.pendingReferral ||
+            "0x0000000000000000000000000000000000000000";
         const referee = account;
-        const referrerReward = ethers.utils.parseUnits(playerData.pendingReferrerReward.toString(), 18);
-        const refereeReward = ethers.utils.parseUnits(playerData.pendingRefereeReward.toString(), 18);
+        const referrerReward = ethers.parseUnits(
+            playerData.pendingReferrerReward.toString(),
+            18
+        );
+        const refereeReward = ethers.parseUnits(
+            playerData.pendingRefereeReward.toString(),
+            18
+        );
 
         await estimateGas(contract.claimAllRewards, [
             totalReward,
             referrer,
             referee,
             referrerReward,
-            refereeReward
+            refereeReward,
         ]);
 
         queueTransaction(contract.claimAllRewards, [
@@ -1037,11 +1135,13 @@ document.addEventListener("DOMContentLoaded", () => {
             referrer,
             referee,
             referrerReward,
-            refereeReward
+            refereeReward,
         ]);
 
-        playerData.rewards = (playerData.rewards || 0) + playerData.pendingRewards;
-        playerData.totalRewards = (playerData.totalRewards || 0) + playerData.pendingRewards;
+        playerData.rewards =
+            (playerData.rewards || 0) + playerData.pendingRewards;
+        playerData.totalRewards =
+            (playerData.totalRewards || 0) + playerData.pendingRewards;
         playerData.pendingRewards = 0;
         playerData.pendingLevels = [];
         playerData.pendingReferral = null;
@@ -1052,28 +1152,41 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    document.getElementById("connectWallet").addEventListener("click", connectWallet);
-    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
-    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
-    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
+    document
+        .getElementById("connectWallet")
+        .addEventListener("click", connectWallet);
+    document
+        .getElementById("disconnectWallet")
+        .addEventListener("click", disconnectWallet);
+    document
+        .getElementById("getReferralLink")
+        .addEventListener("click", generateReferralLink);
+    document
+        .getElementById("claimGameRewards")
+        .addEventListener("click", claimPendingRewards);
     document.getElementById("stakeTokens").addEventListener("click", async () => {
         if (!contract) return alert("Connect your wallet first!");
         const amount = document.getElementById("stakeInput").value;
-        if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
-        const amountInWei = ethers.utils.parseUnits(amount.toString(), 18);
+        if (!amount || amount <= 0)
+            return alert("Enter a valid amount to stake!");
+        const amountInWei = ethers.parseUnits(amount.toString(), 18);
         await estimateGas(contract.stakeTokens, [amountInWei]);
         queueTransaction(contract.stakeTokens, [amountInWei]);
     });
-    document.getElementById("claimStakingReward").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        await estimateGas(contract.claimStakingReward, []);
-        queueTransaction(contract.claimStakingReward, []);
-    });
-    document.getElementById("unstakeTokens").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        await estimateGas(contract.unstakeTokens, []);
-        queueTransaction(contract.unstakeTokens, []);
-    });
+    document
+        .getElementById("claimStakingReward")
+        .addEventListener("click", async () => {
+            if (!contract) return alert("Connect your wallet first!");
+            await estimateGas(contract.claimStakingReward, []);
+            queueTransaction(contract.claimStakingReward, []);
+        });
+    document
+        .getElementById("unstakeTokens")
+        .addEventListener("click", async () => {
+            if (!contract) return alert("Connect your wallet first!");
+            await estimateGas(contract.unstakeTokens, []);
+            queueTransaction(contract.unstakeTokens, []);
+        });
 
     async function queueTransaction(fn, args) {
         transactionQueue.push({ fn, args });
