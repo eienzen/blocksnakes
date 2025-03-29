@@ -719,6 +719,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
+        // कैनवस को साफ करें
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, "#0a0a23");
@@ -726,6 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // स्नेक को ड्रॉ करें
         snake.forEach((segment, index) => {
             const segmentGradient = ctx.createLinearGradient(segment.x * gridSize, segment.y * gridSize, (segment.x + 1) * gridSize, (segment.y + 1) * gridSize);
             segmentGradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
@@ -733,7 +735,6 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillStyle = segmentGradient;
             ctx.shadowColor = "rgba(255, 0, 255, 0.5)";
             ctx.shadowBlur = 15;
-           benz
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 5;
             ctx.beginPath();
@@ -742,6 +743,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.strokeStyle = "#000";
             ctx.stroke();
 
+            // स्नेक का सिर (आंखें और जीभ)
             if (index === 0) {
                 ctx.fillStyle = "#fff";
                 ctx.shadowColor = "rgba(255, 255, 0, 0.5)";
@@ -782,6 +784,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
+        // बॉक्स (खाना) को ड्रॉ करें
         const boxGradient = ctx.createLinearGradient(box.x * gridSize, box.y * gridSize, (box.x + 1) * gridSize, (box.y + 1) * gridSize);
         boxGradient.addColorStop(0, "#ff5555");
         boxGradient.addColorStop(1, "#ffaa00");
@@ -794,18 +797,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.strokeRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
-        ctx.beginPath();
-        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
-        ctx.moveTo(box.x * gridSize, box.y * gridSize);
-        ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + 5);
-        ctx.moveTo(box.x * gridSize + (gridSize - 2), box.y * gridSize);
-        ctx.lineTo(box.x * gridSize + (gridSize - 7), box.y * gridSize + 5);
-        ctx.moveTo(box.x * gridSize + (gridSize - 2), box.y * gridSize + (gridSize - 2));
-        ctx.lineTo(box.x * gridSize + (gridSize - 7), box.y * gridSize + (gridSize - 7));
-        ctx.moveTo(box.x * gridSize, box.y * gridSize + (gridSize - 2));
-        ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + (gridSize - 7));
-        ctx.stroke();
 
+        // स्कोर अपडेट करें
         document.getElementById('score').textContent = `Score: ${score}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
