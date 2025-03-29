@@ -1065,18 +1065,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function connectWallet() {
-        if (isConnecting) return alert("Wallet connection in progress. Please wait.");
-        if (account) return alert("Wallet already connected!");
+        if (isConnecting) {
+            alert("Wallet connection in progress. Please wait.");
+            return;
+        }
+        if (account) {
+            alert("Wallet already connected!");
+            return;
+        }
 
-        if (!window.ethereum && !window.web3) {
+        if (!window.ethereum) {
             alert("No Web3 wallet detected. Please install MetaMask or another Web3 wallet.");
             return;
         }
 
-        let provider = window.ethereum || (window.web3 && window.web3.currentProvider);
-
         try {
             isConnecting = true;
+            const provider = window.ethereum;
             const accounts = await provider.request({ method: "eth_requestAccounts" });
             if (!accounts || accounts.length === 0) {
                 throw new Error("No accounts found. Please ensure your wallet is unlocked.");
@@ -1093,6 +1098,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await loadPlayerHistory();
             updateRewardHistoryUI();
         } catch (error) {
+            console.error("Error connecting wallet:", error);
             if (error.code === 4001) {
                 alert("User rejected the request. Please connect your wallet to continue.");
             } else if (error.code === -32002) {
