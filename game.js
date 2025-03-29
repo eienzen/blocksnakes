@@ -2,8 +2,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let account = null;
     let contract = null;
     let isConnecting = false;
-    let transactionQueue = [];
-    let isProcessingTransaction = false;
 
     // प्लेयर डेटा
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
@@ -34,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // कॉन्ट्रैक्ट एड्रेस और ABI
-    const contractAddress = "0x1c64c7245bfa04816332c71a5220a40c190c4e73"; // यहाँ डिप्लॉय किया हुआ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xbea3ee62d52aa040c6747d603ff5a50b9269d9b3"; // यहाँ अपना कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
@@ -687,7 +685,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let score = 0;
     let gameRewards = 0;
     const SNAKE_SPEED = 300;
-    let lastSnakeState = null; // स्नेक की आखिरी स्थिति स्टोर करने के लिए
+    let lastSnakeState = null;
 
     function updateCanvasSize() {
         const screenWidth = window.innerWidth;
@@ -719,7 +717,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
-        // कैनवस को साफ करें
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
         gradient.addColorStop(0, "#0a0a23");
@@ -727,7 +724,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // स्नेक को ड्रॉ करें
         snake.forEach((segment, index) => {
             const segmentGradient = ctx.createLinearGradient(segment.x * gridSize, segment.y * gridSize, (segment.x + 1) * gridSize, (segment.y + 1) * gridSize);
             segmentGradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
@@ -743,7 +739,6 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.strokeStyle = "#000";
             ctx.stroke();
 
-            // स्नेक का सिर (आंखें और जीभ)
             if (index === 0) {
                 ctx.fillStyle = "#fff";
                 ctx.shadowColor = "rgba(255, 255, 0, 0.5)";
@@ -759,7 +754,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // जीभ ड्रॉ करना
                 ctx.fillStyle = "#ff4040";
                 ctx.beginPath();
                 if (direction === 'right') {
@@ -784,7 +778,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // बॉक्स (खाना) को ड्रॉ करें
         const boxGradient = ctx.createLinearGradient(box.x * gridSize, box.y * gridSize, (box.x + 1) * gridSize, (box.y + 1) * gridSize);
         boxGradient.addColorStop(0, "#ff5555");
         boxGradient.addColorStop(1, "#ffaa00");
@@ -798,7 +791,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.lineWidth = 1;
         ctx.strokeRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
-        // स्कोर अपडेट करें
         document.getElementById('score').textContent = `Score: ${score}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
@@ -811,8 +803,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            const referrerAmount = 3; // 3 BST
-            const refereeAmount = 5; // 5 BST
+            const referrerAmount = 3;
+            const refereeAmount = 5;
 
             playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeAmount;
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
@@ -835,9 +827,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             try {
-                // रेफरल सेट करना
                 await contract.referUser(playerData.pendingReferral, account);
-                // रेफरल रिवॉर्ड जोड़ना
                 await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, refereeAmount);
             } catch (error) {
                 console.error("Error adding referral reward:", error);
@@ -850,7 +840,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            const referrerAmount = 2; // 2 BST
+            const referrerAmount = 2;
 
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
             playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
@@ -863,7 +853,6 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             try {
-                // एक्स्ट्रा रेफरल रिवॉर्ड जोड़ना
                 await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, 0);
             } catch (error) {
                 console.error("Error adding extra referral reward:", error);
@@ -944,10 +933,26 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showGameOverPopup() {
-        const popup = document.getElementById("gameOverPopup");
-        document.getElementById("finalScore").textContent = `Score: ${score}`;
-        document.getElementById("finalRewards").textContent = `Rewards: ${gameRewards} BST`;
-        popup.style.display = "block";
+        const popup = document.createElement("div");
+        popup.id = "gameOverPopup";
+        popup.style.position = "fixed";
+        popup.style.top = "50%";
+        popup.style.left = "50%";
+        popup.style.transform = "translate(-50%, -50%)";
+        popup.style.backgroundColor = "#fff";
+        popup.style.padding = "20px";
+        popup.style.border = "2px solid #333";
+        popup.innerHTML = `
+            <h2>Game Over!</h2>
+            <p id="finalScore">Score: ${score}</p>
+            <p id="finalRewards">Rewards: ${gameRewards} BST</p>
+            <button id="continueWithTokens">Continue with Tokens (5 BST)</button>
+            <button id="startNewGame">Start New Game</button>
+        `;
+        document.body.appendChild(popup);
+
+        document.getElementById("continueWithTokens").addEventListener("click", continueWithTokens);
+        document.getElementById("startNewGame").addEventListener("click", resetGame);
     }
 
     async function continueWithTokens() {
@@ -969,7 +974,7 @@ document.addEventListener("DOMContentLoaded", () => {
             score = lastSnakeState.score;
             gameRewards = lastSnakeState.gameRewards;
 
-            document.getElementById("gameOverPopup").style.display = "none";
+            document.getElementById("gameOverPopup").remove();
             gameInterval = setInterval(move, SNAKE_SPEED);
         } catch (error) {
             console.error("Error continuing game:", error);
@@ -996,7 +1001,8 @@ document.addEventListener("DOMContentLoaded", () => {
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
-        document.getElementById("gameOverPopup").style.display = "none";
+        const popup = document.getElementById("gameOverPopup");
+        if (popup) popup.remove();
     }
 
     document.addEventListener('keydown', (event) => {
@@ -1033,20 +1039,22 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCanvasSize();
     draw();
 
-    document.getElementById('playGame').addEventListener('click', () => {
-        if (!account) {
-            alert("Please connect your wallet to play the game!");
-            return;
-        }
-        enterFullscreen();
-        resetGame();
-        if (!gameInterval) {
-            gameInterval = setInterval(move, SNAKE_SPEED);
-        }
-    });
-
-    document.getElementById('continueWithTokens').addEventListener('click', continueWithTokens);
-    document.getElementById('startNewGame').addEventListener('click', resetGame);
+    const playGameButton = document.getElementById('playGame');
+    if (playGameButton) {
+        playGameButton.addEventListener('click', () => {
+            if (!account) {
+                alert("Please connect your wallet to play the game!");
+                return;
+            }
+            enterFullscreen();
+            resetGame();
+            if (!gameInterval) {
+                gameInterval = setInterval(move, SNAKE_SPEED);
+            }
+        });
+    } else {
+        console.error("Element with id 'playGame' not found.");
+    }
 
     function generateReferralLink() {
         if (!account) return alert("Connect your wallet first!");
@@ -1188,40 +1196,67 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    document.getElementById("connectWallet").addEventListener("click", connectWallet);
-    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
-    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
-    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
-    document.getElementById("stakeTokens").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        const amount = document.getElementById("stakeInput").value;
-        if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
-        try {
-            await contract.stakeTokens(amount);
-            alert("Tokens staked successfully!");
-        } catch (error) {
-            console.error("Error staking tokens:", error);
-            alert("Failed to stake tokens: " + error.message);
-        }
-    });
-    document.getElementById("claimStakingReward").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        try {
-            await contract.claimStakingReward();
-            alert("Staking reward claimed successfully!");
-        } catch (error) {
-            console.error("Error claiming staking reward:", error);
-            alert("Failed to claim staking reward: " + error.message);
-        }
-    });
-    document.getElementById("unstakeTokens").addEventListener("click", async () => {
-        if (!contract) return alert("Connect your wallet first!");
-        try {
-            await contract.unstakeTokens();
-            alert("Tokens unstaked successfully!");
-        } catch (error) {
-            console.error("Error unstaking tokens:", error);
-            alert("Failed to unstake tokens: " + error.message);
-        }
-    });
+    const connectWalletButton = document.getElementById("connectWallet");
+    if (connectWalletButton) {
+        connectWalletButton.addEventListener("click", connectWallet);
+    }
+
+    const disconnectWalletButton = document.getElementById("disconnectWallet");
+    if (disconnectWalletButton) {
+        disconnectWalletButton.addEventListener("click", disconnectWallet);
+    }
+
+    const getReferralLinkButton = document.getElementById("getReferralLink");
+    if (getReferralLinkButton) {
+        getReferralLinkButton.addEventListener("click", generateReferralLink);
+    }
+
+    const claimGameRewardsButton = document.getElementById("claimGameRewards");
+    if (claimGameRewardsButton) {
+        claimGameRewardsButton.addEventListener("click", claimPendingRewards);
+    }
+
+    const stakeTokensButton = document.getElementById("stakeTokens");
+    if (stakeTokensButton) {
+        stakeTokensButton.addEventListener("click", async () => {
+            if (!contract) return alert("Connect your wallet first!");
+            const amount = document.getElementById("stakeInput").value;
+            if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
+            try {
+                await contract.stakeTokens(amount);
+                alert("Tokens staked successfully!");
+            } catch (error) {
+                console.error("Error staking tokens:", error);
+                alert("Failed to stake tokens: " + error.message);
+            }
+        });
+    }
+
+    const claimStakingRewardButton = document.getElementById("claimStakingReward");
+    if (claimStakingRewardButton) {
+        claimStakingRewardButton.addEventListener("click", async () => {
+            if (!contract) return alert("Connect your wallet first!");
+            try {
+                await contract.claimStakingReward();
+                alert("Staking reward claimed successfully!");
+            } catch (error) {
+                console.error("Error claiming staking reward:", error);
+                alert("Failed to claim staking reward: " + error.message);
+            }
+        });
+    }
+
+    const unstakeTokensButton = document.getElementById("unstakeTokens");
+    if (unstakeTokensButton) {
+        unstakeTokensButton.addEventListener("click", async () => {
+            if (!contract) return alert("Connect your wallet first!");
+            try {
+                await contract.unstakeTokens();
+                alert("Tokens unstaked successfully!");
+            } catch (error) {
+                console.error("Error unstaking tokens:", error);
+                alert("Failed to unstake tokens: " + error.message);
+            }
+        });
+    }
 });
