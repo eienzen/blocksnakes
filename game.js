@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // कॉन्ट्रैक्ट एड्रेस और ABI
-    const contractAddress = "0x56f775b8dbe2d7efa6ba5f521fcf8a650f46d4cd"; // यहाँ डिप्लॉय किया हुआ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x1c64c7245bfa04816332c71a5220a40c190c4e73"; // यहाँ डिप्लॉय किया हुआ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"anonymous": false,
@@ -221,6 +221,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
 				"name": "totalReward",
 				"type": "uint256"
@@ -257,6 +262,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
 			{
 				"internalType": "uint256",
 				"name": "totalReward",
@@ -296,7 +306,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
 		"name": "incrementGamesPlayed",
 		"outputs": [],
 		"stateMutability": "nonpayable",
@@ -609,25 +625,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			}
 		],
-		"name": "stakedBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
 		"name": "stakes",
 		"outputs": [
 			{
@@ -730,13 +727,13 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         snake.forEach((segment, index) => {
-            // स्नेक की बॉडी के लिए ग्रेडिएंट
             const segmentGradient = ctx.createLinearGradient(segment.x * gridSize, segment.y * gridSize, (segment.x + 1) * gridSize, (segment.y + 1) * gridSize);
             segmentGradient.addColorStop(0, index === 0 ? "#ff00ff" : "#00ffcc");
             segmentGradient.addColorStop(1, index === 0 ? "#ff66cc" : "#66ffcc");
             ctx.fillStyle = segmentGradient;
             ctx.shadowColor = "rgba(255, 0, 255, 0.5)";
-            ctx.shadowBlur = 15; // ग्लो इफेक्ट बढ़ाया
+            ctx.shadowBlur = 15;
+           benz
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 5;
             ctx.beginPath();
@@ -746,23 +743,22 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.stroke();
 
             if (index === 0) {
-                // स्नेक का सिर: आँखें बड़ा करना
                 ctx.fillStyle = "#fff";
                 ctx.shadowColor = "rgba(255, 255, 0, 0.5)";
                 ctx.shadowBlur = 5;
                 ctx.beginPath();
-                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 5, 0, Math.PI * 2); // आँख का रेडियस 5
+                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 5, 0, Math.PI * 2);
                 ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 5, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.fillStyle = "#000";
                 ctx.shadowBlur = 0;
                 ctx.beginPath();
-                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 2, 0, Math.PI * 2); // पुतली का रेडियस 2
+                ctx.arc(segment.x * gridSize + 5, segment.y * gridSize + 5, 2, 0, Math.PI * 2);
                 ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 2, 0, Math.PI * 2);
                 ctx.fill();
 
-                // स्नेक की जीभ ड्रॉ करना
-                ctx.fillStyle = "#ff4040"; // जीभ का रंग लाल
+                // जीभ ड्रॉ करना
+                ctx.fillStyle = "#ff4040";
                 ctx.beginPath();
                 if (direction === 'right') {
                     ctx.moveTo(segment.x * gridSize + gridSize, segment.y * gridSize + gridSize / 2);
@@ -822,31 +818,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            const referrerAmount = ethers.parseUnits("3", 18);
-            const refereeAmount = ethers.parseUnits("5", 18);
+            const referrerAmount = 3; // 3 BST
+            const refereeAmount = 5; // 5 BST
 
-            playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + 5;
-            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 3;
-            playerData.referralRewards = (playerData.referralRewards || 0) + 3;
+            playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeAmount;
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
+            playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
             playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
-            playerData.pendingRewards = (playerData.pendingRewards || 0) + 5;
+            playerData.pendingRewards = (playerData.pendingRewards || 0) + refereeAmount;
 
             playerData.rewardHistory.push({
-                amount: 5,
+                amount: refereeAmount,
                 timestamp: Date.now(),
                 rewardType: "Referral (Welcome - Referee)",
                 referee: "N/A"
             });
 
             playerData.rewardHistory.push({
-                amount: 3,
+                amount: referrerAmount,
                 timestamp: Date.now(),
                 rewardType: "Referral (Welcome - Referrer)",
                 referee: playerData.pendingReferral
             });
 
             try {
-                await contract.setReferral(playerData.pendingReferral, account);
+                // रेफरल सेट करना
+                await contract.referUser(playerData.pendingReferral, account);
+                // रेफरल रिवॉर्ड जोड़ना
                 await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, refereeAmount);
             } catch (error) {
                 console.error("Error adding referral reward:", error);
@@ -859,19 +857,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            const referrerAmount = ethers.parseUnits("2", 18);
+            const referrerAmount = 2; // 2 BST
 
-            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + 2;
-            playerData.referralRewards = (playerData.referralRewards || 0) + 2;
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
+            playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
 
             playerData.rewardHistory.push({
-                amount: 2,
+                amount: referrerAmount,
                 timestamp: Date.now(),
                 rewardType: "Referral (Extra - Referrer)",
                 referee: playerData.pendingReferral
             });
 
             try {
+                // एक्स्ट्रा रेफरल रिवॉर्ड जोड़ना
                 await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, 0);
             } catch (error) {
                 console.error("Error adding extra referral reward:", error);
@@ -890,7 +889,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        // स्नेक की आखिरी स्थिति स्टोर करें
         lastSnakeState = {
             snake: [...snake],
             direction: direction,
@@ -920,7 +918,6 @@ document.addEventListener("DOMContentLoaded", () => {
             gameRewards += 2;
             if (score > 0 && score % 100 === 0) {
                 const reward = 5;
-                const rewardInWei = ethers.parseUnits(reward.toString(), 18);
                 playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
                 playerData.pendingLevels.push({ score, reward });
 
@@ -932,7 +929,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 try {
-                    await contract.addGameReward(account, rewardInWei);
+                    await contract.addRewards(account, reward);
                 } catch (error) {
                     console.error("Error adding game reward:", error);
                 }
@@ -965,16 +962,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet to continue!");
             return;
         }
-
-        const amount = ethers.parseUnits("5", 18); // 5 BST टोकन
         try {
-            const balance = await contract.balanceOf(account);
-            if (balance < amount) {
-                alert("Insufficient BST tokens to continue! You need 5 BST.");
-                return;
-            }
-
-            await contract.payToContinue(amount);
+            await contract.payToContinue();
             playerData.rewardHistory.push({
                 amount: 5,
                 timestamp: Date.now(),
@@ -982,7 +971,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: "N/A"
             });
 
-            // स्नेक को आखिरी स्थिति में रिस्टोर करें
             snake = [...lastSnakeState.snake];
             direction = lastSnakeState.direction;
             score = lastSnakeState.score;
@@ -1075,26 +1063,12 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    async function estimateGas(fn, args) {
-        if (!contract) return;
-        try {
-            const gasEstimate = await fn(...args).estimateGas();
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const gasPrice = await provider.getFeeData();
-            const gasCost = gasEstimate * gasPrice.gasPrice;
-            const gasCostInBNB = ethers.formatEther(gasCost);
-            document.getElementById("gasEstimate").innerText = `Estimated Gas Fee: ${gasCostInBNB} BNB`;
-        } catch (error) {
-            document.getElementById("gasEstimate").innerText = "Gas estimation failed.";
-        }
-    }
-
     async function connectWallet() {
         if (isConnecting) return alert("Wallet connection in progress. Please wait.");
         if (account) return alert("Wallet already connected!");
 
         if (!window.ethereum && !window.web3) {
-            alert("No Web3 wallet detected. Please install MetaMask, Trust Wallet, or another Web3 wallet to continue.");
+            alert("No Web3 wallet detected. Please install MetaMask or another Web3 wallet.");
             return;
         }
 
@@ -1190,38 +1164,35 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract) return alert("Connect your wallet first!");
         if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
 
-        const totalReward = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
+        const totalReward = playerData.pendingRewards;
         const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
         const referee = account;
-        const referrerReward = ethers.parseUnits(playerData.pendingReferrerReward.toString(), 18);
-        const refereeReward = ethers.parseUnits(playerData.pendingRefereeReward.toString(), 18);
+        const referrerReward = playerData.pendingReferrerReward;
+        const refereeReward = playerData.pendingRefereeReward;
 
-        await estimateGas(contract.claimAllRewards, [
-            totalReward,
-            referrer,
-            referee,
-            referrerReward,
-            refereeReward
-        ]);
-
-        queueTransaction(contract.claimAllRewards, [
-            totalReward,
-            referrer,
-            referee,
-            referrerReward,
-            refereeReward
-        ]);
-
-        playerData.rewards = (playerData.rewards || 0) + playerData.pendingRewards;
-        playerData.totalRewards = (playerData.totalRewards || 0) + playerData.pendingRewards;
-        playerData.pendingRewards = 0;
-        playerData.pendingLevels = [];
-        playerData.pendingReferral = null;
-        playerData.pendingReferrerReward = 0;
-        playerData.pendingRefereeReward = 0;
-        updatePlayerHistoryUI();
-        updateRewardHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
+        try {
+            await contract.claimAllRewards(
+                account,
+                totalReward,
+                referrer,
+                referee,
+                referrerReward,
+                refereeReward
+            );
+            playerData.rewards = (playerData.rewards || 0) + playerData.pendingRewards;
+            playerData.totalRewards = (playerData.totalRewards || 0) + playerData.pendingRewards;
+            playerData.pendingRewards = 0;
+            playerData.pendingLevels = [];
+            playerData.pendingReferral = null;
+            playerData.pendingReferrerReward = 0;
+            playerData.pendingRefereeReward = 0;
+            updatePlayerHistoryUI();
+            updateRewardHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+        } catch (error) {
+            console.error("Error claiming rewards:", error);
+            alert("Failed to claim rewards: " + error.message);
+        }
     }
 
     document.getElementById("connectWallet").addEventListener("click", connectWallet);
@@ -1232,36 +1203,32 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract) return alert("Connect your wallet first!");
         const amount = document.getElementById("stakeInput").value;
         if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
-        const amountInWei = ethers.parseUnits(amount.toString(), 18);
-        await estimateGas(contract.stakeTokens, [amountInWei]);
-        queueTransaction(contract.stakeTokens, [amountInWei]);
+        try {
+            await contract.stakeTokens(amount);
+            alert("Tokens staked successfully!");
+        } catch (error) {
+            console.error("Error staking tokens:", error);
+            alert("Failed to stake tokens: " + error.message);
+        }
     });
     document.getElementById("claimStakingReward").addEventListener("click", async () => {
         if (!contract) return alert("Connect your wallet first!");
-        await estimateGas(contract.claimStakingReward, []);
-        queueTransaction(contract.claimStakingReward, []);
+        try {
+            await contract.claimStakingReward();
+            alert("Staking reward claimed successfully!");
+        } catch (error) {
+            console.error("Error claiming staking reward:", error);
+            alert("Failed to claim staking reward: " + error.message);
+        }
     });
     document.getElementById("unstakeTokens").addEventListener("click", async () => {
         if (!contract) return alert("Connect your wallet first!");
-        await estimateGas(contract.unstakeTokens, []);
-        queueTransaction(contract.unstakeTokens, []);
-    });
-
-    async function queueTransaction(fn, args) {
-        transactionQueue.push({ fn, args });
-        if (!isProcessingTransaction) {
-            isProcessingTransaction = true;
-            while (transactionQueue.length > 0) {
-                const { fn, args } = transactionQueue.shift();
-                try {
-                    const tx = await fn(...args);
-                    await tx.wait();
-                    alert("Transaction successful!");
-                } catch (error) {
-                    alert("Transaction failed: " + error.message);
-                }
-            }
-            isProcessingTransaction = false;
+        try {
+            await contract.unstakeTokens();
+            alert("Tokens unstaked successfully!");
+        } catch (error) {
+            console.error("Error unstaking tokens:", error);
+            alert("Failed to unstake tokens: " + error.message);
         }
-    }
+    });
 });
