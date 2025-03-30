@@ -32,32 +32,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // कॉन्ट्रैक्ट एड्रेस और ABI
-    const contractAddress = "0xbea3ee62d52aa040c6747d603ff5a50b9269d9b3"; // यहाँ अपना कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xf376b2a456a0a8da1a558dc32b327bafcdc64c6c"; // यहाँ अपना कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
-		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
 				"internalType": "address",
 				"name": "owner",
 				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
 			}
 		],
-		"name": "Approval",
-		"type": "event"
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
 	},
 	{
 		"anonymous": false,
@@ -65,17 +62,17 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
+				"name": "previousOwner",
 				"type": "address"
 			},
 			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
 			}
 		],
-		"name": "GameContinued",
+		"name": "OwnershipTransferred",
 		"type": "event"
 	},
 	{
@@ -92,12 +89,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "referee",
 				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "reward",
-				"type": "uint256"
 			}
 		],
 		"name": "ReferralAdded",
@@ -109,32 +100,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			}
-		],
-		"name": "RewardClaimed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -145,12 +111,18 @@ document.addEventListener("DOMContentLoaded", () => {
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "referrerReward",
+				"type": "uint256"
 			}
 		],
-		"name": "RewardsAdded",
+		"name": "RewardsClaimed",
 		"type": "event"
 	},
 	{
@@ -159,7 +131,26 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "StakeRewardUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -178,23 +169,23 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
 				"name": "to",
 				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "value",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "ownerShare",
 				"type": "uint256"
 			}
 		],
-		"name": "Transfer",
+		"name": "TokensMinted",
 		"type": "event"
 	},
 	{
@@ -203,7 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -213,56 +204,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "Unstaked",
+		"name": "WelcomeBonusClaimed",
 		"type": "event"
 	},
 	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			}
-		],
-		"name": "addRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -276,18 +225,8 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			},
 			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			},
-			{
 				"internalType": "uint256",
 				"name": "referrerReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "refereeReward",
 				"type": "uint256"
 			}
 		],
@@ -298,27 +237,14 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "claimStakingReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "incrementGamesPlayed",
+		"name": "claimWelcomeBonus",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
-		"name": "payToContinue",
+		"name": "renounceOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -331,7 +257,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "stakeTokens",
+		"name": "stake",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -340,23 +266,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "to",
+				"name": "newOwner",
 				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
 			}
 		],
-		"name": "transfer",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
+		"name": "transferOwnership",
+		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -364,113 +279,47 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "from",
+				"name": "player",
 				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
+			}
+		],
+		"name": "updateStakeReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
 			{
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
 			}
 		],
-		"name": "transferFrom",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unstakeTokens",
+		"name": "withdrawTokens",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
-		"inputs": [],
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_bstToken",
+				"type": "address"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "calculateStakingReward",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
-		"name": "decimals",
+		"name": "bstToken",
 		"outputs": [
 			{
-				"internalType": "uint8",
+				"internalType": "contract BSTToken",
 				"name": "",
-				"type": "uint8"
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -480,7 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "user",
+				"name": "player",
 				"type": "address"
 			}
 		],
@@ -509,7 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						"type": "address"
 					}
 				],
-				"internalType": "struct BlockSnakesToken.RewardEntry[]",
+				"internalType": "struct BlockSnakesGame.Reward[]",
 				"name": "",
 				"type": "tuple[]"
 			}
@@ -518,32 +367,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "hasBeenReferred",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
-		"name": "name",
+		"name": "MINIMUM_WITHDRAWAL",
 		"outputs": [
 			{
-				"internalType": "string",
+				"internalType": "uint256",
 				"name": "",
-				"type": "string"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -557,6 +387,19 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "",
 				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "OWNER_SHARE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -591,6 +434,39 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "referralRewards",
 				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakeTimestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "pendingStakeRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "hasClaimedWelcomeBonus",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REFERRAL_COMMISSION_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -604,7 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			}
 		],
-		"name": "referredBy",
+		"name": "referrals",
 		"outputs": [
 			{
 				"internalType": "address",
@@ -621,9 +497,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "",
 				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
-		"name": "stakes",
+		"name": "rewardHistory",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -632,12 +513,30 @@ document.addEventListener("DOMContentLoaded", () => {
 			},
 			{
 				"internalType": "uint256",
-				"name": "startTime",
+				"name": "timestamp",
 				"type": "uint256"
 			},
 			{
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "SECONDS_IN_MONTH",
+		"outputs": [
+			{
 				"internalType": "uint256",
-				"name": "lastClaimTime",
+				"name": "",
 				"type": "uint256"
 			}
 		],
@@ -646,12 +545,12 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "symbol",
+		"name": "STAKE_REWARD_RATE",
 		"outputs": [
 			{
-				"internalType": "string",
+				"internalType": "uint256",
 				"name": "",
-				"type": "string"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -659,7 +558,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "totalSupply",
+		"name": "WELCOME_BONUS",
 		"outputs": [
 			{
 				"internalType": "uint256",
