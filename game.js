@@ -7,525 +7,76 @@ document.addEventListener("DOMContentLoaded", () => {
     let playerAddress;
 
     // Contract address and ABI
-    const contractAddress = "0x9Bec45dD0959E1912Dc72a548745308C77dCe4a2"; // यहाँ गेम कॉन्ट्रैक्ट का पता डालें (BlockSnakesGame का पता)
+    const contractAddress = "0x9Bec45dD0959E1912Dc72a548745308C77dCe4a2"; // यहाँ BlockSnakesGame का पता डालें
     const contractABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			}
-		],
-		"name": "claimAllRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "claimWelcomeBonus",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_bstToken",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			}
-		],
-		"name": "RewardsClaimed",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "stake",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "StakeRewardUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Staked",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "ownerShare",
-				"type": "uint256"
-			}
-		],
-		"name": "TokensMinted",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "updateStakeReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "WelcomeBonusClaimed",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "bstToken",
-		"outputs": [
-			{
-				"internalType": "contract BlockSnakesToken",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "getRewardHistory",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "rewardType",
-						"type": "string"
-					},
-					{
-						"internalType": "address",
-						"name": "referee",
-						"type": "address"
-					}
-				],
-				"internalType": "struct BlockSnakesGame.Reward[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "MINIMUM_WITHDRAWAL",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "OWNER_SHARE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "playerHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "gamesPlayed",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReferrals",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referralRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakedAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakeTimestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "pendingStakeRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "hasClaimedWelcomeBonus",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "referrals",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "rewardHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "SECONDS_IN_MONTH",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "STAKE_REWARD_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "WELCOME_BONUS",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+        {
+            "inputs": [],
+            "name": "claimWelcomeBonus",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {"name": "player", "type": "address"},
+                {"name": "totalReward", "type": "uint256"},
+                {"name": "referrer", "type": "address"},
+                {"name": "referrerReward", "type": "uint256"}
+            ],
+            "name": "claimAllRewards",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "player", "type": "address"}],
+            "name": "getRewardHistory",
+            "outputs": [
+                {
+                    "components": [
+                        {"name": "amount", "type": "uint256"},
+                        {"name": "timestamp", "type": "uint256"},
+                        {"name": "rewardType", "type": "string"},
+                        {"name": "refestablishmentee", "type": "address"}
+                    ],
+                    "name": "",
+                    "type": "tuple[]"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "", "type": "address"}],
+            "name": "playerHistory",
+            "outputs": [
+                {"name": "gamesPlayed", "type": "uint256"},
+                {"name": "totalRewards", "type": "uint256"},
+                {"name": "totalReferrals", "type": "uint256"},
+                {"name": "referralRewards", "type": "uint256"},
+                {"name": "stakedAmount", "type": "uint256"},
+                {"name": "stakeTimestamp", "type": "uint256"},
+                {"name": "pendingStakeRewards", "type": "uint256"},
+                {"name": "hasClaimedWelcomeBonus", "type": "bool"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "amount", "type": "uint256"}],
+            "name": "stake",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "player", "type": "address"}],
+            "name": "updateStakeReward",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ];
 
     // Game variables
     const canvas = document.getElementById("gameCanvas");
@@ -574,8 +125,33 @@ document.addEventListener("DOMContentLoaded", () => {
             // Check if connected to BSC Testnet (Chain ID: 97)
             const network = await provider.getNetwork();
             if (network.chainId !== 97) {
-                alert("Please switch to BSC Testnet in MetaMask!");
-                return;
+                try {
+                    await window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: "0x61" }], // 0x61 is Chain ID 97 in hex
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: "wallet_addEthereumChain",
+                            params: [
+                                {
+                                    chainId: "0x61",
+                                    chainName: "BSC Testnet",
+                                    rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
+                                    nativeCurrency: {
+                                        name: "Binance Coin",
+                                        symbol: "BNB",
+                                        decimals: 18,
+                                    },
+                                    blockExplorerUrls: ["https://testnet.bscscan.com"],
+                                },
+                            ],
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
             }
 
             connectWalletButton.style.display = "none";
@@ -774,7 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // Game logic
+    // Game Wlogic
     document.getElementById("playGame").addEventListener("click", () => {
         if (!playerAddress) {
             alert("Please connect your wallet first!");
@@ -802,7 +378,7 @@ document.addEventListener("DOMContentLoaded", () => {
         box.y = Math.floor(Math.random() * 40) * 10;
     }
 
-    function move() {
+    async function move() {
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
         snake.unshift(head);
 
@@ -840,7 +416,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         referee: referrer
                     });
                 }
-                updateRewardHistory();
+                await updateRewardHistory();
             }
             spawnBox();
         } else {
@@ -871,7 +447,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "red";
         ctx.fillRect(box.x, box.y, 10, 10);
         ctx.fillStyle = "green";
-        snake.forEach(segment => ctx.fill penasrect(segment.x, segment.y, 10, 10));
+        snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 10, 10));
     }
 
     // Keyboard controls
