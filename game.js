@@ -8,7 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0,
         totalRewards: 0,
         score: 0,
-        points: 0, // नया: पॉइंट्स ट्रैक करने के लिए
+        points: 0,
         rewards: 0,
         pendingRewards: 0,
         pendingLevels: [],
@@ -22,7 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
         rewardHistory: [],
         stakedAmount: 0,
         stakeTimestamp: 0,
-        pendingStakeRewards: 0
+        pendingStakeRewards: 0,
+        hasClaimedWelcomeBonus: false
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
     playerData.rewardHistory = playerData.rewardHistory || [];
@@ -34,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    const contractAddress = "0xc95ec79230a752f402fb42ed558206a3f5dfd8a6";
+    const contractAddress = "0x4f7100923fbaa295e6d0e68fab676e0ed20a2653";
     const contractABI = [
 	{
 		"inputs": [
@@ -172,6 +173,25 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "event"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "WelcomeBonusClaimed",
+		"type": "event"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -205,6 +225,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"name": "claimAllRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "claimWelcomeBonus",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -403,6 +430,11 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "pendingStakeRewards",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "hasClaimedWelcomeBonus",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
@@ -410,7 +442,20 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
+		"name": "REFERRAL_REFEREE_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REFERRAL_REFERRER_RATE",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -495,6 +540,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [],
 		"name": "STAKE_REWARD_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "WELCOME_BONUS",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -621,45 +679,38 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.strokeRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
         document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('points').textContent = `Points: ${playerData.points}`; // पॉइंट्स दिखाएं
+        document.getElementById('points').textContent = `Points: ${playerData.points}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
-    let hasReceivedWelcomeReward = false;
-    let hasReceivedExtraReferralReward = false;
+    let hasReceivedReferralReward = false;
 
     function checkReferralRewards() {
-        if (!account) return;
+        if (!account || !playerData.pendingReferral || hasReceivedReferralReward) return;
 
-        if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
-            hasReceivedWelcomeReward = true;
-            const refereeAmount = 5;
-            playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeAmount;
-            playerData.pendingRewards = (playerData.pendingRewards || 0) + refereeAmount;
+        if (playerData.points >= 100) {
+            hasReceivedReferralReward = true;
+
+            const refereeReward = playerData.stakedAmount * 0.05; // रेफरी को 5% स्टेक का
+            const referrerReward = playerData.stakedAmount * 0.02; // रेफरर को 2% रेफरी के स्टेक का
+
+            playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeReward;
+            playerData.pendingRewards = (playerData.pendingRewards || 0) + refereeReward;
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerReward;
+            playerData.referralRewards = (playerData.referralRewards || 0) + referrerReward;
             playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
 
             playerData.rewardHistory.push({
-                amount: refereeAmount,
+                amount: refereeReward,
                 timestamp: Date.now(),
-                rewardType: "Referral (Welcome - Referee)",
+                rewardType: "Referral (Referee)",
                 referee: "N/A"
             });
 
-            updatePlayerHistoryUI();
-            updateRewardHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-        }
-
-        if (playerData.rewards >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
-            hasReceivedExtraReferralReward = true;
-            const referrerAmount = playerData.rewards * 0.01;
-            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
-            playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
-
             playerData.rewardHistory.push({
-                amount: referrerAmount,
+                amount: referrerReward,
                 timestamp: Date.now(),
-                rewardType: "Referral (Extra - Referrer)",
+                rewardType: "Referral (Referrer)",
                 referee: playerData.pendingReferral
             });
 
@@ -695,7 +746,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    setInterval(updateStakeRewardLocally, 60 * 1000); // हर मिनट स्टेक रिवॉर्ड अपडेट
+    setInterval(updateStakeRewardLocally, 60 * 1000);
 
     async function move() {
         let head = { x: snake[0].x, y: snake[0].y };
@@ -708,7 +759,7 @@ document.addEventListener("DOMContentLoaded", () => {
             snake: [...snake],
             direction: direction,
             score: score,
-            points: playerData.points, // पॉइंट्स भी स्टोर करें
+            points: playerData.points,
             gameRewards: gameRewards
         };
 
@@ -722,11 +773,11 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             score += 10;
-            playerData.points += 10; // बॉक्स खाने पर 10 पॉइंट्स
+            playerData.points += 10;
             if (playerData.points >= 100) {
                 const reward = 5;
                 playerData.pendingRewards += reward;
-                playerData.points -= 100; // 100 पॉइंट्स कट करें
+                playerData.points -= 100;
                 gameRewards += reward;
 
                 playerData.rewardHistory.push({
@@ -742,15 +793,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 setTimeout(() => {
                     levelMessage.style.display = "none";
                 }, 3000);
+
+                checkReferralRewards(); // रेफरल रिवॉर्ड चेक करें
             }
-            checkReferralRewards();
             generateBox();
         } else {
             snake.pop();
         }
         draw();
         updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData)); // तुरंत हिस्ट्री अपडेट
+        localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
     function showGameOverPopup() {
@@ -787,9 +839,8 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
         score = 0;
         gameRewards = 0;
-        playerData.points = 0; // गेम रीसेट पर पॉइंट्स भी रीसेट
-        hasReceivedWelcomeReward = false;
-        hasReceivedExtraReferralReward = false;
+        playerData.points = 0;
+        hasReceivedReferralReward = false;
         snake = [{ x: 10, y: 10 }];
         box = { x: 15, y: 15 };
         direction = 'right';
@@ -905,6 +956,31 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function claimWelcomeBonus() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
+
+        try {
+            const tx = await contract.claimWelcomeBonus();
+            await tx.wait();
+            playerData.hasClaimedWelcomeBonus = true;
+            playerData.totalRewards += 100;
+            playerData.rewardHistory.push({
+                amount: 100,
+                timestamp: Date.now(),
+                rewardType: "Welcome Bonus",
+                referee: "N/A"
+            });
+            updatePlayerHistoryUI();
+            updateRewardHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            alert("Welcome bonus of 100 BST claimed successfully!");
+        } catch (error) {
+            console.error("Error claiming welcome bonus:", error);
+            alert("Failed to claim welcome bonus: " + error.message);
+        }
+    }
+
     async function connectWallet() {
         if (isConnecting) {
             alert("Wallet connection in progress. Please wait.");
@@ -981,6 +1057,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
             playerData.stakeTimestamp = Number(history.stakeTimestamp);
             playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
+            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
 
             const rewardHistory = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewardHistory.map(entry => ({
@@ -1091,4 +1168,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const amount = prompt("Enter amount to stake (BST):");
         if (amount) stakeTokens(parseFloat(amount));
     });
+
+    const welcomeBonusButton = document.getElementById("welcomeBonusButton");
+    if (welcomeBonusButton) welcomeBonusButton.addEventListener("click", claimWelcomeBonus);
 });
