@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let playerAddress;
 
     // यहाँ BlockSnakesGame का पता डालें
-    const contractAddress = "0x3f4da0ae45b6cac314bcc4a634280c84984272b9"; // Remix से कॉपी किया गया BlockSnakesGame का पता डालें
+    const contractAddress = "0x3f4da0ae45b6cac314bcc4a634280c84984272b9; // Remix से कॉपी किया गया BlockSnakesGame का पता डालें
     
     // यहाँ नया contractABI पेस्ट करें (Remix से कॉपी करें)
     const contractABI = [
@@ -529,20 +529,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // MetaMask कनेक्शन
     async function connectWallet() {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                provider = new ethers.providers.Web3Provider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = provider.getSigner();
-                playerAddress = await signer.getAddress();
-                contract = new ethers.Contract(contractAddress, contractABI, signer);
-                document.getElementById("wallet-address").innerText = `Connected: ${playerAddress}`;
-            } catch (error) {
-                console.error("Failed to connect wallet:", error);
-                alert("Failed to connect wallet. Please ensure MetaMask is installed and try again.");
-            }
-        } else {
+        if (typeof window.ethereum === 'undefined') {
             alert("MetaMask is not installed. Please install MetaMask to play the game.");
+            return;
+        }
+        if (typeof ethers === 'undefined') {
+            alert("Ethers.js library failed to load. Please check your internet connection or refresh the page.");
+            return;
+        }
+        try {
+            provider = new ethers.providers.Web3Provider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = provider.getSigner();
+            playerAddress = await signer.getAddress();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+            document.getElementById("wallet-address").innerText = `Connected: ${playerAddress}`;
+            // प्लेयर हिस्ट्री अपडेट करें
+            updatePlayerHistory("Connected Wallet", `Address: ${playerAddress}`);
+        } catch (error) {
+            console.error("Failed to connect wallet:", error);
+            alert("Failed to connect wallet. Please ensure MetaMask is installed and try again.");
         }
     }
 
@@ -556,20 +562,113 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.claimWelcomeBonus();
             await tx.wait();
             alert("Welcome Bonus claimed successfully!");
+            updatePlayerHistory("Claimed Welcome Bonus", "100 BST");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
             alert("Failed to claim welcome bonus. See console for details.");
         }
     }
 
+    // BST स्टेक करना
+    async function stakeBST() {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
+        const amount = prompt("Enter amount to stake (in BST):");
+        if (!amount || isNaN(amount) || amount <= 0) {
+            alert("Please enter a valid amount!");
+            return;
+        }
+        try {
+            const amountWei = ethers.utils.parseUnits(amount, 18);
+            const tx = await contract.stake(amountWei);
+            await tx.wait();
+            alert(`Successfully staked ${amount} BST!`);
+            updatePlayerHistory("Staked BST", `${amount} BST`);
+        } catch (error) {
+            console.error("Error staking:", error);
+            alert("Failed to stake. See console for details.");
+        }
+    }
+
+    // स्टेकिंग रिवॉर्ड क्लेम करना
+    async function claimStakingReward() {
+        if (!contract) {
+            alert("Please connect your wallet first!");
+            return;
+        }
+        try {
+            const tx = await contract.updateStakeReward(playerAddress);
+            await tx.wait();
+            const playerData = await contract.playerHistory(playerAddress);
+            const pendingStakeRewards = ethers.utils.formatUnits(playerData.pendingStakeRewards, 18);
+            if (pendingStakeRewards > 0) {
+                const claimTx = await contract.claimAllRewards(playerAddress, ethers.utils.parseUnits(pendingStakeRewards, 18), "0x0000000000000000000000000000000000000000", 0);
+                await claimTx.wait();
+                alert(`Successfully claimed ${pendingStakeRewards} BST staking reward!`);
+                updatePlayerHistory("Claimed Staking Reward", `${pendingStakeRewards} BST`);
+            } else {
+                alert("No staking rewards to claim!");
+            }
+        } catch (error) {
+            console.error("Error claiming staking reward:", error);
+            alert("Failed to claim staking reward. See console for details.");
+        }
+    }
+
+    // How to Play दिखाना
+    function showHowToPlay() {
+        alert("How to Play:\n1. Connect your MetaMask wallet.\n2. Claim your welcome bonus.\n3. Use arrow keys to move the snake and eat food.\n4. Stake BST to earn rewards.\n5. Claim your staking rewards.");
+        updatePlayerHistory("Viewed How to Play", "Instructions displayed");
+    }
+
+    // Run BST Paper (डमी फंक्शन, आप इसे अपने हिसाब से अपडेट कर सकते हैं)
+    function runBSTPaper() {
+        alert("Running BST Paper... (This is a placeholder function)");
+        updatePlayerHistory("Ran BST Paper", "Placeholder action");
+    }
+
+    // प्लेयर हिस्ट्री दिखाना
+    function showPlayerHistory() {
+        const historyDiv = document.getElementById("playerHistory");
+        historyDiv.style.display = historyDiv.style.display === "none" ? "block" : "none";
+    }
+
+    // ऑफलाइन प्लेयर हिस्ट्री मैनेज करना
+    function updatePlayerHistory(action, details) {
+        const history = JSON.parse(localStorage.getItem("playerHistory")) || [];
+        const entry = {
+            action: action,
+            details: details,
+            timestamp: new Date().toLocaleString()
+        };
+        history.push(entry);
+        localStorage.setItem("playerHistory", JSON.stringify(history));
+        displayPlayerHistory();
+    }
+
+    function displayPlayerHistory() {
+        const historyList = document.getElementById("playerHistoryList");
+        const history = JSON.parse(localStorage.getItem("playerHistory")) || [];
+        historyList.innerHTML = "";
+        history.forEach(entry => {
+            const li = document.createElement("li");
+            li.textContent = `${entry.action} - ${entry.details} at ${entry.timestamp}`;
+            historyList.appendChild(li);
+        });
+    }
+
     // स्नेक गेम लॉजिक
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
 
-    const snake = [{ x: 10, y: 10 }];
     const gridSize = 20;
+    let snake = [{ x: 10, y: 10 }];
+    let food = { x: 15, y: 15 };
     let dx = 1;
     let dy = 0;
+    let score = 0;
 
     function drawGrid() {
         ctx.strokeStyle = "#ddd";
@@ -596,15 +695,61 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function drawFood() {
+        ctx.fillStyle = "red";
+        ctx.strokeStyle = "darkred";
+        ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+        ctx.strokeRect(food.x * gridSize, food.y * gridSize, gridSize - 2, gridSize - 2);
+    }
+
+    function spawnFood() {
+        food.x = Math.floor(Math.random() * (canvas.width / gridSize));
+        food.y = Math.floor(Math.random() * (canvas.height / gridSize));
+    }
+
     function updateSnake() {
         const head = { x: snake[0].x + dx, y: snake[0].y + dy };
         snake.unshift(head);
-        snake.pop();
+
+        // खाना खाने की जाँच
+        if (head.x === food.x && head.y === food.y) {
+            score += 10;
+            spawnFood();
+            updatePlayerHistory("Ate Food", `Score: ${score}`);
+        } else {
+            snake.pop();
+        }
+
+        // दीवार से टकराने की जाँच
+        if (head.x < 0 || head.x >= canvas.width / gridSize || head.y < 0 || head.y >= canvas.height / gridSize) {
+            alert(`Game Over! Score: ${score}`);
+            updatePlayerHistory("Game Over", `Score: ${score}`);
+            snake = [{ x: 10, y: 10 }];
+            dx = 1;
+            dy = 0;
+            score = 0;
+            spawnFood();
+        }
+
+        // खुद से टकराने की जाँच
+        for (let i = 1; i < snake.length; i++) {
+            if (head.x === snake[i].x && head.y === snake[i].y) {
+                alert(`Game Over! Score: ${score}`);
+                updatePlayerHistory("Game Over", `Score: ${score}`);
+                snake = [{ x: 10, y: 10 }];
+                dx = 1;
+                dy = 0;
+                score = 0;
+                spawnFood();
+                break;
+            }
+        }
     }
 
     function gameLoop() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         drawGrid();
+        drawFood();
         updateSnake();
         drawSnake();
         setTimeout(gameLoop, 100);
@@ -628,9 +773,17 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // गेम शुरू करना
+    spawnFood();
     gameLoop();
+    displayPlayerHistory();
 
     // ग्लोबल फंक्शंस को एक्सपोज़ करें
     window.connectWallet = connectWallet;
     window.claimWelcomeBonus = claimWelcomeBonus;
+    window.stakeBST = stakeBST;
+    window.claimStakingReward = claimStakingReward;
+    window.showHowToPlay = showHowToPlay;
+    window.runBSTPaper = runBSTPaper;
+    window.showPlayerHistory = showPlayerHistory;
 });
