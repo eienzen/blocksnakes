@@ -1,90 +1,536 @@
-// Wait for the DOM to load before running the script
 document.addEventListener("DOMContentLoaded", () => {
-    // Web3 provider setup
     let provider;
     let signer;
     let contract;
     let playerAddress;
 
-    // Contract address and ABI
-    const contractAddress = "0x9Bec45dD0959E1912Dc72a548745308C77dCe4a2"; // यहाँ BlockSnakesGame का पता डालें
+    const contractAddress = "0x3f4da0ae45b6cac314bcc4a634280c84984272b9"; // यहाँ BlockSnakesGame का पता डालें
+    // यहाँ नया contractABI पेस्ट करें (Remix से कॉपी करें, जैसा ऊपर बताया गया है)
     const contractABI = [
-        {
-            "inputs": [],
-            "name": "claimWelcomeBonus",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"name": "player", "type": "address"},
-                {"name": "totalReward", "type": "uint256"},
-                {"name": "referrer", "type": "address"},
-                {"name": "referrerReward", "type": "uint256"}
-            ],
-            "name": "claimAllRewards",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [{"name": "player", "type": "address"}],
-            "name": "getRewardHistory",
-            "outputs": [
-                {
-                    "components": [
-                        {"name": "amount", "type": "uint256"},
-                        {"name": "timestamp", "type": "uint256"},
-                        {"name": "rewardType", "type": "string"},
-                        {"name": "refestablishmentee", "type": "address"}
-                    ],
-                    "name": "",
-                    "type": "tuple[]"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [{"name": "", "type": "address"}],
-            "name": "playerHistory",
-            "outputs": [
-                {"name": "gamesPlayed", "type": "uint256"},
-                {"name": "totalRewards", "type": "uint256"},
-                {"name": "totalReferrals", "type": "uint256"},
-                {"name": "referralRewards", "type": "uint256"},
-                {"name": "stakedAmount", "type": "uint256"},
-                {"name": "stakeTimestamp", "type": "uint256"},
-                {"name": "pendingStakeRewards", "type": "uint256"},
-                {"name": "hasClaimedWelcomeBonus", "type": "bool"}
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [{"name": "amount", "type": "uint256"}],
-            "name": "stake",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [{"name": "player", "type": "address"}],
-            "name": "updateStakeReward",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
-    ];
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "referrerReward",
+				"type": "uint256"
+			}
+		],
+		"name": "RewardsClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "StakeRewardUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Staked",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "ownerShare",
+				"type": "uint256"
+			}
+		],
+		"name": "TokensMinted",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "WelcomeBonusClaimed",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "referrerReward",
+				"type": "uint256"
+			}
+		],
+		"name": "claimAllRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "claimWelcomeBonus",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stake",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			}
+		],
+		"name": "updateStakeReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_bstToken",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [],
+		"name": "bstToken",
+		"outputs": [
+			{
+				"internalType": "contract BlockSnakesToken",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			}
+		],
+		"name": "getRewardHistory",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "rewardType",
+						"type": "string"
+					},
+					{
+						"internalType": "address",
+						"name": "referee",
+						"type": "address"
+					}
+				],
+				"internalType": "struct BlockSnakesGame.Reward[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MINIMUM_WITHDRAWAL",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "OWNER_SHARE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "playerHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "gamesPlayed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReferrals",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "referralRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakeTimestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "pendingStakeRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "hasClaimedWelcomeBonus",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REFERRAL_COMMISSION_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "referrals",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "rewardHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "SECONDS_IN_MONTH",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "STAKE_REWARD_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "WELCOME_BONUS",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
 
-    // Game variables
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     canvas.width = 400;
     canvas.height = 400;
 
-    let snake = [{ x: 200, y: 200 }];
+    let snake = [{ x: 200, y: 200 }]; // स्नेक की शुरुआती पोजीशन
     let box = { x: 0, y: 0 };
     let score = 0;
     let points = 0;
@@ -93,7 +539,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let dy = 0;
     let gameLoop;
 
-    // Player data
     let playerData = {
         points: 0,
         pendingRewards: 0,
@@ -107,250 +552,8 @@ document.addEventListener("DOMContentLoaded", () => {
         rewardHistory: []
     };
 
-    // Connect wallet
-    const connectWalletButton = document.getElementById("connectWallet");
-    connectWalletButton.addEventListener("click", async () => {
-        if (typeof window.ethereum === "undefined") {
-            alert("Please install MetaMask!");
-            return;
-        }
+    // बाकी कोड (connectWallet, disconnectWallet, आदि) वही रहेगा
 
-        try {
-            provider = new ethers.providers.Web3Provider(window.ethereum);
-            await provider.send("eth_requestAccounts", []);
-            signer = provider.getSigner();
-            playerAddress = await signer.getAddress();
-            contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-            // Check if connected to BSC Testnet (Chain ID: 97)
-            const network = await provider.getNetwork();
-            if (network.chainId !== 97) {
-                try {
-                    await window.ethereum.request({
-                        method: "wallet_switchEthereumChain",
-                        params: [{ chainId: "0x61" }], // 0x61 is Chain ID 97 in hex
-                    });
-                } catch (switchError) {
-                    if (switchError.code === 4902) {
-                        await window.ethereum.request({
-                            method: "wallet_addEthereumChain",
-                            params: [
-                                {
-                                    chainId: "0x61",
-                                    chainName: "BSC Testnet",
-                                    rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
-                                    nativeCurrency: {
-                                        name: "Binance Coin",
-                                        symbol: "BNB",
-                                        decimals: 18,
-                                    },
-                                    blockExplorerUrls: ["https://testnet.bscscan.com"],
-                                },
-                            ],
-                        });
-                    } else {
-                        throw switchError;
-                    }
-                }
-            }
-
-            connectWalletButton.style.display = "none";
-            document.getElementById("disconnectWallet").style.display = "block";
-
-            // Load player data
-            await loadPlayerData();
-            await updateRewardHistory();
-        } catch (error) {
-            console.error("Error connecting wallet:", error);
-            alert("Error connecting to MetaMask: " + error.message);
-        }
-    });
-
-    // Disconnect wallet
-    document.getElementById("disconnectWallet").addEventListener("click", () => {
-        provider = null;
-        signer = null;
-        contract = null;
-        playerAddress = null;
-
-        document.getElementById("connectWallet").style.display = "block";
-        document.getElementById("disconnectWallet").style.display = "none";
-
-        // Reset UI
-        resetUI();
-    });
-
-    // Claim Welcome Bonus
-    document.getElementById("welcomeBonusButton").addEventListener("click", async () => {
-        if (!contract || !playerAddress) {
-            alert("Please connect your wallet first!");
-            return;
-        }
-
-        try {
-            const tx = await contract.claimWelcomeBonus();
-            await tx.wait();
-            alert("Welcome Bonus claimed successfully! You received 100 BST.");
-            await loadPlayerData();
-            await updateRewardHistory();
-        } catch (error) {
-            console.error("Error claiming welcome bonus:", error);
-            alert("Error claiming welcome bonus: " + error.message);
-        }
-    });
-
-    // Stake BST
-    document.getElementById("stakeButton").addEventListener("click", async () => {
-        if (!contract || !playerAddress) {
-            alert("Please connect your wallet first!");
-            return;
-        }
-
-        const amount = prompt("Enter amount to stake (in BST):");
-        if (!amount || isNaN(amount) || amount <= 0) {
-            alert("Please enter a valid amount!");
-            return;
-        }
-
-        try {
-            const amountWei = ethers.utils.parseUnits(amount, 18);
-            const tx = await contract.stake(amountWei);
-            await tx.wait();
-            alert(`Successfully staked ${amount} BST!`);
-            await loadPlayerData();
-        } catch (error) {
-            console.error("Error staking:", error);
-            alert("Error staking: " + error.message);
-        }
-    });
-
-    // Claim Rewards
-    document.getElementById("claimGameRewards").addEventListener("click", async () => {
-        if (!contract || !playerAddress) {
-            alert("Please connect your wallet first!");
-            return;
-        }
-
-        try {
-            const referrer = new URLSearchParams(window.location.search).get("referrer") || "0x0000000000000000000000000000000000000000";
-            const totalReward = ethers.utils.parseUnits((playerData.pendingRewards + playerData.pendingStakeRewards).toString(), 18);
-            const referrerReward = ethers.utils.parseUnits(playerData.pendingReferrerReward.toString(), 18);
-
-            if (playerData.pendingRewards + playerData.pendingStakeRewards < 10) {
-                alert("You need at least 10 BST to claim rewards!");
-                return;
-            }
-
-            const tx = await contract.claimAllRewards(playerAddress, totalReward, referrer, referrerReward);
-            await tx.wait();
-            alert("Rewards claimed successfully!");
-            playerData.pendingRewards = 0;
-            playerData.pendingReferrerReward = 0;
-            playerData.pendingStakeRewards = 0;
-            await loadPlayerData();
-            await updateRewardHistory();
-        } catch (error) {
-            console.error("Error claiming rewards:", error);
-            alert("Error claiming rewards: " + error.message);
-        }
-    });
-
-    // Get Referral Link
-    document.getElementById("getReferralLink").addEventListener("click", () => {
-        if (!playerAddress) {
-            alert("Please connect your wallet first!");
-            return;
-        }
-
-        const referralLink = `${window.location.origin}${window.location.pathname}?referrer=${playerAddress}`;
-        navigator.clipboard.writeText(referralLink);
-        alert("Referral link copied to clipboard: " + referralLink);
-    });
-
-    // Load player data
-    async function loadPlayerData() {
-        if (!contract || !playerAddress) return;
-
-        try {
-            const history = await contract.playerHistory(playerAddress);
-            playerData.gamesPlayed = history.gamesPlayed.toNumber();
-            playerData.totalRewards = parseFloat(ethers.utils.formatUnits(history.totalRewards, 18)).toFixed(2);
-            playerData.totalReferrals = history.totalReferrals.toNumber();
-            playerData.referralRewards = parseFloat(ethers.utils.formatUnits(history.referralRewards, 18)).toFixed(2);
-            playerData.stakedAmount = parseFloat(ethers.utils.formatUnits(history.stakedAmount, 18)).toFixed(2);
-            playerData.pendingStakeRewards = parseFloat(ethers.utils.formatUnits(history.pendingStakeRewards, 18)).toFixed(2);
-
-            // Update UI
-            document.getElementById("gamesPlayed").innerText = `Games Played: ${playerData.gamesPlayed}`;
-            document.getElementById("totalGameRewards").innerText = `Total Game Rewards: ${playerData.totalRewards} BST`;
-            document.getElementById("totalReferrals").innerText = `Total Referrals: ${playerData.totalReferrals}`;
-            document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards} BST`;
-            document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${(playerData.pendingRewards + playerData.pendingStakeRewards).toFixed(2)} BST`;
-            document.getElementById("stakedAmountText").innerText = `Staked Amount: ${playerData.stakedAmount} BST`;
-            document.getElementById("pendingStakeRewardsText").innerText = `Pending Stake Rewards: ${playerData.pendingStakeRewards} BST`;
-        } catch (error) {
-            console.error("Error loading player data:", error);
-            alert("Error loading player data: " + error.message);
-        }
-    }
-
-    // Update reward history
-    async function updateRewardHistory() {
-        if (!contract || !playerAddress) return;
-
-        try {
-            const history = await contract.getRewardHistory(playerAddress);
-            playerData.rewardHistory = history.map(item => ({
-                amount: parseFloat(ethers.utils.formatUnits(item.amount, 18)).toFixed(2),
-                timestamp: new Date(item.timestamp * 1000).toLocaleString(),
-                rewardType: item.rewardType,
-                referee: item.referee
-            }));
-
-            const historyList = document.getElementById("rewardHistoryList");
-            historyList.innerHTML = "";
-            playerData.rewardHistory.forEach(item => {
-                const li = document.createElement("li");
-                li.innerText = `Type: ${item.rewardType}, Amount: ${item.amount} BST, Time: ${item.timestamp}, Referee: ${item.referee}`;
-                historyList.appendChild(li);
-            });
-        } catch (error) {
-            console.error("Error updating reward history:", error);
-            alert("Error updating reward history: " + error.message);
-        }
-    }
-
-    // Reset UI
-    function resetUI() {
-        document.getElementById("gamesPlayed").innerText = "Games Played: 0";
-        document.getElementById("totalGameRewards").innerText = "Total Game Rewards: 0 BST";
-        document.getElementById("totalReferrals").innerText = "Total Referrals: 0";
-        document.getElementById("referralRewards").innerText = "Referral Rewards: 0 BST";
-        document.getElementById("pendingRewardsText").innerText = "Pending Rewards: 0 BST";
-        document.getElementById("stakedAmountText").innerText = "Staked Amount: 0 BST";
-        document.getElementById("pendingStakeRewardsText").innerText = "Pending Stake Rewards: 0 BST";
-        document.getElementById("rewardHistoryList").innerHTML = "";
-        document.getElementById("score").innerText = "Score: 0";
-        document.getElementById("points").innerText = "Points: 0";
-        document.getElementById("gameRewards").innerText = "Game Rewards: 0 BST";
-        score = 0;
-        points = 0;
-        gameRewards = 0;
-        playerData = {
-            points: 0,
-            pendingRewards: 0,
-            pendingReferrerReward: 0,
-            totalReferrals: 0,
-            referralRewards: 0,
-            gamesPlayed: 0,
-            totalRewards: 0,
-            stakedAmount: 0,
-            pendingStakeRewards: 0,
-            rewardHistory: []
-        };
-    }
-
-    // Game Wlogic
     document.getElementById("playGame").addEventListener("click", () => {
         if (!playerAddress) {
             alert("Please connect your wallet first!");
@@ -363,19 +566,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function resetGame() {
-        snake = [{ x: 200, y: 200 }];
+        // स्नेक को कैनवस के बीच में शुरू करें
+        snake = [{ x: 200, y: 200 }]; // 400x400 कैनवस में बीच की पोजीशन
         dx = 10;
         dy = 0;
         score = 0;
         points = 0;
         spawnBox();
+        draw(); // गेम रीसेट होने पर तुरंत ड्रॉ करें
         document.getElementById("score").innerText = `Score: ${score}`;
         document.getElementById("points").innerText = `Points: ${points}`;
     }
 
     function spawnBox() {
-        box.x = Math.floor(Math.random() * 40) * 10;
-        box.y = Math.floor(Math.random() * 40) * 10;
+        // रेड बॉक्स को रैंडम जगह पर स्पॉन करें, लेकिन सुनिश्चित करें कि यह स्नेक के ऊपर न हो
+        do {
+            box.x = Math.floor(Math.random() * 40) * 10;
+            box.y = Math.floor(Math.random() * 40) * 10;
+        } while (snake.some(segment => segment.x === box.x && segment.y === box.y));
+    }
+
+    function draw() {
+        // कैनवस को साफ करें
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // रेड बॉक्स ड्रॉ करें
+        ctx.fillStyle = "#ff0000"; // चमकदार लाल रंग
+        ctx.strokeStyle = "#ffffff"; // सफेद बॉर्डर
+        ctx.lineWidth = 2;
+        ctx.fillRect(box.x, box.y, 10, 10);
+        ctx.strokeRect(box.x, box.y, 10, 10);
+
+        // स्नेक ड्रॉ करें
+        snake.forEach(segment => {
+            ctx.fillStyle = "#00ff00"; // चमकदार हरा रंग
+            ctx.strokeStyle = "#000000"; // काला बॉर्डर
+            ctx.lineWidth = 2;
+            ctx.fillRect(segment.x, segment.y, 10, 10);
+            ctx.strokeRect(segment.x, segment.y, 10, 10);
+        });
     }
 
     async function move() {
@@ -389,7 +618,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (playerData.points >= 100) {
                 const reward = 5;
-                const referrerReward = 0.05; // 1% of 5 BST
+                const referrerReward = 0.05;
 
                 playerData.pendingRewards += reward;
                 playerData.points -= 100;
@@ -431,40 +660,12 @@ document.addEventListener("DOMContentLoaded", () => {
             await loadPlayerData();
         }
 
-        draw();
+        draw(); // हर मूवमेंट के बाद ड्रॉ करें
         document.getElementById("score").innerText = `Score: ${score}`;
         document.getElementById("points").innerText = `Points: ${playerData.points}`;
         document.getElementById("gameRewards").innerText = `Game Rewards: ${gameRewards} BST`;
         document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${(playerData.pendingRewards + playerData.pendingStakeRewards).toFixed(2)} BST`;
     }
 
-    function collision(head) {
-        return snake.slice(1).some(segment => segment.x === head.x && segment.y === head.y);
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "red";
-        ctx.fillRect(box.x, box.y, 10, 10);
-        ctx.fillStyle = "green";
-        snake.forEach(segment => ctx.fillRect(segment.x, segment.y, 10, 10));
-    }
-
-    // Keyboard controls
-    document.addEventListener("keydown", e => {
-        switch (e.key) {
-            case "ArrowUp":
-                if (dy === 0) { dx = 0; dy = -10; }
-                break;
-            case "ArrowDown":
-                if (dy === 0) { dx = 0; dy = 10; }
-                break;
-            case "ArrowLeft":
-                if (dx === 0) { dx = -10; dy = 0; }
-                break;
-            case "ArrowRight":
-                if (dx === 0) { dx = 10; dy = 0; }
-                break;
-        }
-    });
+    // बाकी कोड (collision, keydown, आदि) वही रहेगा
 });
