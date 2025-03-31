@@ -3,96 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSP टेस्टिंग के लिए अस्थायी रूप से हटाया गया। प्रोडक्शन में सख्त CSP जोड़ें। -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' ws://localhost:8545; img-src 'self'; style-src 'self' 'unsafe-inline';"> -->
     <title>BlockSnakes Game</title>
-    <link rel="icon" href="data:image/x-icon;base64,AA">
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f0f0f0;
             margin: 0;
-            padding: 20px;
+            font-family: Arial, sans-serif;
+            background-color: #f5f5f5;
         }
-        h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 20px;
-        }
-        canvas {
-            border: 2px solid #333;
-            margin: 20px auto;
-            display: block;
-            background-color: #000; /* कैनवस का बैकग्राउंड काला करेंगे ताकि स्नेक और बॉक्स साफ दिखें */
-        }
-        button {
-            padding: 12px 24px;
-            margin: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
+        header {
             background-color: #4CAF50;
             color: white;
-            border: none;
-            border-radius: 5px;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        #gameInfo {
-            margin: 20px;
             padding: 20px;
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
         }
-        #rewardHistoryList {
-            list-style-type: none;
-            padding: 0;
-            max-width: 600px;
-            margin: 20px auto;
-            text-align: left;
+        header h1 {
+            margin: 0;
+            font-size: 2em;
         }
-        #rewardHistoryList li {
-            background-color: #f9f9f9;
-            padding: 10px;
-            margin: 5px 0;
-            border-radius: 5px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-            font-size: 14px;
-        }
-        .info-box {
+        header p {
             margin: 10px 0;
-            font-size: 16px;
-            color: #555;
+        }
+        header button {
+            background-color: #fff;
+            color: #4CAF50;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 1em;
+        }
+        header button:hover {
+            background-color: #e0e0e0;
+        }
+        #gameCanvas {
+            display: block;
+            margin: 20px auto;
+            background-color: #f0f0f0;
         }
     </style>
 </head>
 <body>
-    <h1>BlockSnakes Game</h1>
-    <div id="gameInfo">
-        <button id="connectWallet">Connect Wallet</button>
-        <button id="disconnectWallet" style="display:none;">Disconnect Wallet</button>
-        <button id="playGame">Play Game</button>
-        <button id="getReferralLink">Get Referral Link</button>
-        <button id="claimGameRewards">Claim Rewards</button>
-        <button id="stakeButton">Stake BST</button>
-        <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-        <canvas id="gameCanvas"></canvas>
-        <div id="score" class="info-box">Score: 0</div>
-        <div id="points" class="info-box">Points: 0</div>
-        <div id="gameRewards" class="info-box">Game Rewards: 0 BST</div>
-        <div id="gamesPlayed" class="info-box">Games Played: 0</div>
-        <div id="totalGameRewards" class="info-box">Total Game Rewards: 0 BST</div>
-        <div id="totalReferrals" class="info-box">Total Referrals: 0</div>
-        <div id="referralRewards" class="info-box">Referral Rewards: 0 BST</div>
-        <div id="pendingRewardsText" class="info-box">Pending Rewards: 0 BST</div>
-        <div id="stakedAmountText" class="info-box">Staked Amount: 0 BST</div>
-        <div id="pendingStakeRewardsText" class="info-box">Pending Stake Rewards: 0 BST</div>
-    </div>
-    <h2>Reward History</h2>
-    <ul id="rewardHistoryList"></ul>
+    <header>
+        <h1>BlockSnakes Game</h1>
+        <p id="wallet-address">Wallet: Not Connected</p>
+        <button onclick="connectWallet()">Connect Wallet</button>
+        <button onclick="claimWelcomeBonus()">Claim Welcome Bonus</button>
+    </header>
+    <canvas id="gameCanvas" width="400" height="400" style="border: 1px solid black;"></canvas>
+    <script src="assets/js/ethers-5.7.umd.min.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
