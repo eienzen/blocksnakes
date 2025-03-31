@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let playerAddress;
 
     // यहाँ BlockSnakesGame का पता डालें
-    const contractAddress = "0x3f4da0ae45b6cac314bcc4a634280c84984272b9; // Remix से कॉपी किया गया BlockSnakesGame का पता डालें
+    const contractAddress = "0x3f4da0ae45b6cac314bcc4a634280c84984272b9;" // Remix से कॉपी किया गया BlockSnakesGame का पता डालें
     
     // यहाँ नया contractABI पेस्ट करें (Remix से कॉपी करें)
     const contractABI = [
