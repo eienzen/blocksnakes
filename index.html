@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlockSnakes Game</title>
-    <link rel="icon" href="data:image/x-icon;base64,AA"> <!-- Favicon त्रुटि ठीक करने के लिए -->
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script> <!-- Integrity हटाया -->
+    <link rel="icon" href="data:image/x-icon;base64,AA">
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.umd.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -23,7 +23,7 @@
             border: 2px solid #333;
             margin: 20px auto;
             display: block;
-            background-color: #fff;
+            background-color: #000; /* कैनवस का बैकग्राउंड काला करेंगे ताकि स्नेक और बॉक्स साफ दिखें */
         }
         button {
             padding: 12px 24px;
@@ -71,9 +71,9 @@
 </head>
 <body>
     <h1>BlockSnakes Game</h1>
-    <button id="connectWallet">Connect Wallet</button>
-    <button id="disconnectWallet" style="display:none;">Disconnect Wallet</button>
     <div id="gameInfo">
+        <button id="connectWallet">Connect Wallet</button>
+        <button id="disconnectWallet" style="display:none;">Disconnect Wallet</button>
         <button id="playGame">Play Game</button>
         <button id="getReferralLink">Get Referral Link</button>
         <button id="claimGameRewards">Claim Rewards</button>
