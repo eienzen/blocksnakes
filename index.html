@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <!-- CSP टेस्टिंग के लिए अस्थायी रूप से हटाया गया। प्रोडक्शन में सख्त CSP जोड़ें। -->
-    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; connect-src 'self' ws://localhost:8545; img-src 'self'; style-src 'self' 'unsafe-inline';"> -->
     <title>BlockSnakes Game</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
     <style>
         body {
             margin: 0;
@@ -44,6 +44,25 @@
             margin: 20px auto;
             background-color: #f0f0f0;
         }
+        #playerHistory {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        #playerHistory h2 {
+            margin-top: 0;
+        }
+        #playerHistoryList {
+            list-style: none;
+            padding: 0;
+        }
+        #playerHistoryList li {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
     </style>
 </head>
 <body>
@@ -52,8 +71,17 @@
         <p id="wallet-address">Wallet: Not Connected</p>
         <button onclick="connectWallet()">Connect Wallet</button>
         <button onclick="claimWelcomeBonus()">Claim Welcome Bonus</button>
+        <button onclick="stakeBST()">Stake BST</button>
+        <button onclick="claimStakingReward()">Claim Staking Reward</button>
+        <button onclick="showHowToPlay()">How to Play</button>
+        <button onclick="runBSTPaper()">Run BST Paper</button>
+        <button onclick="showPlayerHistory()">Show Player History</button>
     </header>
     <canvas id="gameCanvas" width="400" height="400" style="border: 1px solid black;"></canvas>
+    <div id="playerHistory" style="display: none;">
+        <h2>Player History</h2>
+        <ul id="playerHistoryList"></ul>
+    </div>
     <script src="assets/js/ethers-5.7.umd.min.js"></script>
     <script src="game.js"></script>
 </body>
