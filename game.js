@@ -2,13 +2,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let account = null;
     let contract = null;
     let isConnecting = false;
-    let gameInterval = null;
+    let transactionQueue = [];
+    let isProcessingTransaction = false;
 
+    // प्लेयर डेटा
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
         totalRewards: 0,
         score: 0,
-        points: 0,
         rewards: 0,
         pendingRewards: 0,
         pendingLevels: [],
@@ -18,15 +19,13 @@ document.addEventListener("DOMContentLoaded", () => {
         referralRewards: 0,
         pendingReferral: null,
         pendingReferrerReward: 0,
-        rewardHistory: [],
-        stakedAmount: 0,
-        stakeTimestamp: 0,
-        pendingStakeRewards: 0,
-        hasClaimedWelcomeBonus: false
+        pendingRefereeReward: 0,
+        rewardHistory: []
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
     playerData.rewardHistory = playerData.rewardHistory || [];
 
+    // रेफरल लिंक से रेफरर का पता निकालें
     const urlParams = new URLSearchParams(window.location.search);
     const referrerAddress = urlParams.get("ref");
     if (referrerAddress && !playerData.pendingReferral) {
@@ -34,29 +33,33 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    const contractAddress = "0x8cd3920ada865d6900934a75bf2c35261a4715b3";
+    // कॉन्ट्रैक्ट एड्रेस और ABI
+    const contractAddress = "0xb3ffe5ee126f95fd8650f8695be9fc8d092b5984"; // यहाँ डिप्लॉय किया हुआ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
+		"anonymous": false,
 		"inputs": [
 			{
+				"indexed": true,
 				"internalType": "address",
 				"name": "owner",
 				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
+			},
 			{
+				"indexed": true,
 				"internalType": "address",
-				"name": "account",
+				"name": "spender",
 				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
 			}
 		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
+		"name": "Approval",
+		"type": "event"
 	},
 	{
 		"anonymous": false,
@@ -64,17 +67,17 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "previousOwner",
+				"name": "user",
 				"type": "address"
 			},
 			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
 			}
 		],
-		"name": "OwnershipTransferred",
+		"name": "GameContinued",
 		"type": "event"
 	},
 	{
@@ -91,6 +94,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "referee",
 				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
 			}
 		],
 		"name": "ReferralAdded",
@@ -102,7 +111,32 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
+			}
+		],
+		"name": "RewardClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
 				"type": "address"
 			},
 			{
@@ -113,18 +147,12 @@ document.addEventListener("DOMContentLoaded", () => {
 			},
 			{
 				"indexed": false,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
 			}
 		],
-		"name": "RewardsClaimed",
+		"name": "RewardsAdded",
 		"type": "event"
 	},
 	{
@@ -133,26 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "StakeRewardUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
+				"name": "user",
 				"type": "address"
 			},
 			{
@@ -171,7 +180,32 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
 				"type": "address"
 			},
 			{
@@ -181,14 +215,56 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "WelcomeBonusClaimed",
+		"name": "Unstaked",
 		"type": "event"
 	},
 	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "player",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			}
+		],
+		"name": "addRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
 				"type": "address"
 			},
 			{
@@ -202,8 +278,18 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			},
 			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			},
+			{
 				"internalType": "uint256",
 				"name": "referrerReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "refereeReward",
 				"type": "uint256"
 			}
 		],
@@ -214,14 +300,27 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "claimWelcomeBonus",
+		"name": "claimStakingReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "incrementGamesPlayed",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
-		"name": "renounceOwnership",
+		"name": "payToContinue",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -234,7 +333,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "stake",
+		"name": "stakeTokens",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -243,38 +342,23 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "newOwner",
+				"name": "to",
 				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "updateStakeReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
+			},
 			{
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
 			}
 		],
-		"name": "withdrawTokens",
-		"outputs": [],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -282,21 +366,62 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_bstToken",
+				"name": "from",
 				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
 			}
 		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
 	{
 		"inputs": [],
-		"name": "bstToken",
-		"outputs": [
+		"name": "unstakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
 			{
-				"internalType": "contract IERC20",
+				"internalType": "address",
 				"name": "",
 				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -306,7 +431,58 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "player",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "calculateStakingReward",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
 				"type": "address"
 			}
 		],
@@ -335,7 +511,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						"type": "address"
 					}
 				],
-				"internalType": "struct BlockSnakesGame.Reward[]",
+				"internalType": "struct BlockSnakesToken.RewardEntry[]",
 				"name": "",
 				"type": "tuple[]"
 			}
@@ -344,13 +520,32 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "MINIMUM_WITHDRAWAL",
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "hasBeenReferred",
 		"outputs": [
 			{
-				"internalType": "uint256",
+				"internalType": "bool",
 				"name": "",
-				"type": "uint256"
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
 			}
 		],
 		"stateMutability": "view",
@@ -398,39 +593,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "referralRewards",
 				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakedAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakeTimestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "pendingStakeRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "hasClaimedWelcomeBonus",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -444,7 +606,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			}
 		],
-		"name": "referrals",
+		"name": "referredBy",
 		"outputs": [
 			{
 				"internalType": "address",
@@ -461,14 +623,9 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "",
 				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
 			}
 		],
-		"name": "rewardHistory",
+		"name": "stakes",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -477,18 +634,26 @@ document.addEventListener("DOMContentLoaded", () => {
 			},
 			{
 				"internalType": "uint256",
-				"name": "timestamp",
+				"name": "startTime",
 				"type": "uint256"
 			},
+			{
+				"internalType": "uint256",
+				"name": "lastClaimTime",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
 			{
 				"internalType": "string",
-				"name": "rewardType",
+				"name": "",
 				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -496,33 +661,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "SECONDS_IN_MONTH",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "STAKE_REWARD_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "WELCOME_BONUS",
+		"name": "totalSupply",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -541,13 +680,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const gridWidth = 30;
     const gridHeight = 20;
     let gridSize;
+    let gameInterval;
     let snake = [{ x: 10, y: 10 }];
     let box = { x: 15, y: 15 };
     let direction = 'right';
     let score = 0;
     let gameRewards = 0;
     const SNAKE_SPEED = 300;
-    let lastSnakeState = null;
+    let lastSnakeState = null; // स्नेक की आखिरी स्थिति स्टोर करने के लिए
 
     function updateCanvasSize() {
         const screenWidth = window.innerWidth;
@@ -562,10 +702,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function enterFullscreen() {
-        if (canvas.requestFullscreen) canvas.requestFullscreen();
-        else if (canvas.mozRequestFullScreen) canvas.mozRequestFullScreen();
-        else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
-        else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
+        if (canvas.requestFullscreen) {
+            canvas.requestFullscreen();
+        } else if (canvas.mozRequestFullScreen) {
+            canvas.mozRequestFullScreen();
+        } else if (canvas.webkitRequestFullscreen) {
+            canvas.webkitRequestFullscreen();
+        } else if (canvas.msRequestFullscreen) {
+            canvas.msRequestFullscreen();
+        }
     }
 
     function generateBox() {
@@ -588,6 +733,7 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillStyle = segmentGradient;
             ctx.shadowColor = "rgba(255, 0, 255, 0.5)";
             ctx.shadowBlur = 15;
+           benz
             ctx.shadowOffsetX = 5;
             ctx.shadowOffsetY = 5;
             ctx.beginPath();
@@ -611,6 +757,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.arc(segment.x * gridSize + (gridSize - 5), segment.y * gridSize + 5, 2, 0, Math.PI * 2);
                 ctx.fill();
 
+                // जीभ ड्रॉ करना
                 ctx.fillStyle = "#ff4040";
                 ctx.beginPath();
                 if (direction === 'right') {
@@ -647,39 +794,93 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.strokeStyle = "#fff";
         ctx.lineWidth = 1;
         ctx.strokeRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
+        ctx.beginPath();
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.moveTo(box.x * gridSize, box.y * gridSize);
+        ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + 5);
+        ctx.moveTo(box.x * gridSize + (gridSize - 2), box.y * gridSize);
+        ctx.lineTo(box.x * gridSize + (gridSize - 7), box.y * gridSize + 5);
+        ctx.moveTo(box.x * gridSize + (gridSize - 2), box.y * gridSize + (gridSize - 2));
+        ctx.lineTo(box.x * gridSize + (gridSize - 7), box.y * gridSize + (gridSize - 7));
+        ctx.moveTo(box.x * gridSize, box.y * gridSize + (gridSize - 2));
+        ctx.lineTo(box.x * gridSize + 5, box.y * gridSize + (gridSize - 7));
+        ctx.stroke();
 
         document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('points').textContent = `Points: ${playerData.points}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
-    function updateStakeRewardLocally() {
-        const now = Math.floor(Date.now() / 1000);
-        const lastTimestamp = playerData.stakeTimestamp || now;
-        const SECONDS_IN_MONTH = 30 * 24 * 60 * 60;
-        const STAKE_REWARD_RATE = 5;
+    let hasReceivedWelcomeReward = false;
+    let hasReceivedExtraReferralReward = false;
 
-        if (playerData.stakedAmount > 0 && now > lastTimestamp) {
-            const timeElapsed = now - lastTimestamp;
-            const reward = (playerData.stakedAmount * STAKE_REWARD_RATE * timeElapsed) / (SECONDS_IN_MONTH * 100);
-            playerData.pendingStakeRewards = (playerData.pendingStakeRewards || 0) + reward;
-            playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
-            playerData.stakeTimestamp = now;
+    async function checkReferralRewards() {
+        if (!account || !contract) return;
+
+        if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
+            hasReceivedWelcomeReward = true;
+            const referrerAmount = 3; // 3 BST
+            const refereeAmount = 5; // 5 BST
+
+            playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeAmount;
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
+            playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
+            playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
+            playerData.pendingRewards = (playerData.pendingRewards || 0) + refereeAmount;
 
             playerData.rewardHistory.push({
-                amount: reward,
+                amount: refereeAmount,
                 timestamp: Date.now(),
-                rewardType: "Stake",
+                rewardType: "Referral (Welcome - Referee)",
                 referee: "N/A"
             });
+
+            playerData.rewardHistory.push({
+                amount: referrerAmount,
+                timestamp: Date.now(),
+                rewardType: "Referral (Welcome - Referrer)",
+                referee: playerData.pendingReferral
+            });
+
+            try {
+                // रेफरल सेट करना
+                await contract.referUser(playerData.pendingReferral, account);
+                // रेफरल रिवॉर्ड जोड़ना
+                await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, refereeAmount);
+            } catch (error) {
+                console.error("Error adding referral reward:", error);
+            }
+
+            updatePlayerHistoryUI();
+            updateRewardHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+        }
+
+        if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
+            hasReceivedExtraReferralReward = true;
+            const referrerAmount = 2; // 2 BST
+
+            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
+            playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
+
+            playerData.rewardHistory.push({
+                amount: referrerAmount,
+                timestamp: Date.now(),
+                rewardType: "Referral (Extra - Referrer)",
+                referee: playerData.pendingReferral
+            });
+
+            try {
+                // एक्स्ट्रा रेफरल रिवॉर्ड जोड़ना
+                await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, 0);
+            } catch (error) {
+                console.error("Error adding extra referral reward:", error);
+            }
 
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         }
     }
-
-    setInterval(updateStakeRewardLocally, 60 * 1000);
 
     async function move() {
         let head = { x: snake[0].x, y: snake[0].y };
@@ -692,7 +893,6 @@ document.addEventListener("DOMContentLoaded", () => {
             snake: [...snake],
             direction: direction,
             score: score,
-            points: playerData.points,
             gameRewards: gameRewards
         };
 
@@ -703,76 +903,85 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        for (let segment of snake) {
+            if (head.x === segment.x && head.y === segment.y) {
+                clearInterval(gameInterval);
+                gameInterval = null;
+                showGameOverPopup();
+                return;
+            }
+        }
+
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             score += 10;
-            playerData.points += 10;
-            if (playerData.points >= 100) {
+            gameRewards += 2;
+            if (score > 0 && score % 100 === 0) {
                 const reward = 5;
-                const referrerReward = reward * 0.01; // 1% गेम रिवॉर्ड का
-
-                playerData.pendingRewards += reward;
-                playerData.points -= 100;
-                gameRewards += reward;
+                playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
+                playerData.pendingLevels.push({ score, reward });
 
                 playerData.rewardHistory.push({
                     amount: reward,
                     timestamp: Date.now(),
-                    rewardType: "Game (100 Points)",
+                    rewardType: "Game",
                     referee: "N/A"
                 });
 
-                if (playerData.pendingReferral) {
-                    playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerReward;
-                    playerData.referralRewards = (playerData.referralRewards || 0) + referrerReward;
-                    playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
-
-                    playerData.rewardHistory.push({
-                        amount: referrerReward,
-                        timestamp: Date.now(),
-                        rewardType: "Referral (Game)",
-                        referee: playerData.pendingReferral
-                    });
+                try {
+                    await contract.addRewards(account, reward);
+                } catch (error) {
+                    console.error("Error adding game reward:", error);
                 }
 
                 const levelMessage = document.getElementById("levelMessage");
-                levelMessage.innerText = `100 Points Reached! Reward: ${reward} BST`;
+                levelMessage.innerText = `Milestone Reached! Score: ${score}, Reward: ${reward} BST`;
                 levelMessage.style.display = "block";
                 setTimeout(() => {
                     levelMessage.style.display = "none";
                 }, 3000);
             }
+            await checkReferralRewards();
             generateBox();
         } else {
             snake.pop();
         }
         draw();
         updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
     function showGameOverPopup() {
-        const popup = document.createElement("div");
-        popup.id = "gameOverPopup";
-        popup.style.position = "fixed";
-        popup.style.top = "50%";
-        popup.style.left = "50%";
-        popup.style.transform = "translate(-50%, -50%)";
-        popup.style.backgroundColor = "#fff";
-        popup.style.padding = "20px";
-        popup.style.border = "2px solid #333";
-        popup.innerHTML = `
-            <h2>Game Over!</h2>
-            <p id="finalScore">Score: ${score}</p>
-            <p id="finalPoints">Points: ${playerData.points}</p>
-            <p id="finalRewards">Rewards: ${gameRewards} BST</p>
-            <button id="startNewGame">Start New Game</button>
-            <button id="syncAndExit">Sync & Exit</button>
-        `;
-        document.body.appendChild(popup);
+        const popup = document.getElementById("gameOverPopup");
+        document.getElementById("finalScore").textContent = `Score: ${score}`;
+        document.getElementById("finalRewards").textContent = `Rewards: ${gameRewards} BST`;
+        popup.style.display = "block";
+    }
 
-        document.getElementById("startNewGame").addEventListener("click", resetGame);
-        document.getElementById("syncAndExit").addEventListener("click", syncAndExit);
+    async function continueWithTokens() {
+        if (!contract || !account) {
+            alert("Please connect your wallet to continue!");
+            return;
+        }
+        try {
+            await contract.payToContinue();
+            playerData.rewardHistory.push({
+                amount: 5,
+                timestamp: Date.now(),
+                rewardType: "Continue Game",
+                referee: "N/A"
+            });
+
+            snake = [...lastSnakeState.snake];
+            direction = lastSnakeState.direction;
+            score = lastSnakeState.score;
+            gameRewards = lastSnakeState.gameRewards;
+
+            document.getElementById("gameOverPopup").style.display = "none";
+            gameInterval = setInterval(move, SNAKE_SPEED);
+        } catch (error) {
+            console.error("Error continuing game:", error);
+            alert("Failed to continue game: " + error.message);
+        }
     }
 
     async function resetGame() {
@@ -785,7 +994,8 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
         score = 0;
         gameRewards = 0;
-        playerData.points = 0;
+        hasReceivedWelcomeReward = false;
+        hasReceivedExtraReferralReward = false;
         snake = [{ x: 10, y: 10 }];
         box = { x: 15, y: 15 };
         direction = 'right';
@@ -793,39 +1003,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
-        const popup = document.getElementById("gameOverPopup");
-        if (popup) popup.remove();
-    }
-
-    async function syncAndExit() {
-        if (!contract || !account) {
-            alert("Please connect your wallet to sync data!");
-            return;
-        }
-        pauseGame();
-        try {
-            await syncPendingRewards();
-            alert("Data synced successfully!");
-        } catch (error) {
-            console.error("Error syncing data:", error);
-            alert("Failed to sync data: " + error.message);
-        }
-        document.getElementById("gameOverPopup").remove();
-    }
-
-    function pauseGame() {
-        if (gameInterval) {
-            clearInterval(gameInterval);
-            gameInterval = null;
-            console.log("Game paused due to transaction");
-        }
-    }
-
-    function restartGame() {
-        if (!gameInterval) {
-            gameInterval = setInterval(move, SNAKE_SPEED);
-            console.log("Game restarted after transaction");
-        }
+        document.getElementById("gameOverPopup").style.display = "none";
     }
 
     document.addEventListener('keydown', (event) => {
@@ -862,20 +1040,20 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCanvasSize();
     draw();
 
-    const playGameButton = document.getElementById('playGame');
-    if (playGameButton) {
-        playGameButton.addEventListener('click', () => {
-            if (!account) {
-                alert("Please connect your wallet to play the game!");
-                return;
-            }
-            enterFullscreen();
-            resetGame();
-            if (!gameInterval) {
-                gameInterval = setInterval(move, SNAKE_SPEED);
-            }
-        });
-    }
+    document.getElementById('playGame').addEventListener('click', () => {
+        if (!account) {
+            alert("Please connect your wallet to play the game!");
+            return;
+        }
+        enterFullscreen();
+        resetGame();
+        if (!gameInterval) {
+            gameInterval = setInterval(move, SNAKE_SPEED);
+        }
+    });
+
+    document.getElementById('continueWithTokens').addEventListener('click', continueWithTokens);
+    document.getElementById('startNewGame').addEventListener('click', resetGame);
 
     function generateReferralLink() {
         if (!account) return alert("Connect your wallet first!");
@@ -885,75 +1063,23 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    async function stakeTokens(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        try {
-            const tx = await contract.stake(ethers.parseUnits(amount.toString(), 18));
-            await tx.wait();
-            playerData.stakedAmount += amount;
-            playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            updatePlayerHistoryUI();
-            alert(`Successfully staked ${amount} BST!`);
-        } catch (error) {
-            console.error("Error staking tokens:", error);
-            alert("Failed to stake tokens: " + error.message);
-        }
-    }
-
-    async function claimWelcomeBonus() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
-
-        try {
-            const tx = await contract.claimWelcomeBonus();
-            await tx.wait();
-            playerData.hasClaimedWelcomeBonus = true;
-            playerData.totalRewards += 100;
-            playerData.rewardHistory.push({
-                amount: 100,
-                timestamp: Date.now(),
-                rewardType: "Welcome Bonus",
-                referee: "N/A"
-            });
-            updatePlayerHistoryUI();
-            updateRewardHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Welcome bonus of 100 BST claimed successfully!");
-        } catch (error) {
-            console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + error.message);
-        }
-    }
-
     async function connectWallet() {
-        if (isConnecting) {
-            alert("Wallet connection in progress. Please wait.");
-            return;
-        }
-        if (account) {
-            alert("Wallet already connected!");
+        if (isConnecting) return alert("Wallet connection in progress. Please wait.");
+        if (account) return alert("Wallet already connected!");
+
+        if (!window.ethereum && !window.web3) {
+            alert("No Web3 wallet detected. Please install MetaMask or another Web3 wallet.");
             return;
         }
 
-        if (!window.ethereum) {
-            alert("MetaMask not detected. Please install MetaMask and refresh the page.");
-            return;
-        }
-
-        const provider = window.ethereum;
-        if (!provider.isMetaMask) {
-            alert("Detected provider is not MetaMask. Please use MetaMask.");
-            return;
-        }
+        let provider = window.ethereum || (window.web3 && window.web3.currentProvider);
 
         try {
             isConnecting = true;
             const accounts = await provider.request({ method: "eth_requestAccounts" });
             if (!accounts || accounts.length === 0) {
-                throw new Error("No accounts found. Please ensure MetaMask is unlocked.");
+                throw new Error("No accounts found. Please ensure your wallet is unlocked.");
             }
-
             account = accounts[0];
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "inline-block";
@@ -965,17 +1091,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await loadPlayerHistory();
             updateRewardHistoryUI();
-            alert("Wallet connected successfully!");
         } catch (error) {
-            console.error("Error connecting wallet:", error);
             if (error.code === 4001) {
-                alert("You rejected the connection request. Please approve it in MetaMask.");
+                alert("User rejected the request. Please connect your wallet to continue.");
             } else if (error.code === -32002) {
-                alert("A connection request is already pending. Please check MetaMask.");
-            } else if (error.code === -32603) {
-                alert("No active wallet found. Please ensure MetaMask is unlocked and try again.");
+                alert("A wallet connection request is already pending. Please check your wallet.");
             } else {
-                alert("Failed to connect wallet: " + error.message);
+                alert("Error connecting wallet: " + error.message);
             }
         } finally {
             isConnecting = false;
@@ -999,10 +1121,6 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
-            playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
-            playerData.stakeTimestamp = Number(history.stakeTimestamp);
-            playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
-            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
 
             const rewardHistory = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewardHistory.map(entry => ({
@@ -1029,8 +1147,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards || 0} BST`;
         document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards || 0} BST`;
         document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels?.length || 0}`;
-        document.getElementById("stakedAmountText").innerText = `Staked Amount: ${playerData.stakedAmount || 0} BST`;
-        document.getElementById("pendingStakeRewardsText").innerText = `Pending Stake Rewards: ${playerData.pendingStakeRewards || 0} BST`;
     }
 
     function updateRewardHistoryUI() {
@@ -1039,76 +1155,80 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.rewardHistory.forEach(entry => {
             const date = new Date(entry.timestamp).toLocaleString();
             const li = document.createElement("li");
-            li.innerText = `${entry.rewardType}: ${entry.amount.toFixed(6)} BST on ${date} ${entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""}`;
+            li.innerText = `${entry.rewardType}: ${entry.amount} BST on ${date} ${entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""}`;
             historyList.appendChild(li);
         });
     }
 
-    async function syncPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("You need at least 10 BST to sync rewards!");
+    async function claimPendingRewards() {
+        if (!contract) return alert("Connect your wallet first!");
+        if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
 
         const totalReward = playerData.pendingRewards;
         const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
+        const referee = account;
         const referrerReward = playerData.pendingReferrerReward;
+        const refereeReward = playerData.pendingRefereeReward;
 
         try {
-            const tx = await contract.claimAllRewards(
+            await contract.claimAllRewards(
                 account,
-                ethers.parseUnits(totalReward.toString(), 18),
+                totalReward,
                 referrer,
-                ethers.parseUnits(referrerReward.toString(), 18)
+                referee,
+                referrerReward,
+                refereeReward
             );
-            await tx.wait();
             playerData.rewards = (playerData.rewards || 0) + playerData.pendingRewards;
             playerData.totalRewards = (playerData.totalRewards || 0) + playerData.pendingRewards;
             playerData.pendingRewards = 0;
             playerData.pendingLevels = [];
             playerData.pendingReferral = null;
             playerData.pendingReferrerReward = 0;
-            playerData.pendingStakeRewards = 0;
+            playerData.pendingRefereeReward = 0;
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
-            console.error("Error syncing rewards:", error);
-            throw error;
-        }
-    }
-
-    async function claimPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("You need at least 10 BST to withdraw!");
-
-        pauseGame();
-        try {
-            await syncPendingRewards();
-            alert("Rewards claimed successfully!");
-            restartGame();
-        } catch (error) {
+            console.error("Error claiming rewards:", error);
             alert("Failed to claim rewards: " + error.message);
-            restartGame();
         }
     }
 
-    const connectWalletButton = document.getElementById("connectWallet");
-    if (connectWalletButton) connectWalletButton.addEventListener("click", connectWallet);
-
-    const disconnectWalletButton = document.getElementById("disconnectWallet");
-    if (disconnectWalletButton) disconnectWalletButton.addEventListener("click", disconnectWallet);
-
-    const getReferralLinkButton = document.getElementById("getReferralLink");
-    if (getReferralLinkButton) getReferralLinkButton.addEventListener("click", generateReferralLink);
-
-    const claimGameRewardsButton = document.getElementById("claimGameRewards");
-    if (claimGameRewardsButton) claimGameRewardsButton.addEventListener("click", claimPendingRewards);
-
-    const stakeButton = document.getElementById("stakeButton");
-    if (stakeButton) stakeButton.addEventListener("click", () => {
-        const amount = prompt("Enter amount to stake (BST):");
-        if (amount) stakeTokens(parseFloat(amount));
+    document.getElementById("connectWallet").addEventListener("click", connectWallet);
+    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
+    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
+    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
+    document.getElementById("stakeTokens").addEventListener("click", async () => {
+        if (!contract) return alert("Connect your wallet first!");
+        const amount = document.getElementById("stakeInput").value;
+        if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
+        try {
+            await contract.stakeTokens(amount);
+            alert("Tokens staked successfully!");
+        } catch (error) {
+            console.error("Error staking tokens:", error);
+            alert("Failed to stake tokens: " + error.message);
+        }
     });
-
-    const welcomeBonusButton = document.getElementById("welcomeBonusButton");
-    if (welcomeBonusButton) welcomeBonusButton.addEventListener("click", claimWelcomeBonus);
+    document.getElementById("claimStakingReward").addEventListener("click", async () => {
+        if (!contract) return alert("Connect your wallet first!");
+        try {
+            await contract.claimStakingReward();
+            alert("Staking reward claimed successfully!");
+        } catch (error) {
+            console.error("Error claiming staking reward:", error);
+            alert("Failed to claim staking reward: " + error.message);
+        }
+    });
+    document.getElementById("unstakeTokens").addEventListener("click", async () => {
+        if (!contract) return alert("Connect your wallet first!");
+        try {
+            await contract.unstakeTokens();
+            alert("Tokens unstaked successfully!");
+        } catch (error) {
+            console.error("Error unstaking tokens:", error);
+            alert("Failed to unstake tokens: " + error.message);
+        }
+    });
 });
