@@ -687,7 +687,7 @@ async function connectWallet() {
                 params: [{ chainId: "0x61" }] // BSC टेस्टनेट चेन ID: 97 (हेक्स में 0x61)
             });
 
-            contract = new ethers.Contract("0xYourContractAddress", contractABI, signer);
+            contract = new ethers.Contract("0x709ca4d3d776d2f3d164856d097da6229411b52a", contractABI, signer);
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "inline";
             document.getElementById("walletAddress").innerText = `Wallet: ${account}`;
