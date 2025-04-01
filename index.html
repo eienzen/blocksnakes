@@ -7,34 +7,12 @@
     <title>BlockSnakes - Play & Earn</title>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            text-align: center;
-            margin: 0;
-            padding: 0;
-        }
-        nav {
-            background-color: #333;
-            padding: 10px;
-        }
-        nav a {
-            color: white;
-            text-decoration: none;
-            margin: 0 15px;
-        }
-        .section {
-            margin: 20px;
-        }
-        canvas {
-            border: 2px solid #333;
-            background-color: #fff;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 10px;
-            font-size: 16px;
-        }
+        body { font-family: Arial, sans-serif; background-color: #f0f0f0; text-align: center; margin: 0; padding: 0; }
+        nav { background-color: #333; padding: 10px; }
+        nav a { color: white; text-decoration: none; margin: 0 15px; }
+        .section { margin: 20px; }
+        canvas { border: 2px solid #333; background-color: #fff; }
+        button { padding: 10px 20px; margin: 10px; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -69,27 +47,17 @@
         </div>
         <button id="playGame">Play Game</button>
         <button id="claimGameRewards">Claim Game Rewards</button>
+        <button id="payToContinue">Pay to Continue</button>
         <div id="gasEstimate"></div>
-        <div id="levelMessage"></div>
     </div>
 
-    <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-    <p id="points">Points: 0</p>
     <div class="section" id="playerInfoColumn">
         <div id="playerHistory">
             <h2>Player History</h2>
             <p id="gamesPlayed">Games Played: 0</p>
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
-            <p id="lastGameScore">Last Game Score: 0</p>
-            <p id="lastGameRewards">Last Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
-        </div>
-        <div id="pendingRewards">
-            <h2>Pending Game Rewards</h2>
-            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <p id="pendingLevelsText">Pending Milestones: 0</p>
-            <p>Minimum Withdrawal: 50 BST</p>
         </div>
     </div>
 
@@ -107,7 +75,6 @@
             </div>
             <button id="claimStakingReward">Claim Staking Reward</button>
             <button id="unstakeTokens">Unstake Tokens</button>
-            <div id="gasEstimate"></div>
         </div>
     </div>
 
