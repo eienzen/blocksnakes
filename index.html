@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io; img-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io https://data-seed-prebsc-1-s1.binance.org:8545; img-src 'self';">
     <title>BlockSnakes - Play & Earn</title>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -35,6 +36,10 @@
             margin: 10px;
             font-size: 16px;
         }
+        #tokenSupplyChart {
+            max-width: 400px;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -55,9 +60,16 @@
 
     <div class="section" id="tokenActions">
         <h2>Token Actions</h2>
+        <p id="walletAddress">Wallet: Not Connected</p>
+        <p id="balance">Balance: 0 BST</p>
         <button id="connectWallet">Connect Wallet</button>
         <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
         <button id="getReferralLink">Get Referral Link</button>
+    </div>
+
+    <div class="section" id="tokenSupply">
+        <h2>Token Supply Distribution</h2>
+        <canvas id="tokenSupplyChart"></canvas>
     </div>
 
     <div class="section" id="game">
@@ -89,7 +101,7 @@
             <h2>Pending Game Rewards</h2>
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
             <p id="pendingLevelsText">Pending Milestones: 0</p>
-            <p>Minimum Withdrawal: 50 BST</p>
+            <p>Minimum Withdrawal: 10 BST</p>
         </div>
     </div>
 
@@ -101,6 +113,7 @@
     <div class="section" id="stakingActionsColumn">
         <div id="stakingActions">
             <h2>Staking Actions</h2>
+            <p id="stakedAmount">Staked: 0 BST</p>
             <div>
                 <input type="number" id="stakeInput" placeholder="Enter amount to stake" />
                 <button id="stakeTokens">Stake Tokens</button>
