@@ -32,26 +32,8 @@ const tokenSupplyData = {
     community: 10 // 10%
 };
 
-// MetaMask से कनेक्ट करें (BSC टेस्टनेट)
-async function connectWallet() {
-    if (window.ethereum) {
-        try {
-            provider = window.ethereum;
-            const ethersProvider = new ethers.providers.Web3Provider(provider);
-            signer = ethersProvider.getSigner();
-            const accounts = await provider.request({ method: "eth_requestAccounts" });
-            account = accounts[0];
-
-            // BSC टेस्टनेट पर स्विच करें
-            await provider.request({
-                method: "wallet_switchEthereumChain",
-                params: [{ chainId: "0x61" }] // BSC टेस्टनेट चेन ID: 97 (हेक्स में 0x61)
-            });
-
-            // नया कॉन्ट्रैक्ट एड्रेस और ABI यहाँ डालें
-            // 1. contractABI डालें: यह आपके स्मार्ट कॉन्ट्रैक्ट का ABI है, जो आपको Remix या आपके डिप्लॉयमेंट टूल से मिलेगा।
-            //    उदाहरण:
-            //    const contractABI = [
+// स्मार्ट कॉन्ट्रैक्ट का ABI
+const contractABI = [
 	{
 		"inputs": [
 			{
@@ -688,17 +670,24 @@ async function connectWallet() {
 		"type": "function"
 	}
 ];
-            //
-            // 2. contractAddress डालें: यह आपके डिप्लॉय किए गए स्मार्ट कॉन्ट्रैक्ट का एड्रेस है (जैसे 0xYourContractAddress)।
-            //    उदाहरण:
-            //    const contractAddress = "0x709ca4d3d776d2f3d164856d097da6229411b52a";
-            //
-            // 3. contract को इनिशियलाइज़ करें:
-            //    contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-            // ऊपर दिए गए कमेंट्स के हिसाब से contractAddress और contractABI डालने के बाद, नीचे की लाइन को अनकमेंट करें:
-            // contract = new ethers.Contract(contractAddress, contractABI, signer);
+// MetaMask से कनेक्ट करें (BSC टेस्टनेट)
+async function connectWallet() {
+    if (window.ethereum) {
+        try {
+            provider = window.ethereum;
+            const ethersProvider = new ethers.providers.Web3Provider(provider);
+            signer = ethersProvider.getSigner();
+            const accounts = await provider.request({ method: "eth_requestAccounts" });
+            account = accounts[0];
 
+            // BSC टेस्टनेट पर स्विच करें
+            await provider.request({
+                method: "wallet_switchEthereumChain",
+                params: [{ chainId: "0x61" }] // BSC टेस्टनेट चेन ID: 97 (हेक्स में 0x61)
+            });
+
+            contract = new ethers.Contract("0xYourContractAddress", contractABI, signer);
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "inline";
             document.getElementById("walletAddress").innerText = `Wallet: ${account}`;
