@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0,
         totalRewards: 0,
         score: 0,
-        points: 0, // Points earned by eating boxes; 100 points = 5 BST
         pendingRewards: 0,
         totalReferrals: 0,
         referralRewards: 0,
@@ -850,7 +849,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function enterFullscreen() {
-        if (canvas.requestFullscreen) canvas.requestFullscreen();
+        if (canvas.requestFullscreen) {
+            canvas.requestFullscreen();
+        } else if (canvas.webkitRequestFullscreen) { // iOS Safari
+            canvas.webkitRequestFullscreen();
+        } else if (canvas.mozRequestFullScreen) { // Firefox
+            canvas.mozRequestFullScreen();
+        } else if (canvas.msRequestFullscreen) { // IE/Edge
+            canvas.msRequestFullscreen();
+        }
     }
 
     function generateBox() {
@@ -872,8 +879,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
         document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('points').textContent = `Points: ${playerData.points}`;
-        document.getElementById('potentialBST').textContent = `Potential BST: ${(playerData.points / 100 * 5).toFixed(2)}`;
+        document.getElementById('potentialBST').textContent = `Potential BST: ${(score / 100).toFixed(2)}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
@@ -910,13 +916,12 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             score += 10;
-            playerData.points += 10;
-            if (playerData.points >= 100) {
-                const reward = 5;
-                const referrerReward = reward * 0.01; // 1% रेफरल रिवॉर्ड
+            if (score >= 100) {
+                const reward = Math.floor(score / 100); // हर 100 स्कोर पर 1 BST
+                const referrerReward = reward * 0.01; // 1% रेफरर को
                 playerData.pendingRewards += reward;
-                playerData.points -= 100;
                 gameRewards += reward;
+                score = score % 100; // स्कोर रीसेट करें
 
                 playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
                 if (playerData.pendingReferral) {
@@ -943,8 +948,7 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.innerHTML = `
                 <h2>Game Over!</h2>
                 <p id="finalScore">Score: ${score}</p>
-                <p id="finalPoints">Points: ${playerData.points}</p>
-                <p id="finalPotentialBST">Potential BST: ${(playerData.points / 100 * 5).toFixed(2)}</p>
+                <p id="finalPotentialBST">Potential BST: ${(score / 100).toFixed(2)}</p>
                 <p id="finalRewards">Rewards: ${gameRewards} BST</p>
                 <button id="startNewGame">Start New Game</button>
             `;
@@ -996,12 +1000,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const deltaY = touch.clientY - touchStartY;
 
         if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 0 && direction !== 'left') direction = 'right';
-            else if (deltaX < 0 && direction !== 'right') direction = 'left';
+            if (deltaX > 10 && direction !== 'left') direction = 'right';
+            else if (deltaX < -10 && direction !== 'right') direction = 'left';
         } else {
-            if (deltaY > 0 && direction !== 'up') direction = 'down';
-            else if (deltaY < 0 && direction !== 'down') direction = 'up';
+            if (deltaY > 10 && direction !== 'up') direction = 'down';
+            else if (deltaY < -10 && direction !== 'down') direction = 'up';
         }
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
     });
 
     window.addEventListener('resize', updateCanvasSize);
