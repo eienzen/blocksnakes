@@ -58,6 +58,7 @@
         <button id="connectWallet">Connect Wallet</button>
         <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
         <button id="getReferralLink">Get Referral Link</button>
+        <button id="welcomeBonusButton">Claim Welcome Bonus</button> <!-- जोड़ा गया -->
     </div>
 
     <div class="section" id="game">
@@ -65,6 +66,7 @@
         <canvas id="gameCanvas"></canvas>
         <div id="gameInfo">
             <p id="score">Score: 0</p>
+            <p id="points">Points: 0</p> <!-- जोड़ा गया -->
             <p id="gameRewards">Game Rewards: 0 BST</p>
         </div>
         <button id="playGame">Play Game</button>
@@ -78,16 +80,15 @@
             <h2>Player History</h2>
             <p id="gamesPlayed">Games Played: 0</p>
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
-            <p id="lastGameScore">Last Game Score: 0</p>
-            <p id="lastGameRewards">Last Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
+            <p id="stakedAmountText">Staked Amount: 0 BST</p> <!-- जोड़ा गया -->
+            <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p> <!-- जोड़ा गया -->
         </div>
         <div id="pendingRewards">
             <h2>Pending Game Rewards</h2>
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <p id="pendingLevelsText">Pending Milestones: 0</p>
-            <p>Minimum Withdrawal: 50 BST</p>
+            <p>Minimum Withdrawal: 10 BST</p> <!-- 50 से 10 BST में बदला -->
         </div>
     </div>
 
@@ -103,9 +104,7 @@
                 <input type="number" id="stakeInput" placeholder="Enter amount to stake" />
                 <button id="stakeTokens">Stake Tokens</button>
             </div>
-            <button id="claimStakingReward">Claim Staking Reward</button>
             <button id="unstakeTokens">Unstake Tokens</button>
-            <div id="gasEstimate"></div>
         </div>
     </div>
 
