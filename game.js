@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     let account = null;
     let contract = null;
-    let isConnecting = false;
     let gameInterval = null;
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
@@ -9,11 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         totalRewards: 0,
         score: 0,
         points: 0,
-        rewards: 0,
         pendingRewards: 0,
-        pendingLevels: [],
-        lastGameScore: 0,
-        lastGameRewards: 0,
         totalReferrals: 0,
         referralRewards: 0,
         pendingReferral: null,
@@ -24,17 +19,14 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingStakeRewards: 0,
         hasClaimedWelcomeBonus: false
     };
-    playerData.pendingLevels = playerData.pendingLevels || [];
-    playerData.rewardHistory = playerData.rewardHistory || [];
 
     const urlParams = new URLSearchParams(window.location.search);
     const referrerAddress = urlParams.get("ref");
     if (referrerAddress && !playerData.pendingReferral) {
         playerData.pendingReferral = referrerAddress;
-        localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    const contractAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032"; // BlockSnakesGame का नया एड्रेस यहाँ डालें
+    const contractAddress = "0x01F8f9AA705C8f9d12028735f356DD3667272d12"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -874,8 +866,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (playerData.stakedAmount > 0 && playerData.stakeTimestamp > 0) {
             const timeElapsed = now - playerData.stakeTimestamp;
             const reward = (playerData.stakedAmount * 5 * timeElapsed) / (30 * 24 * 60 * 60 * 100);
-            playerData.pendingStakeRewards = (playerData.pendingStakeRewards || 0) + reward;
-            playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
+            playerData.pendingStakeRewards += reward;
+            playerData.pendingRewards += reward;
             playerData.stakeTimestamp = now;
             playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Stake", referee: "N/A" });
             updatePlayerHistoryUI();
@@ -905,16 +897,16 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.points += 10;
             if (playerData.points >= 100) {
                 const reward = 5;
-                const referrerReward = reward * 0.01; // 1% रेफरल रिवॉर्ड (0.05 BST)
+                const referrerReward = reward * 0.01; // 1% रेफरल रिवॉर्ड
                 playerData.pendingRewards += reward;
                 playerData.points -= 100;
                 gameRewards += reward;
 
                 playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
                 if (playerData.pendingReferral) {
-                    playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerReward;
-                    playerData.referralRewards = (playerData.referralRewards || 0) + referrerReward;
-                    playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
+                    playerData.pendingReferrerReward += referrerReward;
+                    playerData.referralRewards += referrerReward;
+                    playerData.totalReferrals += 1;
                     playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
                 }
             }
@@ -923,32 +915,41 @@ document.addEventListener("DOMContentLoaded", () => {
             snake.pop();
         }
         draw();
+        updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
     function showGameOverPopup() {
-        const popup = document.getElementById("gameOverPopup");
+        const popup = document.getElementById("gameOverPopup") || document.createElement("div");
+        if (!popup.id) {
+            popup.id = "gameOverPopup";
+            popup.innerHTML = `
+                <h2>Game Over!</h2>
+                <p id="finalScore">Score: ${score}</p>
+                <p id="finalPoints">Points: ${playerData.points}</p>
+                <p id="finalRewards">Rewards: ${gameRewards} BST</p>
+                <button id="startNewGame">Start New Game</button>
+            `;
+            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; color: #000; padding: 20px; border: 2px solid #333;";
+            document.body.appendChild(popup);
+            document.getElementById("startNewGame").addEventListener("click", resetGame);
+        }
         popup.style.display = "block";
-        document.getElementById("finalScore").textContent = `Score: ${score}`;
-        document.getElementById("finalPoints").textContent = `Points: ${playerData.points}`;
-        document.getElementById("finalRewards").textContent = `Rewards: ${gameRewards} BST`;
     }
 
     async function resetGame() {
         if (gameInterval) clearInterval(gameInterval);
-        playerData.lastGameScore = score;
-        playerData.lastGameRewards = gameRewards;
         playerData.gamesPlayed += 1;
         score = 0;
         gameRewards = 0;
-        playerData.points = 0;
         snake = [{ x: 10, y: 10 }];
         box = { x: 15, y: 15 };
         direction = 'right';
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
-        document.getElementById("gameOverPopup").style.display = "none";
+        const popup = document.getElementById("gameOverPopup");
+        if (popup) popup.style.display = "none";
     }
 
     document.addEventListener('keydown', (event) => {
@@ -987,6 +988,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updatePlayerHistoryUI();
             alert(`Successfully staked ${amount} BST!`);
         } catch (error) {
+            console.error("Error staking tokens:", error);
             alert("Failed to stake tokens: " + error.message);
         }
     }
@@ -1004,6 +1006,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
+            console.error("Error claiming welcome bonus:", error);
             alert("Failed to claim welcome bonus: " + error.message);
         }
     }
@@ -1015,7 +1018,7 @@ document.addEventListener("DOMContentLoaded", () => {
             account = accounts[0];
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "block";
-            document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
+            document.getElementById("walletAddress") && (document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`);
 
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
@@ -1024,6 +1027,7 @@ document.addEventListener("DOMContentLoaded", () => {
             await loadPlayerHistory();
             alert("Wallet connected successfully!");
         } catch (error) {
+            console.error("Error connecting wallet:", error);
             alert("Failed to connect wallet: " + error.message);
         }
     }
@@ -1033,50 +1037,63 @@ document.addEventListener("DOMContentLoaded", () => {
         contract = null;
         document.getElementById("connectWallet").style.display = "block";
         document.getElementById("disconnectWallet").style.display = "none";
-        document.getElementById("walletAddress").textContent = "";
+        document.getElementById("walletAddress") && (document.getElementById("walletAddress").textContent = "");
         alert("Wallet disconnected!");
     }
 
     async function loadPlayerHistory() {
         if (!contract || !account) return;
-        const history = await contract.playerHistory(account);
-        playerData.gamesPlayed = Number(history.gamesPlayed);
-        playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
-        playerData.totalReferrals = Number(history.totalReferrals);
-        playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
-        playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
-        playerData.stakeTimestamp = Number(history.stakeTimestamp);
-        playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
-        playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
+        try {
+            const history = await contract.playerHistory(account);
+            playerData.gamesPlayed = Number(history.gamesPlayed);
+            playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
+            playerData.totalReferrals = Number(history.totalReferrals);
+            playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
+            playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
+            playerData.stakeTimestamp = Number(history.stakeTimestamp);
+            playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
+            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
 
-        const rewards = await contract.getRewardHistory(account);
-        playerData.rewardHistory = rewards.map(r => ({
-            amount: Number(r.amount) / 10 ** 18,
-            timestamp: Number(r.timestamp) * 1000,
-            rewardType: r.rewardType,
-            referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
-        }));
+            const rewards = await contract.getRewardHistory(account);
+            playerData.rewardHistory = rewards.map(r => ({
+                amount: Number(r.amount) / 10 ** 18,
+                timestamp: Number(r.timestamp) * 1000,
+                rewardType: r.rewardType,
+                referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
+            }));
 
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+        } catch (error) {
+            console.error("Error loading player history:", error);
+        }
     }
 
     function updatePlayerHistoryUI() {
-        document.getElementById("gamesPlayed").textContent = `Games Played: ${playerData.gamesPlayed}`;
-        document.getElementById("totalGameRewards").textContent = `Total Rewards: ${playerData.totalRewards} BST`;
-        document.getElementById("totalReferrals").textContent = `Total Referrals: ${playerData.totalReferrals}`;
-        document.getElementById("referralRewards").textContent = `Referral Rewards: ${playerData.referralRewards} BST`;
-        document.getElementById("pendingRewardsText").textContent = `Pending Rewards: ${playerData.pendingRewards} BST`;
-        document.getElementById("stakedAmountText").textContent = `Staked Amount: ${playerData.stakedAmount} BST`;
-        document.getElementById("pendingStakeRewardsText").textContent = `Pending Stake Rewards: ${playerData.pendingStakeRewards} BST`;
+        const elements = {
+            gamesPlayed: `Games Played: ${playerData.gamesPlayed}`,
+            totalGameRewards: `Total Game Rewards: ${playerData.totalRewards} BST`,
+            totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
+            referralRewards: `Referral Rewards: ${playerData.referralRewards} BST`,
+            pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards} BST`,
+            stakedAmountText: `Staked Amount: ${playerData.stakedAmount} BST`,
+            pendingStakeRewardsText: `Pending Stake Rewards: ${playerData.pendingStakeRewards} BST`
+        };
+
+        for (const [id, value] of Object.entries(elements)) {
+            const element = document.getElementById(id);
+            if (element) element.textContent = value;
+        }
 
         const historyList = document.getElementById("rewardHistoryList");
-        historyList.innerHTML = "";
-        playerData.rewardHistory.forEach(entry => {
-            const li = document.createElement("li");
-            li.textContent = `${entry.rewardType}: ${entry.amount} BST on ${new Date(entry.timestamp).toLocaleString()}`;
-            historyList.appendChild(li);
-        });
+        if (historyList) {
+            historyList.innerHTML = "";
+            playerData.rewardHistory.forEach(entry => {
+                const li = document.createElement("li");
+                li.textContent = `${entry.rewardType}: ${entry.amount} BST on ${new Date(entry.timestamp).toLocaleString()}`;
+                historyList.appendChild(li);
+            });
+        }
     }
 
     async function claimPendingRewards() {
@@ -1098,6 +1115,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Rewards claimed successfully!");
         } catch (error) {
+            console.error("Error claiming rewards:", error);
             alert("Failed to claim rewards: " + error.message);
         }
     }
@@ -1106,10 +1124,9 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
     document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
-    document.getElementById("stakeButton").addEventListener("click", () => {
-        const amount = prompt("Enter amount to stake (BST):");
+    document.getElementById("stakeTokens").addEventListener("click", () => {
+        const amount = document.getElementById("stakeInput").value;
         if (amount) stakeTokens(parseFloat(amount));
     });
     document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
-    document.getElementById("startNewGame").addEventListener("click", resetGame);
 });
