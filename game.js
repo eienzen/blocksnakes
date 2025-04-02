@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xfca3547269Df80f6Cf302Fd303ba94E4fd41F029"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xA8a2D4354C25eC4079833E8213D897A88dC47Cbc"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -160,6 +160,25 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "message",
+				"type": "string"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "DebugLog",
 		"type": "event"
 	},
 	{
@@ -449,11 +468,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -478,6 +492,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -853,7 +872,8 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
         document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('points').textContent = `Points: ${playerData.points} (100 Points = 5 BST)`;
+        document.getElementById('points').textContent = `Points: ${playerData.points}`;
+        document.getElementById('potentialBST').textContent = `Potential BST: ${(playerData.points / 100 * 5).toFixed(2)}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
@@ -923,7 +943,8 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.innerHTML = `
                 <h2>Game Over!</h2>
                 <p id="finalScore">Score: ${score}</p>
-                <p id="finalPoints">Points: ${playerData.points} (100 Points = 5 BST)</p>
+                <p id="finalPoints">Points: ${playerData.points}</p>
+                <p id="finalPotentialBST">Potential BST: ${(playerData.points / 100 * 5).toFixed(2)}</p>
                 <p id="finalRewards">Rewards: ${gameRewards} BST</p>
                 <button id="startNewGame">Start New Game</button>
             `;
@@ -949,11 +970,38 @@ document.addEventListener("DOMContentLoaded", () => {
         if (popup) popup.style.display = "none";
     }
 
+    // कीबोर्ड कंट्रोल्स
     document.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowUp' && direction !== 'down') direction = 'up';
         if (event.key === 'ArrowDown' && direction !== 'up') direction = 'down';
         if (event.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
         if (event.key === 'ArrowRight' && direction !== 'left') direction = 'right';
+    });
+
+    // टच कंट्रोल्स
+    let touchStartX = 0;
+    let touchStartY = 0;
+
+    canvas.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+    });
+
+    canvas.addEventListener('touchmove', (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+            if (deltaX > 0 && direction !== 'left') direction = 'right';
+            else if (deltaX < 0 && direction !== 'right') direction = 'left';
+        } else {
+            if (deltaY > 0 && direction !== 'up') direction = 'down';
+            else if (deltaY < 0 && direction !== 'down') direction = 'up';
+        }
     });
 
     window.addEventListener('resize', updateCanvasSize);
