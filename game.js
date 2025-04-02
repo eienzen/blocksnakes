@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xbc6d1b30fCD2e8d1373Dd8054B7630bace6375fC"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x5e59a1d35f2EFa5ADe2C1137433fA276226A782F"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -368,31 +368,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			}
-		],
-		"name": "claimAllRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "claimWelcomeBonus",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "renounceOwnership",
 		"outputs": [],
@@ -479,6 +454,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -490,24 +470,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -560,47 +522,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint8",
 				"name": "",
 				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "getRewardHistory",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "rewardType",
-						"type": "string"
-					},
-					{
-						"internalType": "address",
-						"name": "referee",
-						"type": "address"
-					}
-				],
-				"internalType": "struct BlockSnakesGame.Reward[]",
-				"name": "",
-				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",
@@ -861,7 +782,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = 'right';
     let score = 0;
     let gameRewards = 0;
-    let baseSnakeSpeed = 300; // शुरुआती स्पीड (ms)
+    let baseSnakeSpeed = 300;
     let currentSnakeSpeed = baseSnakeSpeed;
 
     function updateCanvasSize() {
@@ -875,20 +796,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function enterFullscreen() {
-        if (canvas.requestFullscreen) {
-            canvas.requestFullscreen();
-        } else if (canvas.webkitRequestFullscreen) {
-            canvas.webkitRequestFullscreen();
-        } else if (canvas.mozRequestFullScreen) {
-            canvas.mozRequestFullScreen();
-        } else if (canvas.msRequestFullscreen) {
-            canvas.msRequestFullscreen();
-        }
+        if (canvas.requestFullscreen) canvas.requestFullscreen();
     }
 
     function generateBoxes() {
         boxes = [];
-        const numBoxes = 5; // 5 बॉक्स हर बार
+        const numBoxes = 5;
         for (let i = 0; i < numBoxes; i++) {
             let newBox;
             do {
@@ -907,15 +820,12 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // स्नेक की बॉडी (ग्रेडिएंट के साथ)
         const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
         gradient.addColorStop(0, "#00ffcc");
         gradient.addColorStop(1, "#00ccaa");
         snake.forEach((segment, index) => {
             ctx.fillStyle = gradient;
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-
-            // स्नेक की आंखें (सिर्फ हेड पर)
             if (index === 0) {
                 ctx.fillStyle = "#fff";
                 const eyeSize = gridSize / 5;
@@ -935,7 +845,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // बॉक्सेस
         boxes.forEach(box => {
             ctx.fillStyle = "#ff5555";
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
@@ -980,7 +889,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
         if (eatenBoxIndex !== -1) {
             score += 10;
-            boxes.splice(eatenBoxIndex, 1); // खाया हुआ बॉक्स हटाएं
+            boxes.splice(eatenBoxIndex, 1);
             if (score % 100 === 0) {
                 const reward = 5;
                 const referrerReward = reward * 0.01;
@@ -995,12 +904,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
                 }
 
-                // 100 स्कोर पर स्पीड 0.5% बढ़ाएं
-                currentSnakeSpeed = Math.max(50, currentSnakeSpeed * 0.995); // न्यूनतम 50ms तक सीमित
+                currentSnakeSpeed = Math.max(50, currentSnakeSpeed * 0.995);
                 clearInterval(gameInterval);
                 gameInterval = setInterval(move, currentSnakeSpeed);
             }
-            if (boxes.length < 3) generateBoxes(); // कम से कम 3 बॉक्स रखें
+            if (boxes.length < 3) generateBoxes();
         } else {
             snake.pop();
         }
@@ -1044,11 +952,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (popup) popup.style.display = "none";
     }
 
-    // स्मूथ टच हैंडलिंग
     let touchStartX = 0;
     let touchStartY = 0;
     let lastMoveTime = 0;
-    const touchThreshold = 20; // टच की संवेदनशीलता
+    const touchThreshold = 20;
 
     canvas.addEventListener('touchstart', (event) => {
         event.preventDefault();
@@ -1065,7 +972,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const deltaY = touch.clientY - touchStartY;
         const now = Date.now();
 
-        if (now - lastMoveTime < 100) return; // डबल मूव रोकें (100ms डिबाउंस)
+        if (now - lastMoveTime < 100) return;
 
         if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
             if (deltaX > 0 && direction !== 'left') direction = 'right';
@@ -1108,22 +1015,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function approveTokens(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
+        if (!contract || !account) {
+            throw new Error("Connect your wallet first!");
+        }
         const amountWei = ethers.parseUnits(amount.toString(), 18);
 
         try {
+            console.log("Checking balance...");
             const balance = await contract.balanceOf(account);
+            console.log(`User balance: ${ethers.formatUnits(balance, 18)} BST`);
             if (balance < amountWei) {
-                throw new Error("Insufficient BST balance! Please get some BST tokens.");
+                throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
+            console.log("Checking allowance...");
             const allowance = await contract.allowance(account, contractAddress);
+            console.log(`Current allowance: ${ethers.formatUnits(allowance, 18)} BST`);
             if (allowance < amountWei) {
-                const approveTx = await contract.approve(contractAddress, amountWei);
+                console.log("Approving tokens...");
+                const approveTx = await contract.approve(contractAddress, amountWei, { gasLimit: 100000 });
                 await approveTx.wait();
-                return true; // अप्रूवल सफल
+                console.log("Tokens approved!");
+                return true;
             }
-            return false; // पहले से अप्रूव्ड
+            console.log("Tokens already approved!");
+            return false;
         } catch (error) {
             console.error("Error approving tokens:", error);
             throw new Error("Failed to approve tokens: " + (error.message || "Unknown error"));
@@ -1131,23 +1047,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function stakeTokens(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
+        if (!contract || !account) {
+            throw new Error("Connect your wallet first!");
+        }
         const amountWei = ethers.parseUnits(amount.toString(), 18);
 
         try {
+            console.log("Checking balance before staking...");
             const balance = await contract.balanceOf(account);
+            console.log(`User balance: ${ethers.formatUnits(balance, 18)} BST`);
             if (balance < amountWei) {
-                throw new Error("Insufficient BST balance! Please get some BST tokens.");
+                throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
-            const tx = await contract.stake(amountWei);
+            console.log("Staking tokens...");
+            const tx = await contract.stake(amountWei, { gasLimit: 200000 });
             await tx.wait();
+            console.log("Tokens staked!");
 
             playerData.stakedAmount += parseFloat(amount);
             playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
             localStorage.setItem("playerData", JSON.stringify(playerData));
             updatePlayerHistoryUI();
-            return true; // स्टेकिंग सफल
+            return true;
         } catch (error) {
             console.error("Error staking tokens:", error);
             throw new Error("Failed to stake tokens: " + (error.message || error.reason || "Unknown error"));
@@ -1159,7 +1081,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
-            alert("Checking approval and staking, please wait...");
+            console.log("Starting staking process...");
+            alert("Starting staking process, please wait...");
 
             // स्टेप 1: अप्रूवल
             const approvalNeeded = await approveTokens(amount);
@@ -1178,51 +1101,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function claimWelcomeBonus() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
-        try {
-            const tx = await contract.claimWelcomeBonus();
-            await tx.wait();
-            playerData.hasClaimedWelcomeBonus = true;
-            playerData.totalRewards += 100;
-            playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Welcome bonus of 100 BST claimed!");
-        } catch (error) {
-            console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
-        }
-    }
-
     async function connectWallet() {
-        if (!window.ethereum) return alert("Please install MetaMask or another compatible wallet!");
+        if (!window.ethereum) return alert("Please install MetaMask!");
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             if (network.chainId.toString() !== TARGET_NETWORK_ID) {
-                try {
-                    await window.ethereum.request({
-                        method: "wallet_switchEthereumChain",
-                        params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
-                    });
-                } catch (switchError) {
-                    if (switchError.code === 4902) {
-                        await window.ethereum.request({
-                            method: "wallet_addEthereumChain",
-                            params: [{
-                                chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}`,
-                                chainName: "BNB Testnet",
-                                nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
-                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
-                                blockExplorerUrls: ["https://testnet.bscscan.com"],
-                            }],
-                        });
-                    } else {
-                        throw switchError;
-                    }
-                }
+                await window.ethereum.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
+                });
             }
 
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -1312,47 +1200,16 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function claimPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
-        try {
-            const tx = await contract.claimAllRewards(
-                ethers.parseUnits(playerData.pendingRewards.toString(), 18),
-                playerData.pendingReferral || "0x0000000000000000000000000000000000000000"
-            );
-            await tx.wait();
-            playerData.totalRewards += playerData.pendingRewards;
-            playerData.referralRewards += playerData.pendingReferrerReward;
-            playerData.pendingRewards = 0;
-            playerData.pendingReferrerReward = 0;
-            playerData.pendingReferral = null;
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Rewards claimed successfully!");
-        } catch (error) {
-            console.error("Error claiming rewards:", error);
-            let errorMessage = error.message || "Unknown error";
-            if (error.data && error.data.message) {
-                errorMessage = error.data.message;
-            }
-            alert("Failed to claim rewards: " + errorMessage);
-        }
-    }
-
     const connectBtn = document.getElementById("connectWallet");
     const disconnectBtn = document.getElementById("disconnectWallet");
     const referralBtn = document.getElementById("getReferralLink");
-    const claimRewardsBtn = document.getElementById("claimGameRewards");
     const stakeBtn = document.getElementById("stakeTokens");
-    const welcomeBtn = document.getElementById("welcomeBonusButton");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
-    if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (stakeBtn) stakeBtn.addEventListener("click", () => {
         const amount = document.getElementById("stakeInput")?.value;
         if (amount) stakeWithApproval(parseFloat(amount));
     });
-    if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
 });
