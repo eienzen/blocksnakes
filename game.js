@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0,
         totalRewards: 0,
         score: 0,
+        points: 0, // नया: पॉइंट्स ट्रैक करने के लिए
         rewards: 0,
         pendingRewards: 0,
         pendingLevels: [],
@@ -33,478 +34,70 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    const contractAddress = "0xFafeE28872afC76B5FC6e4de2AaA71123c3f6dfF";
+    const contractAddress = "YOUR_CONTRACT_ADDRESS";
     const contractABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"name": "ReferralAdded",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "refereeReward",
-				"type": "uint256"
-			}
-		],
-		"name": "RewardsClaimed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "StakeRewardUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Staked",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "refereeReward",
-				"type": "uint256"
-			}
-		],
-		"name": "claimAllRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "stake",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "updateStakeReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_bstToken",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [],
-		"name": "bstToken",
-		"outputs": [
-			{
-				"internalType": "contract IERC20",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "getRewardHistory",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "rewardType",
-						"type": "string"
-					},
-					{
-						"internalType": "address",
-						"name": "referee",
-						"type": "address"
-					}
-				],
-				"internalType": "struct BlockSnakesGame.Reward[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "MINIMUM_WITHDRAWAL",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "playerHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "gamesPlayed",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReferrals",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referralRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakedAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakeTimestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "pendingStakeRewards",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "referrals",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "rewardHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "SECONDS_IN_MONTH",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "STAKE_REWARD_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+        {
+            "inputs": [{"name": "amount", "type": "uint256"}],
+            "name": "stake",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {"name": "player", "type": "address"},
+                {"name": "totalReward", "type": "uint256"},
+                {"name": "referrer", "type": "address"},
+                {"name": "referee", "type": "address"},
+                {"name": "referrerReward", "type": "uint256"},
+                {"name": "refereeReward", "type": "uint256"}
+            ],
+            "name": "claimAllRewards",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "player", "type": "address"}],
+            "name": "updateStakeReward",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "player", "type": "address"}],
+            "name": "getRewardHistory",
+            "outputs": [
+                {
+                    "components": [
+                        {"name": "amount", "type": "uint256"},
+                        {"name": "timestamp", "type": "uint256"},
+                        {"name": "rewardType", "type": "string"},
+                        {"name": "referee", "type": "address"}
+                    ],
+                    "name": "",
+                    "type": "tuple[]"
+                }
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        },
+        {
+            "inputs": [{"name": "", "type": "address"}],
+            "name": "playerHistory",
+            "outputs": [
+                {"name": "gamesPlayed", "type": "uint256"},
+                {"name": "totalRewards", "type": "uint256"},
+                {"name": "totalReferrals", "type": "uint256"},
+                {"name": "referralRewards", "type": "uint256"},
+                {"name": "stakedAmount", "type": "uint256"},
+                {"name": "stakeTimestamp", "type": "uint256"},
+                {"name": "pendingStakeRewards", "type": "uint256"}
+            ],
+            "stateMutability": "view",
+            "type": "function"
+        }
+    ];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -620,6 +213,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.strokeRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
         document.getElementById('score').textContent = `Score: ${score}`;
+        document.getElementById('points').textContent = `Points: ${playerData.points}`; // पॉइंट्स दिखाएं
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
@@ -631,7 +225,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            const refereeAmount = 5; // रेफरी को 5 BST
+            const refereeAmount = 5;
             playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeAmount;
             playerData.pendingRewards = (playerData.pendingRewards || 0) + refereeAmount;
             playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
@@ -650,7 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (playerData.rewards >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            const referrerAmount = playerData.rewards * 0.01; // 1% रेफरर को
+            const referrerAmount = playerData.rewards * 0.01;
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
             playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
 
@@ -671,7 +265,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const now = Math.floor(Date.now() / 1000);
         const lastTimestamp = playerData.stakeTimestamp || now;
         const SECONDS_IN_MONTH = 30 * 24 * 60 * 60;
-        const STAKE_REWARD_RATE = 5; // 5% मासिक
+        const STAKE_REWARD_RATE = 5;
 
         if (playerData.stakedAmount > 0 && now > lastTimestamp) {
             const timeElapsed = now - lastTimestamp;
@@ -693,8 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // हर मिनट स्टेक रिवॉर्ड अपडेट करें
-    setInterval(updateStakeRewardLocally, 60 * 1000);
+    setInterval(updateStakeRewardLocally, 60 * 1000); // हर मिनट स्टेक रिवॉर्ड अपडेट
 
     async function move() {
         let head = { x: snake[0].x, y: snake[0].y };
@@ -707,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
             snake: [...snake],
             direction: direction,
             score: score,
+            points: playerData.points, // पॉइंट्स भी स्टोर करें
             gameRewards: gameRewards
         };
 
@@ -720,21 +314,22 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             score += 10;
-            gameRewards += 2;
-            if (score > 0 && score % 100 === 0) {
+            playerData.points += 10; // बॉक्स खाने पर 10 पॉइंट्स
+            if (playerData.points >= 100) {
                 const reward = 5;
-                playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
-                playerData.pendingLevels.push({ score, reward });
+                playerData.pendingRewards += reward;
+                playerData.points -= 100; // 100 पॉइंट्स कट करें
+                gameRewards += reward;
 
                 playerData.rewardHistory.push({
                     amount: reward,
                     timestamp: Date.now(),
-                    rewardType: "Game",
+                    rewardType: "Game (100 Points)",
                     referee: "N/A"
                 });
 
                 const levelMessage = document.getElementById("levelMessage");
-                levelMessage.innerText = `Milestone Reached! Score: ${score}, Reward: ${reward} BST`;
+                levelMessage.innerText = `100 Points Reached! Reward: ${reward} BST`;
                 levelMessage.style.display = "block";
                 setTimeout(() => {
                     levelMessage.style.display = "none";
@@ -747,6 +342,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         draw();
         updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData)); // तुरंत हिस्ट्री अपडेट
     }
 
     function showGameOverPopup() {
@@ -762,6 +358,7 @@ document.addEventListener("DOMContentLoaded", () => {
         popup.innerHTML = `
             <h2>Game Over!</h2>
             <p id="finalScore">Score: ${score}</p>
+            <p id="finalPoints">Points: ${playerData.points}</p>
             <p id="finalRewards">Rewards: ${gameRewards} BST</p>
             <button id="startNewGame">Start New Game</button>
             <button id="syncAndExit">Sync & Exit</button>
@@ -782,6 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.gamesPlayed = (playerData.gamesPlayed || 0) + 1;
         score = 0;
         gameRewards = 0;
+        playerData.points = 0; // गेम रीसेट पर पॉइंट्स भी रीसेट
         hasReceivedWelcomeReward = false;
         hasReceivedExtraReferralReward = false;
         snake = [{ x: 10, y: 10 }];
