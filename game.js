@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x98948c3b81253686c682A2A7525F913FFBE95e7c"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x9327aE1b23a1D62974A77B7e26D6298419cCeF27"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -473,11 +473,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -502,6 +497,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -934,13 +934,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
-            score += 10; // 1 बॉक्स = 10 स्कोर
+            score += 10;
             if (score >= 100) {
-                const reward = 5; // 100 स्कोर = 5 BST
-                const referrerReward = reward * 0.01; // 1% रेफरर को (0.05 BST)
+                const reward = 5;
+                const referrerReward = reward * 0.01;
                 playerData.pendingRewards += reward;
                 gameRewards += reward;
-                score -= 100; // स्कोर रीसेट करें
+                score -= 100;
 
                 playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
                 if (playerData.pendingReferral) {
@@ -1048,52 +1048,32 @@ document.addEventListener("DOMContentLoaded", () => {
         navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
     }
 
-    async function approveTokens(amount) {
+    async function approveAndStakeTokens(amount) {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
-            const balance = await contract.balanceOf(account);
             const amountWei = ethers.parseUnits(amount.toString(), 18);
-
+            const balance = await contract.balanceOf(account);
             if (balance < amountWei) {
                 return alert("Insufficient BST balance! Please get some BST tokens.");
             }
 
+            // अप्रूवल चेक करें और करें
             const allowance = await contract.allowance(account, contractAddress);
             if (allowance < amountWei) {
+                alert("Approving tokens, please wait...");
                 const approveTx = await contract.approve(contractAddress, amountWei);
                 await approveTx.wait();
-                alert(`Approved ${amount} BST for staking! Now you can stake your tokens.`);
-            } else {
-                alert("Already approved sufficient tokens! Proceed to stake.");
-            }
-        } catch (error) {
-            console.error("Error approving tokens:", error);
-            alert("Failed to approve tokens: " + (error.message || "Unknown error"));
-        }
-    }
-
-    async function stakeTokens(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (amount <= 0) return alert("Amount must be greater than 0!");
-
-        try {
-            const balance = await contract.balanceOf(account);
-            const amountWei = ethers.parseUnits(amount.toString(), 18);
-
-            if (balance < amountWei) {
-                return alert("Insufficient BST balance! Please get some BST tokens.");
+                alert("Tokens approved successfully! Now staking...");
             }
 
-            const allowance = await contract.allowance(account, contractAddress);
-            if (allowance < amountWei) {
-                return alert("Please approve tokens first using the 'Approve Tokens' button!");
-            }
-
+            // स्टेकिंग करें
             const tx = await contract.stake(amountWei);
             await tx.wait();
-            playerData.stakedAmount += amount;
+
+            // डेटा अपडेट करें
+            playerData.stakedAmount += parseFloat(amount);
             playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
             localStorage.setItem("playerData", JSON.stringify(playerData));
             updatePlayerHistoryUI();
@@ -1103,6 +1083,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let errorMessage = error.message || "Unknown error";
             if (error.data && error.data.message) {
                 errorMessage = error.data.message;
+            } else if (error.reason) {
+                errorMessage = error.reason;
             }
             alert("Failed to stake tokens: " + errorMessage);
         }
@@ -1274,7 +1256,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const referralBtn = document.getElementById("getReferralLink");
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const stakeBtn = document.getElementById("stakeTokens");
-    const approveBtn = document.getElementById("approveTokens");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
@@ -1283,11 +1264,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (stakeBtn) stakeBtn.addEventListener("click", () => {
         const amount = document.getElementById("stakeInput")?.value;
-        if (amount) stakeTokens(parseFloat(amount));
-    });
-    if (approveBtn) approveBtn.addEventListener("click", () => {
-        const amount = document.getElementById("stakeInput")?.value;
-        if (amount) approveTokens(parseFloat(amount));
+        if (amount) approveAndStakeTokens(parseFloat(amount));
     });
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
 });
