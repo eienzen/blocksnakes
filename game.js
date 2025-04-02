@@ -857,15 +857,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const gridHeight = 20;
     let gridSize;
     let snake = [{ x: 10, y: 10 }];
-    let box = { x: 15, y: 15 };
+    let boxes = [];
     let direction = 'right';
     let score = 0;
     let gameRewards = 0;
-    const SNAKE_SPEED = 300;
+    let baseSnakeSpeed = 300; // शुरुआती स्पीड (ms)
+    let currentSnakeSpeed = baseSnakeSpeed;
 
     function updateCanvasSize() {
-        const screenWidth = window.innerWidth;
-        const screenHeight = window.innerHeight;
+        const screenWidth = window.innerWidth * 0.9;
+        const screenHeight = window.innerHeight * 0.7;
         gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
         canvas.width = gridSize * gridWidth;
         canvas.height = gridSize * gridHeight;
@@ -885,9 +886,20 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function generateBox() {
-        box.x = Math.floor(Math.random() * gridWidth);
-        box.y = Math.floor(Math.random() * gridHeight);
+    function generateBoxes() {
+        boxes = [];
+        const numBoxes = 5; // 5 बॉक्स हर बार
+        for (let i = 0; i < numBoxes; i++) {
+            let newBox;
+            do {
+                newBox = {
+                    x: Math.floor(Math.random() * gridWidth),
+                    y: Math.floor(Math.random() * gridHeight)
+                };
+            } while (snake.some(segment => segment.x === newBox.x && segment.y === newBox.y) ||
+                     boxes.some(b => b.x === newBox.x && b.y === newBox.y));
+            boxes.push(newBox);
+        }
     }
 
     function draw() {
@@ -895,13 +907,39 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        snake.forEach(segment => {
-            ctx.fillStyle = "#00ffcc";
+        // स्नेक की बॉडी (ग्रेडिएंट के साथ)
+        const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
+        gradient.addColorStop(0, "#00ffcc");
+        gradient.addColorStop(1, "#00ccaa");
+        snake.forEach((segment, index) => {
+            ctx.fillStyle = gradient;
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+
+            // स्नेक की आंखें (सिर्फ हेड पर)
+            if (index === 0) {
+                ctx.fillStyle = "#fff";
+                const eyeSize = gridSize / 5;
+                if (direction === 'right') {
+                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
+                } else if (direction === 'left') {
+                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
+                } else if (direction === 'up') {
+                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
+                } else if (direction === 'down') {
+                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
+                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
+                }
+            }
         });
 
-        ctx.fillStyle = "#ff5555";
-        ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
+        // बॉक्सेस
+        boxes.forEach(box => {
+            ctx.fillStyle = "#ff5555";
+            ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
+        });
 
         document.getElementById('score').textContent = `Score: ${score}`;
         document.getElementById('potentialBST').textContent = `Potential BST: ${(score / 100 * 5).toFixed(2)}`;
@@ -931,7 +969,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
             clearInterval(gameInterval);
             gameInterval = null;
             showGameOverPopup();
@@ -939,14 +977,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         snake.unshift(head);
-        if (head.x === box.x && head.y === box.y) {
+        const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
+        if (eatenBoxIndex !== -1) {
             score += 10;
-            if (score >= 100) {
+            boxes.splice(eatenBoxIndex, 1); // खाया हुआ बॉक्स हटाएं
+            if (score % 100 === 0) {
                 const reward = 5;
                 const referrerReward = reward * 0.01;
                 playerData.pendingRewards += reward;
                 gameRewards += reward;
-                score -= 100;
 
                 playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
                 if (playerData.pendingReferral) {
@@ -955,8 +994,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     playerData.totalReferrals += 1;
                     playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
                 }
+
+                // 100 स्कोर पर स्पीड 0.5% बढ़ाएं
+                currentSnakeSpeed = Math.max(50, currentSnakeSpeed * 0.995); // न्यूनतम 50ms तक सीमित
+                clearInterval(gameInterval);
+                gameInterval = setInterval(move, currentSnakeSpeed);
             }
-            generateBox();
+            if (boxes.length < 3) generateBoxes(); // कम से कम 3 बॉक्स रखें
         } else {
             snake.pop();
         }
@@ -990,14 +1034,49 @@ document.addEventListener("DOMContentLoaded", () => {
         score = 0;
         gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
-        box = { x: 15, y: 15 };
         direction = 'right';
+        currentSnakeSpeed = baseSnakeSpeed;
+        generateBoxes();
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
         const popup = document.getElementById("gameOverPopup");
         if (popup) popup.style.display = "none";
     }
+
+    // स्मूथ टच हैंडलिंग
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let lastMoveTime = 0;
+    const touchThreshold = 20; // टच की संवेदनशीलता
+
+    canvas.addEventListener('touchstart', (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        lastMoveTime = Date.now();
+    });
+
+    canvas.addEventListener('touchmove', (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        const now = Date.now();
+
+        if (now - lastMoveTime < 100) return; // डबल मूव रोकें (100ms डिबाउंस)
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
+            if (deltaX > 0 && direction !== 'left') direction = 'right';
+            else if (deltaX < 0 && direction !== 'right') direction = 'left';
+            lastMoveTime = now;
+        } else if (Math.abs(deltaY) > touchThreshold) {
+            if (deltaY > 0 && direction !== 'up') direction = 'down';
+            else if (deltaY < 0 && direction !== 'down') direction = 'up';
+            lastMoveTime = now;
+        }
+    });
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowUp' && direction !== 'down') direction = 'up';
@@ -1006,36 +1085,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (event.key === 'ArrowRight' && direction !== 'left') direction = 'right';
     });
 
-    let touchStartX = 0;
-    let touchStartY = 0;
-
-    canvas.addEventListener('touchstart', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-    });
-
-    canvas.addEventListener('touchmove', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-
-        if (Math.abs(deltaX) > Math.abs(deltaY)) {
-            if (deltaX > 10 && direction !== 'left') direction = 'right';
-            else if (deltaX < -10 && direction !== 'right') direction = 'left';
-        } else {
-            if (deltaY > 10 && direction !== 'up') direction = 'down';
-            else if (deltaY < -10 && direction !== 'down') direction = 'up';
-        }
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-    });
-
     window.addEventListener('resize', updateCanvasSize);
 
     updateCanvasSize();
+    generateBoxes();
     draw();
 
     const playGameBtn = document.getElementById('playGame');
@@ -1044,7 +1097,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!account) return alert("Please connect your wallet!");
             enterFullscreen();
             resetGame();
-            if (!gameInterval) gameInterval = setInterval(move, SNAKE_SPEED);
+            if (!gameInterval) gameInterval = setInterval(move, currentSnakeSpeed);
         });
     }
 
