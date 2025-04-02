@@ -18,7 +18,9 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingReferral: null,
         pendingReferrerReward: 0,
         pendingRefereeReward: 0,
-        rewardHistory: []
+        rewardHistory: [],
+        lastRewardTimestamp: 0,
+        pendingDailyRewards: 0
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
     playerData.rewardHistory = playerData.rewardHistory || [];
@@ -30,30 +32,716 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    const contractAddress = "YOUR_CONTRACT_ADDRESS";
+    const contractAddress = "0xe331bf9f3eb0613f3abc83ffcc00f1cdf3678b72"; // अपना कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
-        {
-            "inputs": [],
-            "name": "payToContinue",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"name": "player", "type": "address"},
-                {"name": "totalReward", "type": "uint256"},
-                {"name": "referrer", "type": "address"},
-                {"name": "referee", "type": "address"},
-                {"name": "referrerReward", "type": "uint256"},
-                {"name": "refereeReward", "type": "uint256"}
-            ],
-            "name": "claimAllRewards",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }
-    ];
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "reward",
+				"type": "uint256"
+			}
+		],
+		"name": "ReferralAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
+			}
+		],
+		"name": "RewardClaimed",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Staked",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "Transfer",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "Unstaked",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "referrerReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "refereeReward",
+				"type": "uint256"
+			}
+		],
+		"name": "addReferralReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			}
+		],
+		"name": "addRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "approve",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "referrerReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "refereeReward",
+				"type": "uint256"
+			}
+		],
+		"name": "claimAllRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "claimStakingReward",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "incrementGamesPlayed",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			}
+		],
+		"name": "referUser",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "stakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "unstakeTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "initialSupply",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			}
+		],
+		"name": "calculateStakingReward",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "gamesPlayed",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getRewardHistory",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "rewardType",
+						"type": "string"
+					},
+					{
+						"internalType": "address",
+						"name": "referee",
+						"type": "address"
+					}
+				],
+				"internalType": "struct BlockSnakesToken.RewardEntry[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "hasBeenReferred",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "referralRewards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "referredBy",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "rewardHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "stakes",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "startTime",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "lastClaimTime",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "totalReferrals",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "totalRewards",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -228,7 +916,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function updateDailyRewardLocally() {
+        const now = Math.floor(Date.now() / 1000); // सेकंड में टाइमस्टैम्प
+        const lastTimestamp = playerData.lastRewardTimestamp || now;
+        const DAY_IN_SECONDS = 86400;
+
+        if (now >= lastTimestamp + DAY_IN_SECONDS) {
+            const daysElapsed = Math.floor((now - lastTimestamp) / DAY_IN_SECONDS);
+            const reward = daysElapsed * 1; // 1 BST प्रति दिन
+            playerData.pendingDailyRewards = (playerData.pendingDailyRewards || 0) + reward;
+            playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
+            playerData.lastRewardTimestamp = now;
+
+            playerData.rewardHistory.push({
+                amount: reward,
+                timestamp: Date.now(),
+                rewardType: "Daily",
+                referee: "N/A"
+            });
+
+            updatePlayerHistoryUI();
+            updateRewardHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+        }
+    }
+
     async function move() {
+        updateDailyRewardLocally(); // हर मूव में डेली रिवॉर्ड चेक करें
+
         let head = { x: snake[0].x, y: snake[0].y };
         if (direction === 'right') head.x++;
         if (direction === 'left') head.x--;
@@ -242,7 +957,6 @@ document.addEventListener("DOMContentLoaded", () => {
             gameRewards: gameRewards
         };
 
-        // दीवार से टकराने पर गेम ओवर
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
@@ -250,7 +964,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // अपने शरीर से टकराने की शर्त हटाई गई
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             score += 10;
@@ -297,44 +1010,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <h2>Game Over!</h2>
             <p id="finalScore">Score: ${score}</p>
             <p id="finalRewards">Rewards: ${gameRewards} BST</p>
-            <button id="continueWithTokens">Continue with Tokens (5 BST)</button>
             <button id="startNewGame">Start New Game</button>
             <button id="syncAndExit">Sync & Exit</button>
         `;
         document.body.appendChild(popup);
 
-        document.getElementById("continueWithTokens").addEventListener("click", continueWithTokens);
         document.getElementById("startNewGame").addEventListener("click", resetGame);
         document.getElementById("syncAndExit").addEventListener("click", syncAndExit);
-    }
-
-    async function continueWithTokens() {
-        if (!contract || !account) {
-            alert("Please connect your wallet to continue!");
-            return;
-        }
-        pauseGame();
-        try {
-            await contract.payToContinue();
-            playerData.rewardHistory.push({
-                amount: 5,
-                timestamp: Date.now(),
-                rewardType: "Continue Game",
-                referee: "N/A"
-            });
-
-            snake = [...lastSnakeState.snake];
-            direction = lastSnakeState.direction;
-            score = lastSnakeState.score;
-            gameRewards = lastSnakeState.gameRewards;
-
-            document.getElementById("gameOverPopup").remove();
-            restartGame();
-        } catch (error) {
-            console.error("Error continuing game:", error);
-            alert("Failed to continue game: " + error.message);
-            restartGame();
-        }
     }
 
     async function resetGame() {
@@ -521,6 +1203,8 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
+            playerData.lastRewardTimestamp = Number(history.lastRewardTimestamp);
+            playerData.pendingDailyRewards = Number(history.pendingDailyRewards) / 10 ** 18;
 
             const rewardHistory = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewardHistory.map(entry => ({
@@ -547,6 +1231,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards || 0} BST`;
         document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards || 0} BST`;
         document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels?.length || 0}`;
+        document.getElementById("pendingDailyRewardsText").innerText = `Pending Daily Rewards: ${playerData.pendingDailyRewards || 0} BST`;
     }
 
     function updateRewardHistoryUI() {
@@ -571,7 +1256,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const refereeReward = playerData.pendingRefereeReward;
 
         try {
-            await contract.claimAllRewards(
+            const tx = await contract.claimAllRewards(
                 account,
                 ethers.parseUnits(totalReward.toString(), 18),
                 referrer,
@@ -579,6 +1264,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ethers.parseUnits(referrerReward.toString(), 18),
                 ethers.parseUnits(refereeReward.toString(), 18)
             );
+            await tx.wait();
             playerData.rewards = (playerData.rewards || 0) + playerData.pendingRewards;
             playerData.totalRewards = (playerData.totalRewards || 0) + playerData.pendingRewards;
             playerData.pendingRewards = 0;
@@ -586,6 +1272,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.pendingReferral = null;
             playerData.pendingReferrerReward = 0;
             playerData.pendingRefereeReward = 0;
+            playerData.pendingDailyRewards = 0;
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
