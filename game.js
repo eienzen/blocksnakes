@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x9327aE1b23a1D62974A77B7e26D6298419cCeF27"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xbc6d1b30fCD2e8d1373Dd8054B7630bace6375fC"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -175,6 +175,12 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "value",
 				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
 			}
 		],
 		"name": "DebugLog",
@@ -1048,45 +1054,74 @@ document.addEventListener("DOMContentLoaded", () => {
         navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
     }
 
-    async function approveAndStakeTokens(amount) {
+    async function approveTokens(amount) {
         if (!contract || !account) return alert("Connect your wallet first!");
-        if (amount <= 0) return alert("Amount must be greater than 0!");
+        const amountWei = ethers.parseUnits(amount.toString(), 18);
 
         try {
-            const amountWei = ethers.parseUnits(amount.toString(), 18);
             const balance = await contract.balanceOf(account);
             if (balance < amountWei) {
-                return alert("Insufficient BST balance! Please get some BST tokens.");
+                throw new Error("Insufficient BST balance! Please get some BST tokens.");
             }
 
-            // अप्रूवल चेक करें और करें
             const allowance = await contract.allowance(account, contractAddress);
             if (allowance < amountWei) {
-                alert("Approving tokens, please wait...");
                 const approveTx = await contract.approve(contractAddress, amountWei);
                 await approveTx.wait();
-                alert("Tokens approved successfully! Now staking...");
+                return true; // अप्रूवल सफल
+            }
+            return false; // पहले से अप्रूव्ड
+        } catch (error) {
+            console.error("Error approving tokens:", error);
+            throw new Error("Failed to approve tokens: " + (error.message || "Unknown error"));
+        }
+    }
+
+    async function stakeTokens(amount) {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        const amountWei = ethers.parseUnits(amount.toString(), 18);
+
+        try {
+            const balance = await contract.balanceOf(account);
+            if (balance < amountWei) {
+                throw new Error("Insufficient BST balance! Please get some BST tokens.");
             }
 
-            // स्टेकिंग करें
             const tx = await contract.stake(amountWei);
             await tx.wait();
 
-            // डेटा अपडेट करें
             playerData.stakedAmount += parseFloat(amount);
             playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
             localStorage.setItem("playerData", JSON.stringify(playerData));
             updatePlayerHistoryUI();
-            alert(`Successfully staked ${amount} BST!`);
+            return true; // स्टेकिंग सफल
         } catch (error) {
             console.error("Error staking tokens:", error);
-            let errorMessage = error.message || "Unknown error";
-            if (error.data && error.data.message) {
-                errorMessage = error.data.message;
-            } else if (error.reason) {
-                errorMessage = error.reason;
+            throw new Error("Failed to stake tokens: " + (error.message || error.reason || "Unknown error"));
+        }
+    }
+
+    async function stakeWithApproval(amount) {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (amount <= 0) return alert("Amount must be greater than 0!");
+
+        try {
+            alert("Checking approval and staking, please wait...");
+
+            // स्टेप 1: अप्रूवल
+            const approvalNeeded = await approveTokens(amount);
+            if (approvalNeeded) {
+                alert("Tokens approved successfully! Now staking...");
+            } else {
+                alert("Tokens already approved! Proceeding to stake...");
             }
-            alert("Failed to stake tokens: " + errorMessage);
+
+            // स्टेप 2: स्टेकिंग
+            await stakeTokens(amount);
+            alert(`Successfully staked ${amount} BST!`);
+        } catch (error) {
+            console.error("Error in stakeWithApproval:", error);
+            alert(error.message);
         }
     }
 
@@ -1264,7 +1299,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (stakeBtn) stakeBtn.addEventListener("click", () => {
         const amount = document.getElementById("stakeInput")?.value;
-        if (amount) approveAndStakeTokens(parseFloat(amount));
+        if (amount) stakeWithApproval(parseFloat(amount));
     });
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
 });
