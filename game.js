@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x52c068b0e15822991C917DbceADD769D0C90c0e1"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xa673a0168824cD15ACdF4390CCEA888357065553"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -453,6 +453,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -477,11 +482,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -983,8 +983,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function stakeTokens(amount) {
         if (!contract || !account) return alert("Connect your wallet first!");
+        if (amount <= 0) return alert("Amount must be greater than 0!");
+
         try {
-            const tx = await contract.stake(ethers.parseUnits(amount.toString(), 18));
+            // यूज़र का बैलेंस और अप्रूवल चेक करें
+            const balance = await contract.balanceOf(account);
+            const allowance = await contract.allowance(account, contractAddress);
+            const amountWei = ethers.parseUnits(amount.toString(), 18);
+
+            if (balance < amountWei) {
+                return alert("Insufficient BST balance!");
+            }
+
+            if (allowance < amountWei) {
+                const approveTx = await contract.approve(contractAddress, amountWei);
+                await approveTx.wait();
+                alert("Contract approved for staking!");
+            }
+
+            const tx = await contract.stake(amountWei);
             await tx.wait();
             playerData.stakedAmount += amount;
             playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
