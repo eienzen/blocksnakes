@@ -2,8 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let account = null;
     let contract = null;
     let isConnecting = false;
+    let gameInterval = null;
 
-    // प्लेयर डेटा
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
         totalRewards: 0,
@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", () => {
     playerData.pendingLevels = playerData.pendingLevels || [];
     playerData.rewardHistory = playerData.rewardHistory || [];
 
-    // रेफरल लिंक से रेफरर का पता निकालें
     const urlParams = new URLSearchParams(window.location.search);
     const referrerAddress = urlParams.get("ref");
     if (referrerAddress && !playerData.pendingReferral) {
@@ -31,717 +30,30 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    // कॉन्ट्रैक्ट एड्रेस और ABI
-    const contractAddress = "0xf712cb3123592b220c7c4dc086b08aa2df173708"; // यहाँ अपना कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "YOUR_CONTRACT_ADDRESS";
     const contractABI = [
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "reward",
-				"type": "uint256"
-			}
-		],
-		"name": "ReferralAdded",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			}
-		],
-		"name": "RewardClaimed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Staked",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Unstaked",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "refereeReward",
-				"type": "uint256"
-			}
-		],
-		"name": "addReferralReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			}
-		],
-		"name": "addRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "refereeReward",
-				"type": "uint256"
-			}
-		],
-		"name": "claimAllRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "claimStakingReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "incrementGamesPlayed",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"name": "referUser",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "stakeTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "transfer",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unstakeTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "initialSupply",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "calculateStakingReward",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "decimals",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "gamesPlayed",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getRewardHistory",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "rewardType",
-						"type": "string"
-					},
-					{
-						"internalType": "address",
-						"name": "referee",
-						"type": "address"
-					}
-				],
-				"internalType": "struct BlockSnakesToken.RewardEntry[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "hasBeenReferred",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "name",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "referralRewards",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "referredBy",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "rewardHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "stakes",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "startTime",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "lastClaimTime",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "totalReferrals",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "totalRewards",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "totalSupply",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+        {
+            "inputs": [],
+            "name": "payToContinue",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        },
+        {
+            "inputs": [
+                {"name": "player", "type": "address"},
+                {"name": "totalReward", "type": "uint256"},
+                {"name": "referrer", "type": "address"},
+                {"name": "referee", "type": "address"},
+                {"name": "referrerReward", "type": "uint256"},
+                {"name": "refereeReward", "type": "uint256"}
+            ],
+            "name": "claimAllRewards",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
+        }
+    ];
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -749,7 +61,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const gridWidth = 30;
     const gridHeight = 20;
     let gridSize;
-    let gameInterval;
     let snake = [{ x: 10, y: 10 }];
     let box = { x: 15, y: 15 };
     let direction = 'right';
@@ -771,15 +82,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function enterFullscreen() {
-        if (canvas.requestFullscreen) {
-            canvas.requestFullscreen();
-        } else if (canvas.mozRequestFullScreen) {
-            canvas.mozRequestFullScreen();
-        } else if (canvas.webkitRequestFullscreen) {
-            canvas.webkitRequestFullscreen();
-        } else if (canvas.msRequestFullscreen) {
-            canvas.msRequestFullscreen();
-        }
+        if (canvas.requestFullscreen) canvas.requestFullscreen();
+        else if (canvas.mozRequestFullScreen) canvas.mozRequestFullScreen();
+        else if (canvas.webkitRequestFullscreen) canvas.webkitRequestFullscreen();
+        else if (canvas.msRequestFullscreen) canvas.msRequestFullscreen();
     }
 
     function generateBox() {
@@ -869,8 +175,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let hasReceivedWelcomeReward = false;
     let hasReceivedExtraReferralReward = false;
 
-    async function checkReferralRewards() {
-        if (!account || !contract) return;
+    function checkReferralRewards() {
+        if (!account) return;
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
@@ -897,13 +203,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: playerData.pendingReferral
             });
 
-            try {
-                await contract.referUser(playerData.pendingReferral, account);
-                await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, refereeAmount);
-            } catch (error) {
-                console.error("Error adding referral reward:", error);
-            }
-
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
@@ -922,12 +221,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 rewardType: "Referral (Extra - Referrer)",
                 referee: playerData.pendingReferral
             });
-
-            try {
-                await contract.addReferralReward(playerData.pendingReferral, account, referrerAmount, 0);
-            } catch (error) {
-                console.error("Error adding extra referral reward:", error);
-            }
 
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
@@ -949,6 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
             gameRewards: gameRewards
         };
 
+        // दीवार से टकराने पर गेम ओवर
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
@@ -956,15 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        for (let segment of snake) {
-            if (head.x === segment.x && head.y === segment.y) {
-                clearInterval(gameInterval);
-                gameInterval = null;
-                showGameOverPopup();
-                return;
-            }
-        }
-
+        // अपने शरीर से टकराने की शर्त हटाई गई
         snake.unshift(head);
         if (head.x === box.x && head.y === box.y) {
             score += 10;
@@ -981,12 +267,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     referee: "N/A"
                 });
 
-                try {
-                    await contract.addRewards(account, reward);
-                } catch (error) {
-                    console.error("Error adding game reward:", error);
-                }
-
                 const levelMessage = document.getElementById("levelMessage");
                 levelMessage.innerText = `Milestone Reached! Score: ${score}, Reward: ${reward} BST`;
                 levelMessage.style.display = "block";
@@ -994,7 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     levelMessage.style.display = "none";
                 }, 3000);
             }
-            await checkReferralRewards();
+            checkReferralRewards();
             generateBox();
         } else {
             snake.pop();
@@ -1019,11 +299,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <p id="finalRewards">Rewards: ${gameRewards} BST</p>
             <button id="continueWithTokens">Continue with Tokens (5 BST)</button>
             <button id="startNewGame">Start New Game</button>
+            <button id="syncAndExit">Sync & Exit</button>
         `;
         document.body.appendChild(popup);
 
         document.getElementById("continueWithTokens").addEventListener("click", continueWithTokens);
         document.getElementById("startNewGame").addEventListener("click", resetGame);
+        document.getElementById("syncAndExit").addEventListener("click", syncAndExit);
     }
 
     async function continueWithTokens() {
@@ -1031,6 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Please connect your wallet to continue!");
             return;
         }
+        pauseGame();
         try {
             await contract.payToContinue();
             playerData.rewardHistory.push({
@@ -1046,10 +329,11 @@ document.addEventListener("DOMContentLoaded", () => {
             gameRewards = lastSnakeState.gameRewards;
 
             document.getElementById("gameOverPopup").remove();
-            gameInterval = setInterval(move, SNAKE_SPEED);
+            restartGame();
         } catch (error) {
             console.error("Error continuing game:", error);
             alert("Failed to continue game: " + error.message);
+            restartGame();
         }
     }
 
@@ -1074,6 +358,37 @@ document.addEventListener("DOMContentLoaded", () => {
         draw();
         const popup = document.getElementById("gameOverPopup");
         if (popup) popup.remove();
+    }
+
+    async function syncAndExit() {
+        if (!contract || !account) {
+            alert("Please connect your wallet to sync data!");
+            return;
+        }
+        pauseGame();
+        try {
+            await syncPendingRewards();
+            alert("Data synced successfully!");
+        } catch (error) {
+            console.error("Error syncing data:", error);
+            alert("Failed to sync data: " + error.message);
+        }
+        document.getElementById("gameOverPopup").remove();
+    }
+
+    function pauseGame() {
+        if (gameInterval) {
+            clearInterval(gameInterval);
+            gameInterval = null;
+            console.log("Game paused due to transaction");
+        }
+    }
+
+    function restartGame() {
+        if (!gameInterval) {
+            gameInterval = setInterval(move, SNAKE_SPEED);
+            console.log("Game restarted after transaction");
+        }
     }
 
     document.addEventListener('keydown', (event) => {
@@ -1123,8 +438,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 gameInterval = setInterval(move, SNAKE_SPEED);
             }
         });
-    } else {
-        console.error("Element with id 'playGame' not found.");
     }
 
     function generateReferralLink() {
@@ -1146,17 +459,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (!window.ethereum) {
-            alert("No Web3 wallet detected. Please install MetaMask or another Web3 wallet.");
+            alert("MetaMask not detected. Please install MetaMask and refresh the page.");
+            return;
+        }
+
+        const provider = window.ethereum;
+        if (!provider.isMetaMask) {
+            alert("Detected provider is not MetaMask. Please use MetaMask.");
             return;
         }
 
         try {
             isConnecting = true;
-            const provider = window.ethereum;
             const accounts = await provider.request({ method: "eth_requestAccounts" });
             if (!accounts || accounts.length === 0) {
-                throw new Error("No accounts found. Please ensure your wallet is unlocked.");
+                throw new Error("No accounts found. Please ensure MetaMask is unlocked.");
             }
+
             account = accounts[0];
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "inline-block";
@@ -1168,14 +487,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await loadPlayerHistory();
             updateRewardHistoryUI();
+            alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Error connecting wallet:", error);
             if (error.code === 4001) {
-                alert("User rejected the request. Please connect your wallet to continue.");
+                alert("You rejected the connection request. Please approve it in MetaMask.");
             } else if (error.code === -32002) {
-                alert("A wallet connection request is already pending. Please check your wallet.");
+                alert("A connection request is already pending. Please check MetaMask.");
+            } else if (error.code === -32603) {
+                alert("No active wallet found. Please ensure MetaMask is unlocked and try again.");
             } else {
-                alert("Error connecting wallet: " + error.message);
+                alert("Failed to connect wallet: " + error.message);
             }
         } finally {
             isConnecting = false;
@@ -1238,9 +560,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    async function claimPendingRewards() {
-        if (!contract) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 50) return alert("Minimum withdrawal is 50 BST!");
+    async function syncPendingRewards() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (playerData.pendingRewards < 10) return alert("You need at least 10 BST to sync rewards!");
 
         const totalReward = playerData.pendingRewards;
         const referrer = playerData.pendingReferral || "0x0000000000000000000000000000000000000000";
@@ -1251,11 +573,11 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             await contract.claimAllRewards(
                 account,
-                totalReward,
+                ethers.parseUnits(totalReward.toString(), 18),
                 referrer,
                 referee,
-                referrerReward,
-                refereeReward
+                ethers.parseUnits(referrerReward.toString(), 18),
+                ethers.parseUnits(refereeReward.toString(), 18)
             );
             playerData.rewards = (playerData.rewards || 0) + playerData.pendingRewards;
             playerData.totalRewards = (playerData.totalRewards || 0) + playerData.pendingRewards;
@@ -1268,72 +590,35 @@ document.addEventListener("DOMContentLoaded", () => {
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
-            console.error("Error claiming rewards:", error);
+            console.error("Error syncing rewards:", error);
+            throw error;
+        }
+    }
+
+    async function claimPendingRewards() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (playerData.pendingRewards < 10) return alert("You need at least 10 BST to withdraw!");
+
+        pauseGame();
+        try {
+            await syncPendingRewards();
+            alert("Rewards claimed successfully!");
+            restartGame();
+        } catch (error) {
             alert("Failed to claim rewards: " + error.message);
+            restartGame();
         }
     }
 
     const connectWalletButton = document.getElementById("connectWallet");
-    if (connectWalletButton) {
-        connectWalletButton.addEventListener("click", connectWallet);
-    }
+    if (connectWalletButton) connectWalletButton.addEventListener("click", connectWallet);
 
     const disconnectWalletButton = document.getElementById("disconnectWallet");
-    if (disconnectWalletButton) {
-        disconnectWalletButton.addEventListener("click", disconnectWallet);
-    }
+    if (disconnectWalletButton) disconnectWalletButton.addEventListener("click", disconnectWallet);
 
     const getReferralLinkButton = document.getElementById("getReferralLink");
-    if (getReferralLinkButton) {
-        getReferralLinkButton.addEventListener("click", generateReferralLink);
-    }
+    if (getReferralLinkButton) getReferralLinkButton.addEventListener("click", generateReferralLink);
 
     const claimGameRewardsButton = document.getElementById("claimGameRewards");
-    if (claimGameRewardsButton) {
-        claimGameRewardsButton.addEventListener("click", claimPendingRewards);
-    }
-
-    const stakeTokensButton = document.getElementById("stakeTokens");
-    if (stakeTokensButton) {
-        stakeTokensButton.addEventListener("click", async () => {
-            if (!contract) return alert("Connect your wallet first!");
-            const amount = document.getElementById("stakeInput").value;
-            if (!amount || amount <= 0) return alert("Enter a valid amount to stake!");
-            try {
-                await contract.stakeTokens(amount);
-                alert("Tokens staked successfully!");
-            } catch (error) {
-                console.error("Error staking tokens:", error);
-                alert("Failed to stake tokens: " + error.message);
-            }
-        });
-    }
-
-    const claimStakingRewardButton = document.getElementById("claimStakingReward");
-    if (claimStakingRewardButton) {
-        claimStakingRewardButton.addEventListener("click", async () => {
-            if (!contract) return alert("Connect your wallet first!");
-            try {
-                await contract.claimStakingReward();
-                alert("Staking reward claimed successfully!");
-            } catch (error) {
-                console.error("Error claiming staking reward:", error);
-                alert("Failed to claim staking reward: " + error.message);
-            }
-        });
-    }
-
-    const unstakeTokensButton = document.getElementById("unstakeTokens");
-    if (unstakeTokensButton) {
-        unstakeTokensButton.addEventListener("click", async () => {
-            if (!contract) return alert("Connect your wallet first!");
-            try {
-                await contract.unstakeTokens();
-                alert("Tokens unstaked successfully!");
-            } catch (error) {
-                console.error("Error unstaking tokens:", error);
-                alert("Failed to unstake tokens: " + error.message);
-            }
-        });
-    }
+    if (claimGameRewardsButton) claimGameRewardsButton.addEventListener("click", claimPendingRewards);
 });
