@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xa673a0168824cD15ACdF4390CCEA888357065553"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x2A8797D4e8EaE1C9e421AaA5EeD7A535BC99134f"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -453,11 +453,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -482,6 +477,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -981,24 +981,42 @@ document.addEventListener("DOMContentLoaded", () => {
         navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
     }
 
+    async function approveTokens(amount) {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (amount <= 0) return alert("Amount must be greater than 0!");
+
+        try {
+            const amountWei = ethers.parseUnits(amount.toString(), 18);
+            const allowance = await contract.allowance(account, contractAddress);
+
+            if (allowance < amountWei) {
+                const approveTx = await contract.approve(contractAddress, amountWei);
+                await approveTx.wait();
+                alert(`Approved ${amount} BST for staking! Please proceed with staking.`);
+            } else {
+                alert("Already approved sufficient tokens!");
+            }
+        } catch (error) {
+            console.error("Error approving tokens:", error);
+            alert("Failed to approve tokens: " + (error.message || "Unknown error"));
+        }
+    }
+
     async function stakeTokens(amount) {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
-            // यूज़र का बैलेंस और अप्रूवल चेक करें
             const balance = await contract.balanceOf(account);
-            const allowance = await contract.allowance(account, contractAddress);
             const amountWei = ethers.parseUnits(amount.toString(), 18);
 
             if (balance < amountWei) {
-                return alert("Insufficient BST balance!");
+                return alert("Insufficient BST balance! Please get some BST tokens.");
             }
 
+            const allowance = await contract.allowance(account, contractAddress);
             if (allowance < amountWei) {
-                const approveTx = await contract.approve(contractAddress, amountWei);
-                await approveTx.wait();
-                alert("Contract approved for staking!");
+                return alert("Please approve tokens first using the 'Approve Tokens' button!");
             }
 
             const tx = await contract.stake(amountWei);
@@ -1010,7 +1028,11 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(`Successfully staked ${amount} BST!`);
         } catch (error) {
             console.error("Error staking tokens:", error);
-            alert("Failed to stake tokens: " + (error.message || "Unknown error"));
+            let errorMessage = error.message || "Unknown error";
+            if (error.data && error.data.message) {
+                errorMessage = error.data.message;
+            }
+            alert("Failed to stake tokens: " + errorMessage);
         }
     }
 
@@ -1152,6 +1174,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const referralBtn = document.getElementById("getReferralLink");
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const stakeBtn = document.getElementById("stakeTokens");
+    const approveBtn = document.getElementById("approveTokens");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
@@ -1161,6 +1184,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (stakeBtn) stakeBtn.addEventListener("click", () => {
         const amount = document.getElementById("stakeInput")?.value;
         if (amount) stakeTokens(parseFloat(amount));
+    });
+    if (approveBtn) approveBtn.addEventListener("click", () => {
+        const amount = document.getElementById("stakeInput")?.value;
+        if (amount) approveTokens(parseFloat(amount));
     });
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
 });
