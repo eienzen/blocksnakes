@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xYOUR_CONTRACT_ADDRESS_HERE"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x52c068b0e15822991C917DbceADD769D0C90c0e1"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [ /* Remix से BlockSnakesGame का ABI यहाँ डालें */ ];
 
     const canvas = document.getElementById("gameCanvas");
