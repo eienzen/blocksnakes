@@ -8,10 +8,30 @@
     <style>
         body {
             margin: 0;
-            padding: 20px;
+            padding: 0;
             background-color: #1a1a3d;
             color: #fff;
             font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #header {
+            width: 100%;
+            background-color: #2a2a5d;
+            padding: 10px;
+            text-align: center;
+            position: fixed;
+            top: 0;
+            z-index: 1000;
+        }
+        #header p {
+            margin: 5px;
+            font-size: 18px;
+        }
+        #content {
+            margin-top: 100px; /* हेडर के लिए जगह */
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -56,37 +76,43 @@
     </style>
 </head>
 <body>
-    <div id="gameInfo">
-        <h2>Game Info</h2>
-        <p id="score">Score: 0</p>
-        <p id="potentialBST">Potential BST: 0</p>
-        <p id="gameRewards">Game Rewards: 0 BST</p>
-        <button id="playGame">Play Game</button>
-        <button id="connectWallet">Connect Wallet</button>
-        <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
+    <div id="header">
         <p id="walletAddress"></p>
+        <p id="walletBalance">Wallet Balance: 0 BST</p>
+        <p id="totalRewardsHeader">Total Rewards: 0 BST</p>
     </div>
-    <canvas id="gameCanvas"></canvas>
-    <div id="playerHistory">
-        <h2>Player History</h2>
-        <p id="gamesPlayed">Games Played: 0</p>
-        <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
-        <p id="totalReferrals">Total Referrals: 0</p>
-        <p id="referralRewards">Referral Rewards: 0 BST</p>
-        <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-        <p id="stakedAmountText">Staked Amount: 0 BST</p>
-        <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p>
-        <button id="getReferralLink">Get Referral Link</button>
-        <button id="claimGameRewards">Claim Rewards</button>
-        <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-        <h3>Reward History</h3>
-        <ul id="rewardHistoryList"></ul>
-    </div>
-    <div id="stakingActions">
-        <h2>Staking Actions</h2>
-        <div>
-            <input type="number" id="stakeInput" placeholder="Enter amount to stake" min="1" step="1" />
-            <button id="stakeTokens">Stake Tokens</button>
+    <div id="content">
+        <div id="gameInfo">
+            <h2>Game Info</h2>
+            <p id="score">Score: 0</p>
+            <p id="potentialBST">Potential BST: 0</p>
+            <p id="gameRewards">Game Rewards: 0 BST</p>
+            <button id="playGame">Play Game</button>
+            <button id="connectWallet">Connect Wallet</button>
+            <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+        <div id="playerHistory">
+            <h2>Player History</h2>
+            <p id="gamesPlayed">Games Played: 0</p>
+            <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
+            <p id="totalReferrals">Total Referrals: 0</p>
+            <p id="referralRewards">Referral Rewards: 0 BST</p>
+            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
+            <p id="stakedAmountText">Staked Amount: 0 BST</p>
+            <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p>
+            <button id="getReferralLink">Get Referral Link</button>
+            <button id="claimGameRewards">Claim Rewards</button>
+            <button id="welcomeBonusButton">Claim Welcome Bonus</button>
+            <h3>Reward History</h3>
+            <ul id="rewardHistoryList"></ul>
+        </div>
+        <div id="stakingActions">
+            <h2>Staking Actions</h2>
+            <div>
+                <input type="number" id="stakeInput" placeholder="Enter amount to stake" min="1" step="1" />
+                <button id="stakeTokens">Stake Tokens</button>
+            </div>
         </div>
     </div>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
