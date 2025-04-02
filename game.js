@@ -19,8 +19,9 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingReferrerReward: 0,
         pendingRefereeReward: 0,
         rewardHistory: [],
-        lastRewardTimestamp: 0,
-        pendingDailyRewards: 0
+        stakedAmount: 0,
+        stakeTimestamp: 0,
+        pendingStakeRewards: 0
     };
     playerData.pendingLevels = playerData.pendingLevels || [];
     playerData.rewardHistory = playerData.rewardHistory || [];
@@ -32,31 +33,47 @@ document.addEventListener("DOMContentLoaded", () => {
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
-    const contractAddress = "0xe331bf9f3eb0613f3abc83ffcc00f1cdf3678b72"; // अपना कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xFafeE28872afC76B5FC6e4de2AaA71123c3f6dfF";
     const contractABI = [
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			}
+		],
+		"name": "OwnableInvalidOwner",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "OwnableUnauthorizedAccount",
+		"type": "error"
+	},
 	{
 		"anonymous": false,
 		"inputs": [
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "owner",
+				"name": "previousOwner",
 				"type": "address"
 			},
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "spender",
+				"name": "newOwner",
 				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
 			}
 		],
-		"name": "Approval",
+		"name": "OwnershipTransferred",
 		"type": "event"
 	},
 	{
@@ -73,12 +90,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "referee",
 				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "reward",
-				"type": "uint256"
 			}
 		],
 		"name": "ReferralAdded",
@@ -90,23 +101,35 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
+				"name": "player",
 				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "totalReward",
 				"type": "uint256"
 			},
 			{
 				"indexed": false,
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "referrerReward",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "refereeReward",
+				"type": "uint256"
 			}
 		],
-		"name": "RewardClaimed",
+		"name": "RewardsClaimed",
 		"type": "event"
 	},
 	{
@@ -115,7 +138,26 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "user",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "StakeRewardUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -129,124 +171,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "event"
 	},
 	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "Unstaked",
-		"type": "event"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "refereeReward",
-				"type": "uint256"
-			}
-		],
-		"name": "addReferralReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			}
-		],
-		"name": "addRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
+				"name": "player",
 				"type": "address"
 			},
 			{
@@ -282,38 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "claimStakingReward",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "incrementGamesPlayed",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"name": "referUser",
+		"name": "renounceOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -326,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "stakeTokens",
+		"name": "stake",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -335,23 +232,12 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "to",
+				"name": "newOwner",
 				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
 			}
 		],
-		"name": "transfer",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
+		"name": "transferOwnership",
+		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
 	},
@@ -359,34 +245,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "from",
+				"name": "player",
 				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
 			}
 		],
-		"name": "transferFrom",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "unstakeTokens",
+		"name": "updateStakeReward",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -395,83 +258,34 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "initialSupply",
+				"name": "amount",
 				"type": "uint256"
+			}
+		],
+		"name": "withdrawTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_bstToken",
+				"type": "address"
 			}
 		],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "calculateStakingReward",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
-		"name": "decimals",
+		"name": "bstToken",
 		"outputs": [
 			{
-				"internalType": "uint8",
+				"internalType": "contract IERC20",
 				"name": "",
-				"type": "uint8"
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -481,23 +295,10 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "",
+				"name": "player",
 				"type": "address"
 			}
 		],
-		"name": "gamesPlayed",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "getRewardHistory",
 		"outputs": [
 			{
@@ -523,7 +324,7 @@ document.addEventListener("DOMContentLoaded", () => {
 						"type": "address"
 					}
 				],
-				"internalType": "struct BlockSnakesToken.RewardEntry[]",
+				"internalType": "struct BlockSnakesGame.Reward[]",
 				"name": "",
 				"type": "tuple[]"
 			}
@@ -532,32 +333,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "hasBeenReferred",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
-		"name": "name",
+		"name": "MINIMUM_WITHDRAWAL",
 		"outputs": [
 			{
-				"internalType": "string",
+				"internalType": "uint256",
 				"name": "",
-				"type": "string"
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -584,7 +366,50 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			}
 		],
-		"name": "referralRewards",
+		"name": "playerHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "gamesPlayed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReferrals",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "referralRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakedAmount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stakeTimestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "pendingStakeRewards",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REFERRAL_COMMISSION_RATE",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -603,7 +428,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "address"
 			}
 		],
-		"name": "referredBy",
+		"name": "referrals",
 		"outputs": [
 			{
 				"internalType": "address",
@@ -616,6 +441,11 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
 			{
 				"internalType": "uint256",
 				"name": "",
@@ -649,75 +479,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "stakes",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "startTime",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "lastClaimTime",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "totalReferrals",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "totalRewards",
+		"name": "SECONDS_IN_MONTH",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -730,7 +493,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "totalSupply",
+		"name": "STAKE_REWARD_RATE",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -868,14 +631,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (score >= 50 && !hasReceivedWelcomeReward && playerData.pendingReferral) {
             hasReceivedWelcomeReward = true;
-            const referrerAmount = 3;
-            const refereeAmount = 5;
-
+            const refereeAmount = 5; // रेफरी को 5 BST
             playerData.pendingRefereeReward = (playerData.pendingRefereeReward || 0) + refereeAmount;
-            playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
-            playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
-            playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
             playerData.pendingRewards = (playerData.pendingRewards || 0) + refereeAmount;
+            playerData.totalReferrals = (playerData.totalReferrals || 0) + 1;
 
             playerData.rewardHistory.push({
                 amount: refereeAmount,
@@ -884,22 +643,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: "N/A"
             });
 
-            playerData.rewardHistory.push({
-                amount: referrerAmount,
-                timestamp: Date.now(),
-                rewardType: "Referral (Welcome - Referrer)",
-                referee: playerData.pendingReferral
-            });
-
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         }
 
-        if (score >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
+        if (playerData.rewards >= 100 && !hasReceivedExtraReferralReward && playerData.pendingReferral) {
             hasReceivedExtraReferralReward = true;
-            const referrerAmount = 2;
-
+            const referrerAmount = playerData.rewards * 0.01; // 1% रेफरर को
             playerData.pendingReferrerReward = (playerData.pendingReferrerReward || 0) + referrerAmount;
             playerData.referralRewards = (playerData.referralRewards || 0) + referrerAmount;
 
@@ -916,22 +667,23 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function updateDailyRewardLocally() {
-        const now = Math.floor(Date.now() / 1000); // सेकंड में टाइमस्टैम्प
-        const lastTimestamp = playerData.lastRewardTimestamp || now;
-        const DAY_IN_SECONDS = 86400;
+    function updateStakeRewardLocally() {
+        const now = Math.floor(Date.now() / 1000);
+        const lastTimestamp = playerData.stakeTimestamp || now;
+        const SECONDS_IN_MONTH = 30 * 24 * 60 * 60;
+        const STAKE_REWARD_RATE = 5; // 5% मासिक
 
-        if (now >= lastTimestamp + DAY_IN_SECONDS) {
-            const daysElapsed = Math.floor((now - lastTimestamp) / DAY_IN_SECONDS);
-            const reward = daysElapsed * 1; // 1 BST प्रति दिन
-            playerData.pendingDailyRewards = (playerData.pendingDailyRewards || 0) + reward;
+        if (playerData.stakedAmount > 0 && now > lastTimestamp) {
+            const timeElapsed = now - lastTimestamp;
+            const reward = (playerData.stakedAmount * STAKE_REWARD_RATE * timeElapsed) / (SECONDS_IN_MONTH * 100);
+            playerData.pendingStakeRewards = (playerData.pendingStakeRewards || 0) + reward;
             playerData.pendingRewards = (playerData.pendingRewards || 0) + reward;
-            playerData.lastRewardTimestamp = now;
+            playerData.stakeTimestamp = now;
 
             playerData.rewardHistory.push({
                 amount: reward,
                 timestamp: Date.now(),
-                rewardType: "Daily",
+                rewardType: "Stake",
                 referee: "N/A"
             });
 
@@ -941,9 +693,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function move() {
-        updateDailyRewardLocally(); // हर मूव में डेली रिवॉर्ड चेक करें
+    // हर मिनट स्टेक रिवॉर्ड अपडेट करें
+    setInterval(updateStakeRewardLocally, 60 * 1000);
 
+    async function move() {
         let head = { x: snake[0].x, y: snake[0].y };
         if (direction === 'right') head.x++;
         if (direction === 'left') head.x--;
@@ -1130,6 +883,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    async function stakeTokens(amount) {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        try {
+            const tx = await contract.stake(ethers.parseUnits(amount.toString(), 18));
+            await tx.wait();
+            playerData.stakedAmount += amount;
+            playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            updatePlayerHistoryUI();
+            alert(`Successfully staked ${amount} BST!`);
+        } catch (error) {
+            console.error("Error staking tokens:", error);
+            alert("Failed to stake tokens: " + error.message);
+        }
+    }
+
     async function connectWallet() {
         if (isConnecting) {
             alert("Wallet connection in progress. Please wait.");
@@ -1203,8 +972,9 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
-            playerData.lastRewardTimestamp = Number(history.lastRewardTimestamp);
-            playerData.pendingDailyRewards = Number(history.pendingDailyRewards) / 10 ** 18;
+            playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
+            playerData.stakeTimestamp = Number(history.stakeTimestamp);
+            playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
 
             const rewardHistory = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewardHistory.map(entry => ({
@@ -1231,7 +1001,8 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("referralRewards").innerText = `Referral Rewards: ${playerData.referralRewards || 0} BST`;
         document.getElementById("pendingRewardsText").innerText = `Pending Rewards: ${playerData.pendingRewards || 0} BST`;
         document.getElementById("pendingLevelsText").innerText = `Pending Milestones: ${playerData.pendingLevels?.length || 0}`;
-        document.getElementById("pendingDailyRewardsText").innerText = `Pending Daily Rewards: ${playerData.pendingDailyRewards || 0} BST`;
+        document.getElementById("stakedAmountText").innerText = `Staked Amount: ${playerData.stakedAmount || 0} BST`;
+        document.getElementById("pendingStakeRewardsText").innerText = `Pending Stake Rewards: ${playerData.pendingStakeRewards || 0} BST`;
     }
 
     function updateRewardHistoryUI() {
@@ -1240,7 +1011,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.rewardHistory.forEach(entry => {
             const date = new Date(entry.timestamp).toLocaleString();
             const li = document.createElement("li");
-            li.innerText = `${entry.rewardType}: ${entry.amount} BST on ${date} ${entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""}`;
+            li.innerText = `${entry.rewardType}: ${entry.amount.toFixed(6)} BST on ${date} ${entry.referee !== "N/A" ? `(Referee: ${entry.referee})` : ""}`;
             historyList.appendChild(li);
         });
     }
@@ -1272,7 +1043,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.pendingReferral = null;
             playerData.pendingReferrerReward = 0;
             playerData.pendingRefereeReward = 0;
-            playerData.pendingDailyRewards = 0;
+            playerData.pendingStakeRewards = 0;
             updatePlayerHistoryUI();
             updateRewardHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
@@ -1308,4 +1079,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const claimGameRewardsButton = document.getElementById("claimGameRewards");
     if (claimGameRewardsButton) claimGameRewardsButton.addEventListener("click", claimPendingRewards);
+
+    const stakeButton = document.getElementById("stakeButton");
+    if (stakeButton) stakeButton.addEventListener("click", () => {
+        const amount = prompt("Enter amount to stake (BST):");
+        if (amount) stakeTokens(parseFloat(amount));
+    });
 });
