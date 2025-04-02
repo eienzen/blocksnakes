@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x5e59a1d35f2EFa5ADe2C1137433fA276226A782F"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xA06CFda6467c6a8cd7eBc5510cDAb9f9DC750D04"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -369,6 +369,31 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "totalReward",
+				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
+			}
+		],
+		"name": "claimAllRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "claimWelcomeBonus",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"name": "renounceOwnership",
 		"outputs": [],
@@ -455,11 +480,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -471,6 +491,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -523,6 +548,47 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint8",
 				"name": "",
 				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			}
+		],
+		"name": "getRewardHistory",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "rewardType",
+						"type": "string"
+					},
+					{
+						"internalType": "address",
+						"name": "referee",
+						"type": "address"
+					}
+				],
+				"internalType": "struct BlockSnakesGame.Reward[]",
+				"name": "",
+				"type": "tuple[]"
 			}
 		],
 		"stateMutability": "view",
@@ -821,7 +887,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // स्नेक की बॉडी और चेहरा
         const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
         gradient.addColorStop(0, "#00ffcc");
         gradient.addColorStop(1, "#00ccaa");
@@ -829,16 +894,13 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillStyle = gradient;
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
 
-            // स्नेक का चेहरा (हेड पर बड़ी गोल आंखें)
             if (index === 0) {
-                // चेहरा साफ करने के लिए हेड को फिर से ड्रा करें
-                ctx.fillStyle = "#00ffcc"; // हेड का रंग
+                ctx.fillStyle = "#00ffcc";
                 ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
 
-                // बड़ी गोल आंखें
-                ctx.fillStyle = "#ffffff"; // सफेद आंखें
-                const eyeSize = gridSize / 3; // बड़ी आंखें
-                const pupilSize = eyeSize / 2; // प्यूपिल
+                ctx.fillStyle = "#ffffff";
+                const eyeSize = gridSize / 3;
+                const pupilSize = eyeSize / 2;
                 if (direction === 'right') {
                     ctx.beginPath();
                     ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + eyeSize, eyeSize / 2, 0, Math.PI * 2);
@@ -846,7 +908,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     ctx.beginPath();
                     ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + gridSize - eyeSize, eyeSize / 2, 0, Math.PI * 2);
                     ctx.fill();
-                    // प्यूपिल (काला केंद्र)
                     ctx.fillStyle = "#000000";
                     ctx.beginPath();
                     ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + eyeSize, pupilSize / 2, 0, Math.PI * 2);
@@ -1076,17 +1137,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const amountWei = ethers.parseUnits(amount.toString(), 18);
 
         try {
+            console.log("Checking balance for approval...");
             const balance = await contract.balanceOf(account);
+            console.log(`Balance: ${ethers.formatUnits(balance, 18)} BST`);
             if (balance < amountWei) {
                 throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
+            console.log("Checking allowance...");
             const allowance = await contract.allowance(account, contractAddress);
+            console.log(`Allowance: ${ethers.formatUnits(allowance, 18)} BST`);
             if (allowance < amountWei) {
+                console.log("Approving tokens...");
                 const approveTx = await contract.approve(contractAddress, amountWei, { gasLimit: 100000 });
                 await approveTx.wait();
+                console.log("Tokens approved!");
                 return true;
             }
+            console.log("Already approved!");
             return false;
         } catch (error) {
             console.error("Error approving tokens:", error);
@@ -1099,13 +1167,17 @@ document.addEventListener("DOMContentLoaded", () => {
         const amountWei = ethers.parseUnits(amount.toString(), 18);
 
         try {
+            console.log("Checking balance for staking...");
             const balance = await contract.balanceOf(account);
+            console.log(`Balance: ${ethers.formatUnits(balance, 18)} BST`);
             if (balance < amountWei) {
                 throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
+            console.log("Staking tokens...");
             const tx = await contract.stake(amountWei, { gasLimit: 200000 });
             await tx.wait();
+            console.log("Tokens staked!");
 
             playerData.stakedAmount += parseFloat(amount);
             playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
@@ -1124,13 +1196,16 @@ document.addEventListener("DOMContentLoaded", () => {
         if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
+            console.log("Starting staking process...");
             alert("Starting staking process, please wait...");
+
             const approvalNeeded = await approveTokens(amount);
             if (approvalNeeded) {
                 alert("Tokens approved successfully! Now staking...");
             } else {
                 alert("Tokens already approved! Proceeding to stake...");
             }
+
             await stakeTokens(amount);
             alert(`Successfully staked ${amount} BST!`);
         } catch (error) {
@@ -1143,8 +1218,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
         try {
-            const tx = await contract.claimWelcomeBonus();
+            console.log("Claiming welcome bonus...");
+            const tx = await contract.claimWelcomeBonus({ gasLimit: 200000 });
             await tx.wait();
+            console.log("Welcome bonus claimed!");
+
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
@@ -1164,10 +1242,27 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             if (network.chainId.toString() !== TARGET_NETWORK_ID) {
-                await window.ethereum.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
-                });
+                try {
+                    await window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: "wallet_addEthereumChain",
+                            params: [{
+                                chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}`,
+                                chainName: "BNB Testnet",
+                                nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
+                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
+                                blockExplorerUrls: ["https://testnet.bscscan.com"],
+                            }],
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
             }
 
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -1209,41 +1304,44 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadPlayerHistory() {
         if (!contract || !account) return;
         try {
+            console.log("Loading player history...");
             const history = await contract.playerHistory(account);
             playerData.gamesPlayed = Number(history.gamesPlayed);
-            playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
+            playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
             playerData.totalReferrals = Number(history.totalReferrals);
-            playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
-            playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
+            playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
+            playerData.stakedAmount = Number(ethers.formatUnits(history.stakedAmount, 18));
             playerData.stakeTimestamp = Number(history.stakeTimestamp);
-            playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
+            playerData.pendingStakeRewards = Number(ethers.formatUnits(history.pendingStakeRewards, 18));
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
 
             const rewards = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewards.map(r => ({
-                amount: Number(r.amount) / 10 ** 18,
+                amount: Number(ethers.formatUnits(r.amount, 18)),
                 timestamp: Number(r.timestamp) * 1000,
                 rewardType: r.rewardType,
                 referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
             }));
 
+            console.log("Player history loaded:", playerData);
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
             console.error("Error loading player history:", error);
+            alert("Failed to load player history: " + (error.message || "Unknown error"));
         }
     }
 
     function updatePlayerHistoryUI() {
         const elements = {
             gamesPlayed: `Games Played: ${playerData.gamesPlayed}`,
-            totalGameRewards: `Total Game Rewards: ${playerData.totalRewards} BST`,
+            totalGameRewards: `Total Game Rewards: ${playerData.totalRewards.toFixed(2)} BST`,
             totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
-            referralRewards: `Referral Rewards: ${playerData.referralRewards} BST`,
-            pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards} BST`,
-            stakedAmountText: `Staked Amount: ${playerData.stakedAmount} BST`,
-            pendingStakeRewardsText: `Pending Stake Rewards: ${playerData.pendingStakeRewards} BST`,
+            referralRewards: `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`,
+            pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`,
+            stakedAmountText: `Staked Amount: ${playerData.stakedAmount.toFixed(2)} BST`,
+            pendingStakeRewardsText: `Pending Stake Rewards: ${playerData.pendingStakeRewards.toFixed(2)} BST`,
             walletBalance: `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`,
             totalRewardsHeader: `Total Rewards: ${playerData.totalRewards.toFixed(2)} BST`
         };
@@ -1268,11 +1366,15 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
         try {
+            console.log("Claiming pending rewards...");
             const tx = await contract.claimAllRewards(
                 ethers.parseUnits(playerData.pendingRewards.toString(), 18),
-                playerData.pendingReferral || "0x0000000000000000000000000000000000000000"
+                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
+                { gasLimit: 300000 }
             );
             await tx.wait();
+            console.log("Rewards claimed!");
+
             playerData.totalRewards += playerData.pendingRewards;
             playerData.referralRewards += playerData.pendingReferrerReward;
             playerData.pendingRewards = 0;
@@ -1284,11 +1386,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            let errorMessage = error.message || "Unknown error";
-            if (error.data && error.data.message) {
-                errorMessage = error.data.message;
-            }
-            alert("Failed to claim rewards: " + errorMessage);
+            alert("Failed to claim rewards: " + (error.message || error.reason || "Unknown error"));
         }
     }
 
