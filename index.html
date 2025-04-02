@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io; img-src 'self';">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io; img-src 'self';">
     <title>BlockSnakes - Play & Earn</title>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <style>
@@ -58,7 +58,7 @@
         <button id="connectWallet">Connect Wallet</button>
         <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
         <button id="getReferralLink">Get Referral Link</button>
-        <button id="welcomeBonusButton">Claim Welcome Bonus</button> <!-- जोड़ा गया -->
+        <button id="welcomeBonusButton">Claim Welcome Bonus</button>
     </div>
 
     <div class="section" id="game">
@@ -66,13 +66,11 @@
         <canvas id="gameCanvas"></canvas>
         <div id="gameInfo">
             <p id="score">Score: 0</p>
-            <p id="points">Points: 0</p> <!-- जोड़ा गया -->
+            <p id="points">Points: 0</p>
             <p id="gameRewards">Game Rewards: 0 BST</p>
         </div>
         <button id="playGame">Play Game</button>
         <button id="claimGameRewards">Claim Game Rewards</button>
-        <div id="gasEstimate"></div>
-        <div id="levelMessage"></div>
     </div>
 
     <div class="section" id="playerInfoColumn">
@@ -82,13 +80,13 @@
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
-            <p id="stakedAmountText">Staked Amount: 0 BST</p> <!-- जोड़ा गया -->
-            <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p> <!-- जोड़ा गया -->
+            <p id="stakedAmountText">Staked Amount: 0 BST</p>
+            <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p>
         </div>
         <div id="pendingRewards">
             <h2>Pending Game Rewards</h2>
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <p>Minimum Withdrawal: 10 BST</p> <!-- 50 से 10 BST में बदला -->
+            <p>Minimum Withdrawal: 10 BST</p>
         </div>
     </div>
 
