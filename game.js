@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x01F8f9AA705C8f9d12028735f356DD3667272d12"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x0xf4B1C21Ee3005f7FF272Dd28d957d4cFa5C39038"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -920,8 +920,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function showGameOverPopup() {
-        const popup = document.getElementById("gameOverPopup") || document.createElement("div");
-        if (!popup.id) {
+        let popup = document.getElementById("gameOverPopup");
+        if (!popup) {
+            popup = document.createElement("div");
             popup.id = "gameOverPopup";
             popup.innerHTML = `
                 <h2>Game Over!</h2>
@@ -964,12 +965,15 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCanvasSize();
     draw();
 
-    document.getElementById('playGame').addEventListener('click', () => {
-        if (!account) return alert("Please connect your wallet!");
-        enterFullscreen();
-        resetGame();
-        if (!gameInterval) gameInterval = setInterval(move, SNAKE_SPEED);
-    });
+    const playGameBtn = document.getElementById('playGame');
+    if (playGameBtn) {
+        playGameBtn.addEventListener('click', () => {
+            if (!account) return alert("Please connect your wallet!");
+            enterFullscreen();
+            resetGame();
+            if (!gameInterval) gameInterval = setInterval(move, SNAKE_SPEED);
+        });
+    }
 
     function generateReferralLink() {
         if (!account) return alert("Connect your wallet first!");
@@ -989,7 +993,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(`Successfully staked ${amount} BST!`);
         } catch (error) {
             console.error("Error staking tokens:", error);
-            alert("Failed to stake tokens: " + error.message);
+            alert("Failed to stake tokens: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1007,7 +1011,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + error.message);
+            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1016,9 +1020,12 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
             account = accounts[0];
-            document.getElementById("connectWallet").style.display = "none";
-            document.getElementById("disconnectWallet").style.display = "block";
-            document.getElementById("walletAddress") && (document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`);
+            const connectBtn = document.getElementById("connectWallet");
+            const disconnectBtn = document.getElementById("disconnectWallet");
+            const walletAddr = document.getElementById("walletAddress");
+            if (connectBtn) connectBtn.style.display = "none";
+            if (disconnectBtn) disconnectBtn.style.display = "block";
+            if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
 
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
@@ -1028,16 +1035,19 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Error connecting wallet:", error);
-            alert("Failed to connect wallet: " + error.message);
+            alert("Failed to connect wallet: " + (error.message || "Unknown error"));
         }
     }
 
     function disconnectWallet() {
         account = null;
         contract = null;
-        document.getElementById("connectWallet").style.display = "block";
-        document.getElementById("disconnectWallet").style.display = "none";
-        document.getElementById("walletAddress") && (document.getElementById("walletAddress").textContent = "");
+        const connectBtn = document.getElementById("connectWallet");
+        const disconnectBtn = document.getElementById("disconnectWallet");
+        const walletAddr = document.getElementById("walletAddress");
+        if (connectBtn) connectBtn.style.display = "block";
+        if (disconnectBtn) disconnectBtn.style.display = "none";
+        if (walletAddr) walletAddr.textContent = "";
         alert("Wallet disconnected!");
     }
 
@@ -1116,17 +1126,24 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + error.message);
+            alert("Failed to claim rewards: " + (error.message || "Unknown error"));
         }
     }
 
-    document.getElementById("connectWallet").addEventListener("click", connectWallet);
-    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
-    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
-    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
-    document.getElementById("stakeTokens").addEventListener("click", () => {
-        const amount = document.getElementById("stakeInput").value;
+    const connectBtn = document.getElementById("connectWallet");
+    const disconnectBtn = document.getElementById("disconnectWallet");
+    const referralBtn = document.getElementById("getReferralLink");
+    const claimRewardsBtn = document.getElementById("claimGameRewards");
+    const stakeBtn = document.getElementById("stakeTokens");
+    const welcomeBtn = document.getElementById("welcomeBonusButton");
+
+    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
+    if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
+    if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
+    if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
+    if (stakeBtn) stakeBtn.addEventListener("click", () => {
+        const amount = document.getElementById("stakeInput")?.value;
         if (amount) stakeTokens(parseFloat(amount));
     });
-    document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
+    if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
 });
