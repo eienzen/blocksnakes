@@ -2,12 +2,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let account = null;
     let contract = null;
     let gameInterval = null;
+    const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
         totalRewards: 0,
         score: 0,
-        points: 0,
+        points: 0, // Points earned by eating boxes; 100 points = 5 BST
         pendingRewards: 0,
         totalReferrals: 0,
         referralRewards: 0,
@@ -26,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x2A8797D4e8EaE1C9e421AaA5EeD7A535BC99134f"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0xfca3547269Df80f6Cf302Fd303ba94E4fd41F029"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -339,11 +340,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
 				"internalType": "uint256",
 				"name": "totalReward",
 				"type": "uint256"
@@ -453,6 +449,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -477,11 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -857,7 +853,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
         document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('points').textContent = `Points: ${playerData.points}`;
+        document.getElementById('points').textContent = `Points: ${playerData.points} (100 Points = 5 BST)`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
@@ -927,7 +923,7 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.innerHTML = `
                 <h2>Game Over!</h2>
                 <p id="finalScore">Score: ${score}</p>
-                <p id="finalPoints">Points: ${playerData.points}</p>
+                <p id="finalPoints">Points: ${playerData.points} (100 Points = 5 BST)</p>
                 <p id="finalRewards">Rewards: ${gameRewards} BST</p>
                 <button id="startNewGame">Start New Game</button>
             `;
@@ -986,15 +982,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
+            const balance = await contract.balanceOf(account);
             const amountWei = ethers.parseUnits(amount.toString(), 18);
-            const allowance = await contract.allowance(account, contractAddress);
 
+            if (balance < amountWei) {
+                return alert("Insufficient BST balance! Please get some BST tokens.");
+            }
+
+            const allowance = await contract.allowance(account, contractAddress);
             if (allowance < amountWei) {
                 const approveTx = await contract.approve(contractAddress, amountWei);
                 await approveTx.wait();
-                alert(`Approved ${amount} BST for staking! Please proceed with staking.`);
+                alert(`Approved ${amount} BST for staking! Now you can stake your tokens.`);
             } else {
-                alert("Already approved sufficient tokens!");
+                alert("Already approved sufficient tokens! Proceed to stake.");
             }
         } catch (error) {
             console.error("Error approving tokens:", error);
@@ -1055,20 +1056,45 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function connectWallet() {
-        if (!window.ethereum) return alert("Please install MetaMask!");
+        if (!window.ethereum) return alert("Please install MetaMask or another compatible wallet!");
         try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const network = await provider.getNetwork();
+            if (network.chainId.toString() !== TARGET_NETWORK_ID) {
+                try {
+                    await window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: "wallet_addEthereumChain",
+                            params: [{
+                                chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}`,
+                                chainName: "BNB Testnet",
+                                nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
+                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
+                                blockExplorerUrls: ["https://testnet.bscscan.com"],
+                            }],
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
+            }
+
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
             account = accounts[0];
+            const signer = await provider.getSigner();
+            contract = new ethers.Contract(contractAddress, contractABI, signer);
+
             const connectBtn = document.getElementById("connectWallet");
             const disconnectBtn = document.getElementById("disconnectWallet");
             const walletAddr = document.getElementById("walletAddress");
             if (connectBtn) connectBtn.style.display = "none";
             if (disconnectBtn) disconnectBtn.style.display = "block";
             if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
-
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            contract = new ethers.Contract(contractAddress, contractABI, signer);
 
             await loadPlayerHistory();
             alert("Wallet connected successfully!");
@@ -1147,10 +1173,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function claimPendingRewards() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required!");
+        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
         try {
             const tx = await contract.claimAllRewards(
-                account,
                 ethers.parseUnits(playerData.pendingRewards.toString(), 18),
                 playerData.pendingReferral || "0x0000000000000000000000000000000000000000"
             );
@@ -1165,7 +1190,11 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Unknown error"));
+            let errorMessage = error.message || "Unknown error";
+            if (error.data && error.data.message) {
+                errorMessage = error.data.message;
+            }
+            alert("Failed to claim rewards: " + errorMessage);
         }
     }
 
