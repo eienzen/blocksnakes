@@ -1,537 +1,95 @@
-document.addEventListener("DOMContentLoaded", () => {
-    let account = null;
-    let contract = null;
-    let gameInterval = null;
-    const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
-
-    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
-        gamesPlayed: 0,
-        totalRewards: 0,
-        score: 0,
-        pendingRewards: 0,
-        totalReferrals: 0,
-        referralRewards: 0,
-        pendingReferral: null,
-        pendingReferrerReward: 0,
-        rewardHistory: [],
-        stakedAmount: 0,
-        stakeTimestamp: 0,
-        pendingStakeRewards: 0,
-        hasClaimedWelcomeBonus: false
-    };
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrerAddress = urlParams.get("ref");
-    if (referrerAddress && !playerData.pendingReferral) {
-        playerData.pendingReferral = referrerAddress;
-    }
-
-    const contractAddress = "0xYOUR_CONTRACT_ADDRESS_HERE"; // यहाँ कॉन्ट्रैक्ट एड्रेस डालें
-    const contractABI = [ /* Remix से BlockSnakesGame का ABI यहाँ डालें */ ];
-
-    const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
-
-    const gridWidth = 30;
-    const gridHeight = 20;
-    let gridSize;
-    let snake = [{ x: 10, y: 10 }];
-    let boxes = [];
-    let direction = 'right';
-    let score = 0;
-    let gameRewards = 0;
-    let baseSnakeSpeed = 300; // शुरुआती स्पीड (ms)
-    let currentSnakeSpeed = baseSnakeSpeed;
-
-    function updateCanvasSize() {
-        const screenWidth = window.innerWidth * 0.9;
-        const screenHeight = window.innerHeight * 0.7;
-        gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
-        canvas.width = gridSize * gridWidth;
-        canvas.height = gridSize * gridHeight;
-        canvas.style.width = `${canvas.width}px`;
-        canvas.style.height = `${canvas.height}px`;
-    }
-
-    function enterFullscreen() {
-        if (canvas.requestFullscreen) {
-            canvas.requestFullscreen();
-        } else if (canvas.webkitRequestFullscreen) {
-            canvas.webkitRequestFullscreen();
-        } else if (canvas.mozRequestFullScreen) {
-            canvas.mozRequestFullScreen();
-        } else if (canvas.msRequestFullscreen) {
-            canvas.msRequestFullscreen();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.infura.io wss://*.infura.io; img-src 'self';">
+    <title>BlockSnakes Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #1a1a3d;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-    }
-
-    function generateBoxes() {
-        boxes = [];
-        const numBoxes = 5; // 5 बॉक्स हर बार
-        for (let i = 0; i < numBoxes; i++) {
-            let newBox;
-            do {
-                newBox = {
-                    x: Math.floor(Math.random() * gridWidth),
-                    y: Math.floor(Math.random() * gridHeight)
-                };
-            } while (snake.some(segment => segment.x === newBox.x && segment.y === newBox.y) ||
-                     boxes.some(b => b.x === newBox.x && b.y === newBox.y));
-            boxes.push(newBox);
+        canvas {
+            border: 2px solid #00ffcc;
+            background-color: #0a0a23;
         }
-    }
-
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = "#0a0a23";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // स्नेक की बॉडी (ग्रेडिएंट के साथ)
-        const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
-        gradient.addColorStop(0, "#00ffcc");
-        gradient.addColorStop(1, "#00ccaa");
-        snake.forEach((segment, index) => {
-            ctx.fillStyle = gradient;
-            ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-
-            // स्नेक की आंखें (सिर्फ हेड पर)
-            if (index === 0) {
-                ctx.fillStyle = "#fff";
-                const eyeSize = gridSize / 5;
-                if (direction === 'right') {
-                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
-                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
-                } else if (direction === 'left') {
-                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
-                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
-                } else if (direction === 'up') {
-                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
-                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + eyeSize, eyeSize, eyeSize);
-                } else if (direction === 'down') {
-                    ctx.fillRect(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
-                    ctx.fillRect(segment.x * gridSize + gridSize - eyeSize * 2, segment.y * gridSize + gridSize - eyeSize * 2, eyeSize, eyeSize);
-                }
-            }
-        });
-
-        // बॉक्सेस
-        boxes.forEach(box => {
-            ctx.fillStyle = "#ff5555";
-            ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
-        });
-
-        document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('potentialBST').textContent = `Potential BST: ${(score / 100 * 5).toFixed(2)}`;
-        document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
-    }
-
-    function updateStakeRewardLocally() {
-        const now = Math.floor(Date.now() / 1000);
-        if (playerData.stakedAmount > 0 && playerData.stakeTimestamp > 0) {
-            const timeElapsed = now - playerData.stakeTimestamp;
-            const reward = (playerData.stakedAmount * 5 * timeElapsed) / (30 * 24 * 60 * 60 * 100);
-            playerData.pendingStakeRewards += reward;
-            playerData.pendingRewards += reward;
-            playerData.stakeTimestamp = now;
-            playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Stake", referee: "N/A" });
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
+        #gameInfo, #playerHistory, #stakingActions {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #2a2a5d;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
         }
-    }
-
-    setInterval(updateStakeRewardLocally, 60 * 1000);
-
-    async function move() {
-        let head = { x: snake[0].x, y: snake[0].y };
-        if (direction === 'right') head.x++;
-        if (direction === 'left') head.x--;
-        if (direction === 'up') head.y--;
-        if (direction === 'down') head.y++;
-
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-            clearInterval(gameInterval);
-            gameInterval = null;
-            showGameOverPopup();
-            return;
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            background-color: #00ffcc;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
         }
-
-        snake.unshift(head);
-        const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
-        if (eatenBoxIndex !== -1) {
-            score += 10;
-            boxes.splice(eatenBoxIndex, 1); // खाया हुआ बॉक्स हटाएं
-            if (score % 100 === 0) {
-                const reward = 5;
-                const referrerReward = reward * 0.01;
-                playerData.pendingRewards += reward;
-                gameRewards += reward;
-
-                playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
-                if (playerData.pendingReferral) {
-                    playerData.pendingReferrerReward += referrerReward;
-                    playerData.referralRewards += referrerReward;
-                    playerData.totalReferrals += 1;
-                    playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
-                }
-
-                // 100 स्कोर पर स्पीड 0.5% बढ़ाएं
-                currentSnakeSpeed = Math.max(50, currentSnakeSpeed * 0.995); // न्यूनतम 50ms तक सीमित
-                clearInterval(gameInterval);
-                gameInterval = setInterval(move, currentSnakeSpeed);
-            }
-            if (boxes.length < 3) generateBoxes(); // कम से कम 3 बॉक्स रखें
-        } else {
-            snake.pop();
+        button:hover {
+            background-color: #00ccaa;
         }
-        draw();
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-    }
-
-    function showGameOverPopup() {
-        let popup = document.getElementById("gameOverPopup");
-        if (!popup) {
-            popup = document.createElement("div");
-            popup.id = "gameOverPopup";
-            popup.innerHTML = `
-                <h2>Game Over!</h2>
-                <p id="finalScore">Score: ${score}</p>
-                <p id="finalPotentialBST">Potential BST: ${(score / 100 * 5).toFixed(2)}</p>
-                <p id="finalRewards">Rewards: ${gameRewards} BST</p>
-                <button id="startNewGame">Start New Game</button>
-            `;
-            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; color: #000; padding: 20px; border: 2px solid #333;";
-            document.body.appendChild(popup);
-            document.getElementById("startNewGame").addEventListener("click", resetGame);
+        input {
+            padding: 8px;
+            margin: 5px;
+            border-radius: 5px;
+            border: 1px solid #00ffcc;
         }
-        popup.style.display = "block";
-    }
-
-    async function resetGame() {
-        if (gameInterval) clearInterval(gameInterval);
-        playerData.gamesPlayed += 1;
-        score = 0;
-        gameRewards = 0;
-        snake = [{ x: 10, y: 10 }];
-        direction = 'right';
-        currentSnakeSpeed = baseSnakeSpeed;
-        generateBoxes();
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-        draw();
-        const popup = document.getElementById("gameOverPopup");
-        if (popup) popup.style.display = "none";
-    }
-
-    // स्मूथ टच हैंडलिंग
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let lastMoveTime = 0;
-    const touchThreshold = 20; // टच की संवेदनशीलता
-
-    canvas.addEventListener('touchstart', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        lastMoveTime = Date.now();
-    });
-
-    canvas.addEventListener('touchmove', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        const now = Date.now();
-
-        if (now - lastMoveTime < 100) return; // डबल मूव रोकें (100ms डिबाउंस)
-
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
-            if (deltaX > 0 && direction !== 'left') direction = 'right';
-            else if (deltaX < 0 && direction !== 'right') direction = 'left';
-            lastMoveTime = now;
-        } else if (Math.abs(deltaY) > touchThreshold) {
-            if (deltaY > 0 && direction !== 'up') direction = 'down';
-            else if (deltaY < 0 && direction !== 'down') direction = 'up';
-            lastMoveTime = now;
+        ul {
+            list-style-type: none;
+            padding: 0;
         }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'ArrowUp' && direction !== 'down') direction = 'up';
-        if (event.key === 'ArrowDown' && direction !== 'up') direction = 'down';
-        if (event.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
-        if (event.key === 'ArrowRight' && direction !== 'left') direction = 'right';
-    });
-
-    window.addEventListener('resize', updateCanvasSize);
-
-    updateCanvasSize();
-    generateBoxes();
-    draw();
-
-    const playGameBtn = document.getElementById('playGame');
-    if (playGameBtn) {
-        playGameBtn.addEventListener('click', () => {
-            if (!account) return alert("Please connect your wallet!");
-            enterFullscreen();
-            resetGame();
-            if (!gameInterval) gameInterval = setInterval(move, currentSnakeSpeed);
-        });
-    }
-
-    function generateReferralLink() {
-        if (!account) return alert("Connect your wallet first!");
-        const referralLink = `${window.location.origin}${window.location.pathname}?ref=${account}`;
-        navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
-    }
-
-    async function approveTokens(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
-
-        try {
-            const balance = await contract.balanceOf(account);
-            if (balance < amountWei) {
-                throw new Error("Insufficient BST balance! Please get some BST tokens.");
-            }
-
-            const allowance = await contract.allowance(account, contractAddress);
-            if (allowance < amountWei) {
-                const approveTx = await contract.approve(contractAddress, amountWei);
-                await approveTx.wait();
-                return true; // अप्रूवल सफल
-            }
-            return false; // पहले से अप्रूव्ड
-        } catch (error) {
-            console.error("Error approving tokens:", error);
-            throw new Error("Failed to approve tokens: " + (error.message || "Unknown error"));
+        li {
+            margin: 5px 0;
         }
-    }
-
-    async function stakeTokens(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
-
-        try {
-            const balance = await contract.balanceOf(account);
-            if (balance < amountWei) {
-                throw new Error("Insufficient BST balance! Please get some BST tokens.");
-            }
-
-            const tx = await contract.stake(amountWei);
-            await tx.wait();
-
-            playerData.stakedAmount += parseFloat(amount);
-            playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            updatePlayerHistoryUI();
-            return true; // स्टेकिंग सफल
-        } catch (error) {
-            console.error("Error staking tokens:", error);
-            throw new Error("Failed to stake tokens: " + (error.message || error.reason || "Unknown error"));
-        }
-    }
-
-    async function stakeWithApproval(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (amount <= 0) return alert("Amount must be greater than 0!");
-
-        try {
-            alert("Checking approval and staking, please wait...");
-
-            // स्टेप 1: अप्रूवल
-            const approvalNeeded = await approveTokens(amount);
-            if (approvalNeeded) {
-                alert("Tokens approved successfully! Now staking...");
-            } else {
-                alert("Tokens already approved! Proceeding to stake...");
-            }
-
-            // स्टेप 2: स्टेकिंग
-            await stakeTokens(amount);
-            alert(`Successfully staked ${amount} BST!`);
-        } catch (error) {
-            console.error("Error in stakeWithApproval:", error);
-            alert(error.message);
-        }
-    }
-
-    async function claimWelcomeBonus() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
-        try {
-            const tx = await contract.claimWelcomeBonus();
-            await tx.wait();
-            playerData.hasClaimedWelcomeBonus = true;
-            playerData.totalRewards += 100;
-            playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Welcome bonus of 100 BST claimed!");
-        } catch (error) {
-            console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
-        }
-    }
-
-    async function connectWallet() {
-        if (!window.ethereum) return alert("Please install MetaMask or another compatible wallet!");
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const network = await provider.getNetwork();
-            if (network.chainId.toString() !== TARGET_NETWORK_ID) {
-                try {
-                    await window.ethereum.request({
-                        method: "wallet_switchEthereumChain",
-                        params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
-                    });
-                } catch (switchError) {
-                    if (switchError.code === 4902) {
-                        await window.ethereum.request({
-                            method: "wallet_addEthereumChain",
-                            params: [{
-                                chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}`,
-                                chainName: "BNB Testnet",
-                                nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
-                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
-                                blockExplorerUrls: ["https://testnet.bscscan.com"],
-                            }],
-                        });
-                    } else {
-                        throw switchError;
-                    }
-                }
-            }
-
-            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-            account = accounts[0];
-            const signer = await provider.getSigner();
-            contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-            const connectBtn = document.getElementById("connectWallet");
-            const disconnectBtn = document.getElementById("disconnectWallet");
-            const walletAddr = document.getElementById("walletAddress");
-            if (connectBtn) connectBtn.style.display = "none";
-            if (disconnectBtn) disconnectBtn.style.display = "block";
-            if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
-
-            await loadPlayerHistory();
-            alert("Wallet connected successfully!");
-        } catch (error) {
-            console.error("Error connecting wallet:", error);
-            alert("Failed to connect wallet: " + (error.message || "Unknown error"));
-        }
-    }
-
-    function disconnectWallet() {
-        account = null;
-        contract = null;
-        const connectBtn = document.getElementById("connectWallet");
-        const disconnectBtn = document.getElementById("disconnectWallet");
-        const walletAddr = document.getElementById("walletAddress");
-        if (connectBtn) connectBtn.style.display = "block";
-        if (disconnectBtn) disconnectBtn.style.display = "none";
-        if (walletAddr) walletAddr.textContent = "";
-        alert("Wallet disconnected!");
-    }
-
-    async function loadPlayerHistory() {
-        if (!contract || !account) return;
-        try {
-            const history = await contract.playerHistory(account);
-            playerData.gamesPlayed = Number(history.gamesPlayed);
-            playerData.totalRewards = Number(history.totalRewards) / 10 ** 18;
-            playerData.totalReferrals = Number(history.totalReferrals);
-            playerData.referralRewards = Number(history.referralRewards) / 10 ** 18;
-            playerData.stakedAmount = Number(history.stakedAmount) / 10 ** 18;
-            playerData.stakeTimestamp = Number(history.stakeTimestamp);
-            playerData.pendingStakeRewards = Number(history.pendingStakeRewards) / 10 ** 18;
-            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
-
-            const rewards = await contract.getRewardHistory(account);
-            playerData.rewardHistory = rewards.map(r => ({
-                amount: Number(r.amount) / 10 ** 18,
-                timestamp: Number(r.timestamp) * 1000,
-                rewardType: r.rewardType,
-                referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
-            }));
-
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-        } catch (error) {
-            console.error("Error loading player history:", error);
-        }
-    }
-
-    function updatePlayerHistoryUI() {
-        const elements = {
-            gamesPlayed: `Games Played: ${playerData.gamesPlayed}`,
-            totalGameRewards: `Total Game Rewards: ${playerData.totalRewards} BST`,
-            totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
-            referralRewards: `Referral Rewards: ${playerData.referralRewards} BST`,
-            pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards} BST`,
-            stakedAmountText: `Staked Amount: ${playerData.stakedAmount} BST`,
-            pendingStakeRewardsText: `Pending Stake Rewards: ${playerData.pendingStakeRewards} BST`
-        };
-
-        for (const [id, value] of Object.entries(elements)) {
-            const element = document.getElementById(id);
-            if (element) element.textContent = value;
-        }
-
-        const historyList = document.getElementById("rewardHistoryList");
-        if (historyList) {
-            historyList.innerHTML = "";
-            playerData.rewardHistory.forEach(entry => {
-                const li = document.createElement("li");
-                li.textContent = `${entry.rewardType}: ${entry.amount} BST on ${new Date(entry.timestamp).toLocaleString()}`;
-                historyList.appendChild(li);
-            });
-        }
-    }
-
-    async function claimPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
-        try {
-            const tx = await contract.claimAllRewards(
-                ethers.parseUnits(playerData.pendingRewards.toString(), 18),
-                playerData.pendingReferral || "0x0000000000000000000000000000000000000000"
-            );
-            await tx.wait();
-            playerData.totalRewards += playerData.pendingRewards;
-            playerData.referralRewards += playerData.pendingReferrerReward;
-            playerData.pendingRewards = 0;
-            playerData.pendingReferrerReward = 0;
-            playerData.pendingReferral = null;
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Rewards claimed successfully!");
-        } catch (error) {
-            console.error("Error claiming rewards:", error);
-            let errorMessage = error.message || "Unknown error";
-            if (error.data && error.data.message) {
-                errorMessage = error.data.message;
-            }
-            alert("Failed to claim rewards: " + errorMessage);
-        }
-    }
-
-    const connectBtn = document.getElementById("connectWallet");
-    const disconnectBtn = document.getElementById("disconnectWallet");
-    const referralBtn = document.getElementById("getReferralLink");
-    const claimRewardsBtn = document.getElementById("claimGameRewards");
-    const stakeBtn = document.getElementById("stakeTokens");
-    const welcomeBtn = document.getElementById("welcomeBonusButton");
-
-    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
-    if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
-    if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
-    if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
-    if (stakeBtn) stakeBtn.addEventListener("click", () => {
-        const amount = document.getElementById("stakeInput")?.value;
-        if (amount) stakeWithApproval(parseFloat(amount));
-    });
-    if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
-});
+    </style>
+</head>
+<body>
+    <div id="gameInfo">
+        <h2>Game Info</h2>
+        <p id="score">Score: 0</p>
+        <p id="potentialBST">Potential BST: 0</p>
+        <p id="gameRewards">Game Rewards: 0 BST</p>
+        <button id="playGame">Play Game</button>
+        <button id="connectWallet">Connect Wallet</button>
+        <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
+        <p id="walletAddress"></p>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div id="playerHistory">
+        <h2>Player History</h2>
+        <p id="gamesPlayed">Games Played: 0</p>
+        <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
+        <p id="totalReferrals">Total Referrals: 0</p>
+        <p id="referralRewards">Referral Rewards: 0 BST</p>
+        <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
+        <p id="stakedAmountText">Staked Amount: 0 BST</p>
+        <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p>
+        <button id="getReferralLink">Get Referral Link</button>
+        <button id="claimGameRewards">Claim Rewards</button>
+        <button id="welcomeBonusButton">Claim Welcome Bonus</button>
+        <h3>Reward History</h3>
+        <ul id="rewardHistoryList"></ul>
+    </div>
+    <div id="stakingActions">
+        <h2>Staking Actions</h2>
+        <div>
+            <input type="number" id="stakeInput" placeholder="Enter amount to stake" min="1" step="1" />
+            <button id="stakeTokens">Stake Tokens</button>
+        </div>
+    </div>
+    <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
