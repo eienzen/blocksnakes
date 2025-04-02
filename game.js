@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x6D0d84cC53F6256388295E5f85A69BdDf1f8E73A"; // आपके द्वारा दी गई एड्रेस
+    const contractAddress = "0x4fcA98a685fCDc3DF70dab66d0E1e1cEFbcBa976"; // आपके द्वारा दी गई एड्रेस
     const contractABI = [
 	{
 		"inputs": [
@@ -299,6 +299,25 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"name": "Staked",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "TokensWithdrawn",
 		"type": "event"
 	},
 	{
@@ -650,6 +669,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [],
 		"name": "OWNER_COMMISSION_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "ownerBalance",
 		"outputs": [
 			{
 				"internalType": "uint256",
