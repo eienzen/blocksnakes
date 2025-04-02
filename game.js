@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xA06CFda6467c6a8cd7eBc5510cDAb9f9DC750D04"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x0438475Af7a282132DB090EAe5B30065d609C4e1"; // आपके द्वारा दी गई एड्रेस
     const contractABI = [
 	{
 		"inputs": [
@@ -1149,7 +1149,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log(`Allowance: ${ethers.formatUnits(allowance, 18)} BST`);
             if (allowance < amountWei) {
                 console.log("Approving tokens...");
-                const approveTx = await contract.approve(contractAddress, amountWei, { gasLimit: 100000 });
+                const approveTx = await contract.approve(contractAddress, amountWei, { gasLimit: 150000 });
                 await approveTx.wait();
                 console.log("Tokens approved!");
                 return true;
@@ -1174,8 +1174,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
+            console.log("Checking allowance for staking...");
+            const allowance = await contract.allowance(account, contractAddress);
+            console.log(`Allowance: ${ethers.formatUnits(allowance, 18)} BST`);
+            if (allowance < amountWei) {
+                throw new Error("Please approve tokens first!");
+            }
+
             console.log("Staking tokens...");
-            const tx = await contract.stake(amountWei, { gasLimit: 200000 });
+            const tx = await contract.stake(amountWei, { gasLimit: 300000 });
             await tx.wait();
             console.log("Tokens staked!");
 
@@ -1219,7 +1226,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
         try {
             console.log("Claiming welcome bonus...");
-            const tx = await contract.claimWelcomeBonus({ gasLimit: 200000 });
+            const tx = await contract.claimWelcomeBonus({ gasLimit: 300000 });
             await tx.wait();
             console.log("Welcome bonus claimed!");
 
@@ -1232,7 +1239,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
+            alert("Failed to claim welcome bonus: " + (error.message || error.reason || "Unknown error"));
         }
     }
 
@@ -1370,7 +1377,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.claimAllRewards(
                 ethers.parseUnits(playerData.pendingRewards.toString(), 18),
                 playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-                { gasLimit: 300000 }
+                { gasLimit: 400000 }
             );
             await tx.wait();
             console.log("Rewards claimed!");
