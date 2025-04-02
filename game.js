@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0,
         totalRewards: 0,
         score: 0,
+        points: 0, // Points earned by eating boxes; 100 points = 5 BST
         pendingRewards: 0,
         totalReferrals: 0,
         referralRewards: 0,
@@ -18,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
         stakeTimestamp: 0,
         pendingStakeRewards: 0,
         hasClaimedWelcomeBonus: false,
-        walletBalance: 0
+        walletBalance: 0 // हेडर के लिए जोड़ा
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -27,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x0438475Af7a282132DB090EAe5B30065d609C4e1"; // आपके द्वारा दी गई एड्रेस
+    const contractAddress = "0x6D0d84cC53F6256388295E5f85A69BdDf1f8E73A"; // आपके द्वारा दी गई एड्रेस
     const contractABI = [
 	{
 		"inputs": [
@@ -493,6 +494,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
 		"stateMutability": "nonpayable",
 		"type": "constructor"
@@ -836,7 +850,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"stateMutability": "view",
 		"type": "function"
 	}
-];
+]; // मूल कोड से ABI को हटाकर जगह छोड़ी
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -845,16 +859,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const gridHeight = 20;
     let gridSize;
     let snake = [{ x: 10, y: 10 }];
-    let boxes = [];
+    let box = { x: 15, y: 15 };
     let direction = 'right';
     let score = 0;
     let gameRewards = 0;
-    let baseSnakeSpeed = 300;
-    let currentSnakeSpeed = baseSnakeSpeed;
+    const SNAKE_SPEED = 300;
 
     function updateCanvasSize() {
-        const screenWidth = window.innerWidth * 0.9;
-        const screenHeight = window.innerHeight * 0.7;
+        const screenWidth = window.innerWidth * 0.9; // स्क्रीन का 90% यूज़ करें
+        const screenHeight = window.innerHeight * 0.7; // स्क्रीन का 70% यूज़ करें
         gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
         canvas.width = gridSize * gridWidth;
         canvas.height = gridSize * gridHeight;
@@ -866,20 +879,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (canvas.requestFullscreen) canvas.requestFullscreen();
     }
 
-    function generateBoxes() {
-        boxes = [];
-        const numBoxes = 5;
-        for (let i = 0; i < numBoxes; i++) {
-            let newBox;
-            do {
-                newBox = {
-                    x: Math.floor(Math.random() * gridWidth),
-                    y: Math.floor(Math.random() * gridHeight)
-                };
-            } while (snake.some(segment => segment.x === newBox.x && segment.y === newBox.y) ||
-                     boxes.some(b => b.x === newBox.x && b.y === newBox.y));
-            boxes.push(newBox);
-        }
+    function generateBox() {
+        box.x = Math.floor(Math.random() * gridWidth);
+        box.y = Math.floor(Math.random() * gridHeight);
     }
 
     function draw() {
@@ -887,87 +889,16 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
-        gradient.addColorStop(0, "#00ffcc");
-        gradient.addColorStop(1, "#00ccaa");
-        snake.forEach((segment, index) => {
-            ctx.fillStyle = gradient;
+        snake.forEach(segment => {
+            ctx.fillStyle = "#00ffcc";
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-
-            if (index === 0) {
-                ctx.fillStyle = "#00ffcc";
-                ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-
-                ctx.fillStyle = "#ffffff";
-                const eyeSize = gridSize / 3;
-                const pupilSize = eyeSize / 2;
-                if (direction === 'right') {
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + gridSize - eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = "#000000";
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + gridSize - eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (direction === 'left') {
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = "#000000";
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (direction === 'up') {
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = "#000000";
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (direction === 'down') {
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + gridSize - eyeSize, eyeSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = "#000000";
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeSize, segment.y * gridSize + gridSize - eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeSize, segment.y * gridSize + gridSize - eyeSize, pupilSize / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
         });
 
-        boxes.forEach(box => {
-            ctx.fillStyle = "#ff5555";
-            ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
-        });
+        ctx.fillStyle = "#ff5555";
+        ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
 
         document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('potentialBST').textContent = `Potential BST: ${(score / 100 * 5).toFixed(2)}`;
+        document.getElementById('points').textContent = `Points: ${playerData.points} (100 Points = 5 BST)`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
 
@@ -1002,31 +933,25 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         snake.unshift(head);
-        const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
-        if (eatenBoxIndex !== -1) {
+        if (head.x === box.x && head.y === box.y) {
             score += 10;
-            boxes.splice(eatenBoxIndex, 1);
-            if (score % 100 === 0) {
+            playerData.points += 10;
+            if (playerData.points >= 100) {
                 const reward = 5;
                 const referrerReward = reward * 0.01;
                 playerData.pendingRewards += reward;
+                playerData.points -= 100;
                 gameRewards += reward;
-                playerData.totalRewards += reward;
 
                 playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
                 if (playerData.pendingReferral) {
                     playerData.pendingReferrerReward += referrerReward;
                     playerData.referralRewards += referrerReward;
                     playerData.totalReferrals += 1;
-                    playerData.totalRewards += referrerReward;
                     playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
                 }
-
-                currentSnakeSpeed = Math.max(50, currentSnakeSpeed * 0.995);
-                clearInterval(gameInterval);
-                gameInterval = setInterval(move, currentSnakeSpeed);
             }
-            if (boxes.length < 3) generateBoxes();
+            generateBox();
         } else {
             snake.pop();
         }
@@ -1043,7 +968,7 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.innerHTML = `
                 <h2>Game Over!</h2>
                 <p id="finalScore">Score: ${score}</p>
-                <p id="finalPotentialBST">Potential BST: ${(score / 100 * 5).toFixed(2)}</p>
+                <p id="finalPoints">Points: ${playerData.points} (100 Points = 5 BST)</p>
                 <p id="finalRewards">Rewards: ${gameRewards} BST</p>
                 <button id="startNewGame">Start New Game</button>
             `;
@@ -1060,48 +985,14 @@ document.addEventListener("DOMContentLoaded", () => {
         score = 0;
         gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
+        box = { x: 15, y: 15 };
         direction = 'right';
-        currentSnakeSpeed = baseSnakeSpeed;
-        generateBoxes();
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
         const popup = document.getElementById("gameOverPopup");
         if (popup) popup.style.display = "none";
     }
-
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let lastMoveTime = 0;
-    const touchThreshold = 20;
-
-    canvas.addEventListener('touchstart', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        lastMoveTime = Date.now();
-    });
-
-    canvas.addEventListener('touchmove', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        const now = Date.now();
-
-        if (now - lastMoveTime < 100) return;
-
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
-            if (deltaX > 0 && direction !== 'left') direction = 'right';
-            else if (deltaX < 0 && direction !== 'right') direction = 'left';
-            lastMoveTime = now;
-        } else if (Math.abs(deltaY) > touchThreshold) {
-            if (deltaY > 0 && direction !== 'up') direction = 'down';
-            else if (deltaY < 0 && direction !== 'down') direction = 'up';
-            lastMoveTime = now;
-        }
-    });
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'ArrowUp' && direction !== 'down') direction = 'up';
@@ -1113,7 +1004,6 @@ document.addEventListener("DOMContentLoaded", () => {
     window.addEventListener('resize', updateCanvasSize);
 
     updateCanvasSize();
-    generateBoxes();
     draw();
 
     const playGameBtn = document.getElementById('playGame');
@@ -1122,7 +1012,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!account) return alert("Please connect your wallet!");
             enterFullscreen();
             resetGame();
-            if (!gameInterval) gameInterval = setInterval(move, currentSnakeSpeed);
+            if (!gameInterval) gameInterval = setInterval(move, SNAKE_SPEED);
         });
     }
 
@@ -1133,91 +1023,95 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function approveTokens(amount) {
-        if (!contract || !account) throw new Error("Connect your wallet first!");
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
             console.log("Checking balance for approval...");
             const balance = await contract.balanceOf(account);
-            console.log(`Balance: ${ethers.formatUnits(balance, 18)} BST`);
+            const amountWei = ethers.parseUnits(amount.toString(), 18);
+
             if (balance < amountWei) {
-                throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
+                return alert(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
             console.log("Checking allowance...");
             const allowance = await contract.allowance(account, contractAddress);
-            console.log(`Allowance: ${ethers.formatUnits(allowance, 18)} BST`);
             if (allowance < amountWei) {
                 console.log("Approving tokens...");
                 const approveTx = await contract.approve(contractAddress, amountWei, { gasLimit: 150000 });
                 await approveTx.wait();
-                console.log("Tokens approved!");
-                return true;
+                alert(`Approved ${amount} BST for staking! Now you can stake your tokens.`);
+            } else {
+                alert("Already approved sufficient tokens! Proceed to stake.");
             }
-            console.log("Already approved!");
-            return false;
         } catch (error) {
             console.error("Error approving tokens:", error);
-            throw new Error("Failed to approve tokens: " + (error.message || "Unknown error"));
+            alert("Failed to approve tokens: " + (error.message || "Unknown error"));
         }
     }
 
     async function stakeTokens(amount) {
-        if (!contract || !account) throw new Error("Connect your wallet first!");
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (amount <= 0) return alert("Amount must be greater than 0!");
 
         try {
             console.log("Checking balance for staking...");
             const balance = await contract.balanceOf(account);
-            console.log(`Balance: ${ethers.formatUnits(balance, 18)} BST`);
+            const amountWei = ethers.parseUnits(amount.toString(), 18);
+
             if (balance < amountWei) {
-                throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
+                return alert(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
             }
 
-            console.log("Checking allowance for staking...");
+            console.log("Checking allowance...");
             const allowance = await contract.allowance(account, contractAddress);
-            console.log(`Allowance: ${ethers.formatUnits(allowance, 18)} BST`);
             if (allowance < amountWei) {
-                throw new Error("Please approve tokens first!");
+                return alert("Please approve tokens first using the 'Approve Tokens' button!");
             }
 
             console.log("Staking tokens...");
             const tx = await contract.stake(amountWei, { gasLimit: 300000 });
             await tx.wait();
-            console.log("Tokens staked!");
-
-            playerData.stakedAmount += parseFloat(amount);
+            playerData.stakedAmount += amount;
             playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             localStorage.setItem("playerData", JSON.stringify(playerData));
             updatePlayerHistoryUI();
-            return true;
+            alert(`Successfully staked ${amount} BST!`);
         } catch (error) {
             console.error("Error staking tokens:", error);
-            throw new Error("Failed to stake tokens: " + (error.message || error.reason || "Unknown error"));
+            let errorMessage = error.message || "Unknown error";
+            if (error.reason) errorMessage = error.reason;
+            alert("Failed to stake tokens: " + errorMessage);
         }
     }
 
-    async function stakeWithApproval(amount) {
+    async function unstakeTokens() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        if (amount <= 0) return alert("Amount must be greater than 0!");
+        if (playerData.stakedAmount <= 0) return alert("No tokens staked to unstake!");
 
         try {
-            console.log("Starting staking process...");
-            alert("Starting staking process, please wait...");
+            console.log("Updating stake rewards before unstaking...");
+            await contract.updateStakeReward(account, { gasLimit: 200000 });
 
-            const approvalNeeded = await approveTokens(amount);
-            if (approvalNeeded) {
-                alert("Tokens approved successfully! Now staking...");
-            } else {
-                alert("Tokens already approved! Proceeding to stake...");
-            }
+            console.log("Unstaking tokens...");
+            const amountWei = ethers.parseUnits(playerData.stakedAmount.toString(), 18);
+            const tx = await contract.withdrawTokens(amountWei, { gasLimit: 300000 });
+            await tx.wait();
 
-            await stakeTokens(amount);
-            alert(`Successfully staked ${amount} BST!`);
+            playerData.pendingStakeRewards = 0;
+            playerData.stakedAmount = 0;
+            playerData.stakeTimestamp = 0;
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            updatePlayerHistoryUI();
+            alert(`Successfully unstaked ${ethers.formatUnits(amountWei, 18)} BST!`);
         } catch (error) {
-            console.error("Error in stakeWithApproval:", error);
-            alert(error.message);
+            console.error("Error unstaking tokens:", error);
+            let errorMessage = error.message || "Unknown error";
+            if (error.reason) errorMessage = error.reason;
+            alert("Failed to unstake tokens: " + errorMessage);
         }
     }
 
@@ -1228,23 +1122,23 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Claiming welcome bonus...");
             const tx = await contract.claimWelcomeBonus({ gasLimit: 300000 });
             await tx.wait();
-            console.log("Welcome bonus claimed!");
-
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
-            playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || error.reason || "Unknown error"));
+            let errorMessage = error.message || "Unknown error";
+            if (error.reason) errorMessage = error.reason;
+            alert("Failed to claim welcome bonus: " + errorMessage);
         }
     }
 
     async function connectWallet() {
-        if (!window.ethereum) return alert("Please install MetaMask!");
+        if (!window.ethereum) return alert("Please install MetaMask or another compatible wallet!");
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
@@ -1331,12 +1225,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
             }));
 
-            console.log("Player history loaded:", playerData);
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
             console.error("Error loading player history:", error);
-            alert("Failed to load player history: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1349,8 +1241,8 @@ document.addEventListener("DOMContentLoaded", () => {
             pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`,
             stakedAmountText: `Staked Amount: ${playerData.stakedAmount.toFixed(2)} BST`,
             pendingStakeRewardsText: `Pending Stake Rewards: ${playerData.pendingStakeRewards.toFixed(2)} BST`,
-            walletBalance: `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`,
-            totalRewardsHeader: `Total Rewards: ${playerData.totalRewards.toFixed(2)} BST`
+            walletBalance: `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`, // हेडर के लिए
+            totalRewardsHeader: `Total Rewards: ${playerData.totalRewards.toFixed(2)} BST` // हेडर के लिए
         };
 
         for (const [id, value] of Object.entries(elements)) {
@@ -1380,8 +1272,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 { gasLimit: 400000 }
             );
             await tx.wait();
-            console.log("Rewards claimed!");
-
             playerData.totalRewards += playerData.pendingRewards;
             playerData.referralRewards += playerData.pendingReferrerReward;
             playerData.pendingRewards = 0;
@@ -1393,7 +1283,9 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || error.reason || "Unknown error"));
+            let errorMessage = error.message || "Unknown error";
+            if (error.reason) errorMessage = error.reason;
+            alert("Failed to claim rewards: " + errorMessage);
         }
     }
 
@@ -1402,7 +1294,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const referralBtn = document.getElementById("getReferralLink");
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const stakeBtn = document.getElementById("stakeTokens");
+    const approveBtn = document.getElementById("approveTokens");
+    const unstakeBtn = document.getElementById("unstakeTokens");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
+    const buyTokenBtn = document.getElementById("buyToken");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
@@ -1410,7 +1305,15 @@ document.addEventListener("DOMContentLoaded", () => {
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (stakeBtn) stakeBtn.addEventListener("click", () => {
         const amount = document.getElementById("stakeInput")?.value;
-        if (amount) stakeWithApproval(parseFloat(amount));
+        if (amount) stakeTokens(parseFloat(amount));
     });
+    if (approveBtn) approveBtn.addEventListener("click", () => {
+        const amount = document.getElementById("stakeInput")?.value;
+        if (amount) approveTokens(parseFloat(amount));
+    });
+    if (unstakeBtn) unstakeBtn.addEventListener("click", unstakeTokens);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
+    if (buyTokenBtn) buyTokenBtn.addEventListener("click", () => {
+        alert("Buy Token feature coming soon! Please check back later.");
+    });
 });
