@@ -40,7 +40,7 @@
             border: 2px solid #00ffcc;
             background-color: #0a0a23;
         }
-        #gameInfo, #playerHistory, #stakingActions {
+        #gameInfo, #playerHistory {
             margin-top: 20px;
             padding: 10px;
             background-color: #2a2a5d;
@@ -60,18 +60,17 @@
         button:hover {
             background-color: #00ccaa;
         }
-        input {
-            padding: 8px;
-            margin: 5px;
-            border-radius: 5px;
-            border: 1px solid #00ffcc;
-        }
         ul {
             list-style-type: none;
             padding: 0;
         }
         li {
             margin: 5px 0;
+        }
+        #withdrawalFeeInfo {
+            font-size: 14px;
+            color: #ff5555;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -99,20 +98,13 @@
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <p id="stakedAmountText">Staked Amount: 0 BST</p>
-            <p id="pendingStakeRewardsText">Pending Stake Rewards: 0 BST</p>
             <button id="getReferralLink">Get Referral Link</button>
             <button id="claimGameRewards">Claim Rewards</button>
+            <p id="withdrawalFeeInfo">Note: 0.01 USD (in BNB) fee required to claim rewards</p>
             <button id="welcomeBonusButton">Claim Welcome Bonus</button>
+            <p id="withdrawalFeeInfo">Note: 0.01 USD (in BNB) fee required to claim bonus</p>
             <h3>Reward History</h3>
             <ul id="rewardHistoryList"></ul>
-        </div>
-        <div id="stakingActions">
-            <h2>Staking Actions</h2>
-            <div>
-                <input type="number" id="stakeInput" placeholder="Enter amount to stake" min="1" step="1" />
-                <button id="stakeTokens">Stake Tokens</button>
-            </div>
         </div>
     </div>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
