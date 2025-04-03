@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x1795800051cE388B702cEa1FAD0628536a93dD73"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x820009D52d66c1caB5eAfF7716E0b3e4D94ef169"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -1150,15 +1150,37 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    // अपडेटेड claimWelcomeBonus फंक्शन
     async function claimWelcomeBonus() {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
-        try {
-            await fetchWithdrawalFee();
-            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 200000 });
-            await tx.wait();
 
+        try {
+            // यूज़र का BNB बैलेंस चेक करें
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(account);
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
+            if (balance < feeWei) {
+                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+            }
+
+            // कॉन्ट्रैक्ट बैलेंस चेक करें
+            const contractBalance = await contract.contractBalance();
+            const welcomeBonusAmount = ethers.parseUnits("100", 18); // 100 BST
+            if (contractBalance < welcomeBonusAmount) {
+                return alert("Contract does not have enough BST tokens to pay the welcome bonus.");
+            }
+
+            // ट्रांज़ैक्शन भेजें
+            console.log("Attempting to claim welcome bonus...");
+            const tx = await contract.claimWelcomeBonus({ 
+                value: feeWei, 
+                gasLimit: 300000 // गैस लिमिट बढ़ाया
+            });
+            const receipt = await tx.wait();
+            console.log("Transaction successful:", receipt);
+
+            // डेटा अपडेट करें
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
@@ -1168,7 +1190,15 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || error.reason || "Unknown error"));
+            let errorMessage = "Failed to claim welcome bonus: ";
+            if (error.code === "CALL_EXCEPTION") {
+                errorMessage += "Transaction reverted. Check contract conditions or try again.";
+            } else if (error.message.includes("insufficient funds")) {
+                errorMessage += "Insufficient BNB for gas fee.";
+            } else {
+                errorMessage += error.message || "Unknown error";
+            }
+            alert(errorMessage);
         }
     }
 
