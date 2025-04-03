@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract = null;
     let gameInterval = null;
     const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
+    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट 0.1 USD (1 BNB = 500 USD), ओनर अपडेट कर सकता है
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
@@ -14,9 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingReferral: null,
         pendingReferrerReward: 0,
         rewardHistory: [],
-        stakedAmount: 0,
-        stakeTimestamp: 0,
-        pendingStakeRewards: 0,
         hasClaimedWelcomeBonus: false,
         walletBalance: 0
     };
@@ -27,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x258DeA1252787925DF8BF279f549b72df1DF4437"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x4fCf4955061114aF3bbA58961462374B336F10ba"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -167,6 +165,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"indexed": false,
+				"internalType": "uint256",
+				"name": "newPriceInWeiPerUsd",
+				"type": "uint256"
+			}
+		],
+		"name": "BnbPriceUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
 				"internalType": "string",
 				"name": "message",
 				"type": "string"
@@ -185,6 +196,25 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"name": "DebugLog",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "oldWallet",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newWallet",
+				"type": "address"
+			}
+		],
+		"name": "OwnerWalletUpdated",
 		"type": "event"
 	},
 	{
@@ -251,12 +281,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "referrerReward",
 				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "ownerReward",
-				"type": "uint256"
 			}
 		],
 		"name": "RewardsClaimed",
@@ -268,7 +292,7 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "owner",
 				"type": "address"
 			},
 			{
@@ -278,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "StakeRewardUpdated",
+		"name": "TokensBurned",
 		"type": "event"
 	},
 	{
@@ -287,17 +311,29 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "player",
+				"name": "owner",
 				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "totalAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "ownerAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "contractAmount",
 				"type": "uint256"
 			}
 		],
-		"name": "Staked",
+		"name": "TokensMinted",
 		"type": "event"
 	},
 	{
@@ -345,6 +381,31 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "event"
 	},
 	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "bnbAmount",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "ownerWallet",
+				"type": "address"
+			}
+		],
+		"name": "WithdrawalFeePaid",
+		"type": "event"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -372,6 +433,19 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "burnTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
 				"name": "totalReward",
 				"type": "uint256"
 			},
@@ -383,21 +457,14 @@ document.addEventListener("DOMContentLoaded", () => {
 		],
 		"name": "claimAllRewards",
 		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
 		"name": "claimWelcomeBonus",
 		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -408,7 +475,14 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			}
 		],
-		"name": "stake",
+		"name": "mintTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -482,12 +556,38 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
+				"internalType": "uint256",
+				"name": "_bnbPriceInWeiPerUsd",
+				"type": "uint256"
+			}
+		],
+		"name": "updateBnbPrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
 				"internalType": "address",
-				"name": "player",
+				"name": "_newWallet",
 				"type": "address"
 			}
 		],
-		"name": "updateStakeReward",
+		"name": "updateOwnerWallet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawBnb",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -542,12 +642,51 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
+		"name": "bnbPriceInWeiPerUsd",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "contractBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "decimals",
 		"outputs": [
 			{
 				"internalType": "uint8",
 				"name": "",
 				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "getContractBnbBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -635,12 +774,25 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "OWNER_COMMISSION_RATE",
+		"name": "ownerBalance",
 		"outputs": [
 			{
 				"internalType": "uint256",
 				"name": "",
 				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "ownerWallet",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -674,21 +826,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"internalType": "uint256",
 				"name": "referralRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakedAmount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "stakeTimestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "pendingStakeRewards",
 				"type": "uint256"
 			},
 			{
@@ -773,32 +910,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "SECONDS_IN_MONTH",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "STAKE_REWARD_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "symbol",
 		"outputs": [
 			{
@@ -826,6 +937,19 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [],
 		"name": "WELCOME_BONUS",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "WITHDRAWAL_FEE_USD",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -970,22 +1094,6 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById('potentialBST').textContent = `Potential BST: ${(score / 100 * 5).toFixed(2)}`;
         document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
     }
-
-    function updateStakeRewardLocally() {
-        const now = Math.floor(Date.now() / 1000);
-        if (playerData.stakedAmount > 0 && playerData.stakeTimestamp > 0) {
-            const timeElapsed = now - playerData.stakeTimestamp;
-            const reward = (playerData.stakedAmount * 5 * timeElapsed) / (30 * 24 * 60 * 60 * 100);
-            playerData.pendingStakeRewards += reward;
-            playerData.pendingRewards += reward;
-            playerData.stakeTimestamp = now;
-            playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Stake", referee: "N/A" });
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-        }
-    }
-
-    setInterval(updateStakeRewardLocally, 60 * 1000);
 
     async function move() {
         let head = { x: snake[0].x, y: snake[0].y };
@@ -1132,85 +1240,16 @@ document.addEventListener("DOMContentLoaded", () => {
         navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
     }
 
-    async function approveTokens(amount) {
-        if (!contract || !account) throw new Error("Connect your wallet first!");
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
-
+    async function fetchWithdrawalFee() {
+        if (!contract) return;
         try {
-            console.log("Checking balance for approval...");
-            const balance = await contract.balanceOf(account);
-            console.log(`Balance: ${ethers.formatUnits(balance, 18)} BST`);
-            if (balance < amountWei) {
-                throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
-            }
-
-            console.log("Checking allowance...");
-            const allowance = await contract.allowance(account, contractAddress);
-            console.log(`Allowance: ${ethers.formatUnits(allowance, 18)} BST`);
-            if (allowance < amountWei) {
-                console.log("Approving tokens...");
-                const approveTx = await contract.approve(contractAddress, amountWei, { gasLimit: 100000 });
-                await approveTx.wait();
-                console.log("Tokens approved!");
-                return true;
-            }
-            console.log("Already approved!");
-            return false;
+            const bnbPriceWeiPerUsd = await contract.bnbPriceInWeiPerUsd();
+            const feeUsdWei = ethers.parseUnits("0.1", 18); // 0.1 USD in wei
+            const feeBnbWei = feeUsdWei * bnbPriceWeiPerUsd / ethers.parseUnits("1", 18); // BNB में फीस
+            WITHDRAWAL_FEE_BNB = ethers.formatUnits(feeBnbWei, 18); // BNB में स्ट्रिंग
+            console.log("Updated withdrawal fee:", WITHDRAWAL_FEE_BNB, "BNB");
         } catch (error) {
-            console.error("Error approving tokens:", error);
-            throw new Error("Failed to approve tokens: " + (error.message || "Unknown error"));
-        }
-    }
-
-    async function stakeTokens(amount) {
-        if (!contract || !account) throw new Error("Connect your wallet first!");
-        const amountWei = ethers.parseUnits(amount.toString(), 18);
-
-        try {
-            console.log("Checking balance for staking...");
-            const balance = await contract.balanceOf(account);
-            console.log(`Balance: ${ethers.formatUnits(balance, 18)} BST`);
-            if (balance < amountWei) {
-                throw new Error(`Insufficient BST balance! You have ${ethers.formatUnits(balance, 18)} BST, need ${amount} BST.`);
-            }
-
-            console.log("Staking tokens...");
-            const tx = await contract.stake(amountWei, { gasLimit: 200000 });
-            await tx.wait();
-            console.log("Tokens staked!");
-
-            playerData.stakedAmount += parseFloat(amount);
-            playerData.stakeTimestamp = Math.floor(Date.now() / 1000);
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            updatePlayerHistoryUI();
-            return true;
-        } catch (error) {
-            console.error("Error staking tokens:", error);
-            throw new Error("Failed to stake tokens: " + (error.message || error.reason || "Unknown error"));
-        }
-    }
-
-    async function stakeWithApproval(amount) {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (amount <= 0) return alert("Amount must be greater than 0!");
-
-        try {
-            console.log("Starting staking process...");
-            alert("Starting staking process, please wait...");
-
-            const approvalNeeded = await approveTokens(amount);
-            if (approvalNeeded) {
-                alert("Tokens approved successfully! Now staking...");
-            } else {
-                alert("Tokens already approved! Proceeding to stake...");
-            }
-
-            await stakeTokens(amount);
-            alert(`Successfully staked ${amount} BST!`);
-        } catch (error) {
-            console.error("Error in stakeWithApproval:", error);
-            alert(error.message);
+            console.error("Error fetching withdrawal fee:", error);
         }
     }
 
@@ -1218,8 +1257,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
         try {
+            console.log("Fetching current withdrawal fee...");
+            await fetchWithdrawalFee();
             console.log("Claiming welcome bonus...");
-            const tx = await contract.claimWelcomeBonus({ gasLimit: 200000 });
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18); // डायनामिक फीस
+            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 200000 });
             await tx.wait();
             console.log("Welcome bonus claimed!");
 
@@ -1229,10 +1271,41 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Welcome bonus of 100 BST claimed!");
+            alert(`Welcome bonus of 100 BST claimed! Fee: ${WITHDRAWAL_FEE_BNB} BNB`);
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
+            alert("Failed to claim welcome bonus: " + (error.message || error.reason || "Unknown error"));
+        }
+    }
+
+    async function claimPendingRewards() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
+        try {
+            console.log("Fetching current withdrawal fee...");
+            await fetchWithdrawalFee();
+            console.log("Claiming pending rewards...");
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18); // डायनामिक फीस
+            const tx = await contract.claimAllRewards(
+                ethers.parseUnits(playerData.pendingRewards.toString(), 18),
+                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
+                { value: feeWei, gasLimit: 300000 }
+            );
+            await tx.wait();
+            console.log("Rewards claimed!");
+
+            playerData.totalRewards += playerData.pendingRewards;
+            playerData.referralRewards += playerData.pendingReferrerReward;
+            playerData.pendingRewards = 0;
+            playerData.pendingReferrerReward = 0;
+            playerData.pendingReferral = null;
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            alert(`Rewards claimed successfully! Fee: ${WITHDRAWAL_FEE_BNB} BNB`);
+        } catch (error) {
+            console.error("Error claiming rewards:", error);
+            alert("Failed to claim rewards: " + (error.message || error.reason || "Unknown error"));
         }
     }
 
@@ -1278,6 +1351,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
 
             await loadPlayerHistory();
+            await fetchWithdrawalFee(); // कनेक्ट होने पर फीस अपडेट करें
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             alert("Wallet connected successfully!");
@@ -1310,9 +1384,6 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
-            playerData.stakedAmount = Number(ethers.formatUnits(history.stakedAmount, 18));
-            playerData.stakeTimestamp = Number(history.stakeTimestamp);
-            playerData.pendingStakeRewards = Number(ethers.formatUnits(history.pendingStakeRewards, 18));
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
 
@@ -1340,8 +1411,6 @@ document.addEventListener("DOMContentLoaded", () => {
             totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
             referralRewards: `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`,
             pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`,
-            stakedAmountText: `Staked Amount: ${playerData.stakedAmount.toFixed(2)} BST`,
-            pendingStakeRewardsText: `Pending Stake Rewards: ${playerData.pendingStakeRewards.toFixed(2)} BST`,
             walletBalance: `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`,
             totalRewardsHeader: `Total Rewards: ${playerData.totalRewards.toFixed(2)} BST`
         };
@@ -1362,48 +1431,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function claimPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
-        try {
-            console.log("Claiming pending rewards...");
-            const tx = await contract.claimAllRewards(
-                ethers.parseUnits(playerData.pendingRewards.toString(), 18),
-                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-                { gasLimit: 300000 }
-            );
-            await tx.wait();
-            console.log("Rewards claimed!");
-
-            playerData.totalRewards += playerData.pendingRewards;
-            playerData.referralRewards += playerData.pendingReferrerReward;
-            playerData.pendingRewards = 0;
-            playerData.pendingReferrerReward = 0;
-            playerData.pendingReferral = null;
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Rewards claimed successfully!");
-        } catch (error) {
-            console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || error.reason || "Unknown error"));
-        }
-    }
-
     const connectBtn = document.getElementById("connectWallet");
     const disconnectBtn = document.getElementById("disconnectWallet");
     const referralBtn = document.getElementById("getReferralLink");
     const claimRewardsBtn = document.getElementById("claimGameRewards");
-    const stakeBtn = document.getElementById("stakeTokens");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
-    if (stakeBtn) stakeBtn.addEventListener("click", () => {
-        const amount = document.getElementById("stakeInput")?.value;
-        if (amount) stakeWithApproval(parseFloat(amount));
-    });
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
 });
