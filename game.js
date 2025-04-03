@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract = null;
     let gameInterval = null;
     const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
-    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट 0.1 USD (1 BNB = 500 USD), ओनर अपडेट कर सकता है
+    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट 0.0002 BNB, ओनर अपडेट कर सकता है
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x4fCf4955061114aF3bbA58961462374B336F10ba"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x1795800051cE388B702cEa1FAD0628536a93dD73"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -164,44 +164,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newPriceInWeiPerUsd",
-				"type": "uint256"
-			}
-		],
-		"name": "BnbPriceUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "string",
-				"name": "message",
-				"type": "string"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			}
-		],
-		"name": "DebugLog",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
 				"indexed": true,
 				"internalType": "address",
 				"name": "oldWallet",
@@ -271,7 +233,7 @@ document.addEventListener("DOMContentLoaded", () => {
 				"type": "uint256"
 			},
 			{
-				"indexed": false,
+				"indexed": true,
 				"internalType": "address",
 				"name": "referrer",
 				"type": "address"
@@ -384,25 +346,13 @@ document.addEventListener("DOMContentLoaded", () => {
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "user",
-				"type": "address"
-			},
-			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "bnbAmount",
+				"name": "newFeeInBnbWei",
 				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "ownerWallet",
-				"type": "address"
 			}
 		],
-		"name": "WithdrawalFeePaid",
+		"name": "WithdrawalFeeUpdated",
 		"type": "event"
 	},
 	{
@@ -556,19 +506,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	{
 		"inputs": [
 			{
-				"internalType": "uint256",
-				"name": "_bnbPriceInWeiPerUsd",
-				"type": "uint256"
-			}
-		],
-		"name": "updateBnbPrice",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
 				"internalType": "address",
 				"name": "_newWallet",
 				"type": "address"
@@ -583,11 +520,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "_newFeeInBnbWei",
 				"type": "uint256"
 			}
 		],
-		"name": "withdrawBnb",
+		"name": "updateWithdrawalFee",
 		"outputs": [],
 		"stateMutability": "nonpayable",
 		"type": "function"
@@ -642,19 +579,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "bnbPriceInWeiPerUsd",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "contractBalance",
 		"outputs": [
 			{
@@ -674,19 +598,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint8",
 				"name": "",
 				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "getContractBnbBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -767,19 +678,6 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "",
 				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "ownerBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
 			}
 		],
 		"stateMutability": "view",
@@ -949,7 +847,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "WITHDRAWAL_FEE_USD",
+		"name": "withdrawalFeeInBnb",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -1243,10 +1141,8 @@ document.addEventListener("DOMContentLoaded", () => {
     async function fetchWithdrawalFee() {
         if (!contract) return;
         try {
-            const bnbPriceWeiPerUsd = await contract.bnbPriceInWeiPerUsd();
-            const feeUsdWei = ethers.parseUnits("0.1", 18); // 0.1 USD in wei
-            const feeBnbWei = feeUsdWei * bnbPriceWeiPerUsd / ethers.parseUnits("1", 18); // BNB में फीस
-            WITHDRAWAL_FEE_BNB = ethers.formatUnits(feeBnbWei, 18); // BNB में स्ट्रिंग
+            const feeWei = await contract.withdrawalFeeInBnb();
+            WITHDRAWAL_FEE_BNB = ethers.formatUnits(feeWei, 18);
             console.log("Updated withdrawal fee:", WITHDRAWAL_FEE_BNB, "BNB");
         } catch (error) {
             console.error("Error fetching withdrawal fee:", error);
@@ -1257,13 +1153,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
         try {
-            console.log("Fetching current withdrawal fee...");
             await fetchWithdrawalFee();
-            console.log("Claiming welcome bonus...");
-            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18); // डायनामिक फीस
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 200000 });
             await tx.wait();
-            console.log("Welcome bonus claimed!");
 
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
@@ -1271,7 +1164,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert(`Welcome bonus of 100 BST claimed! Fee: ${WITHDRAWAL_FEE_BNB} BNB`);
+            alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
             alert("Failed to claim welcome bonus: " + (error.message || error.reason || "Unknown error"));
@@ -1282,17 +1175,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
         try {
-            console.log("Fetching current withdrawal fee...");
             await fetchWithdrawalFee();
-            console.log("Claiming pending rewards...");
-            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18); // डायनामिक फीस
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             const tx = await contract.claimAllRewards(
                 ethers.parseUnits(playerData.pendingRewards.toString(), 18),
                 playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
                 { value: feeWei, gasLimit: 300000 }
             );
             await tx.wait();
-            console.log("Rewards claimed!");
 
             playerData.totalRewards += playerData.pendingRewards;
             playerData.referralRewards += playerData.pendingReferrerReward;
@@ -1302,7 +1192,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert(`Rewards claimed successfully! Fee: ${WITHDRAWAL_FEE_BNB} BNB`);
+            alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
             alert("Failed to claim rewards: " + (error.message || error.reason || "Unknown error"));
@@ -1351,7 +1241,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
 
             await loadPlayerHistory();
-            await fetchWithdrawalFee(); // कनेक्ट होने पर फीस अपडेट करें
+            await fetchWithdrawalFee();
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             alert("Wallet connected successfully!");
