@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract = null;
     let gameInterval = null;
     const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
-    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट 0.0002 BNB, ओनर अपडेट कर सकता है
+    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस, कॉन्ट्रैक्ट से अपडेट होगी
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
@@ -16,7 +16,8 @@ document.addEventListener("DOMContentLoaded", () => {
         pendingReferrerReward: 0,
         rewardHistory: [],
         hasClaimedWelcomeBonus: false,
-        walletBalance: 0
+        walletBalance: 0,
+        walletAddress: null // वॉलेट एड्रेस स्टोर करने के लिए
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -1053,7 +1054,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p id="finalRewards">Rewards: ${gameRewards} BST</p>
                 <button id="startNewGame">Start New Game</button>
             `;
-            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; color: #000; padding: 20px; border: 2px solid #333;";
+            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #fff; color: #000; padding: 20px; border: 2px solid #333; border-radius: 5px;";
             document.body.appendChild(popup);
             document.getElementById("startNewGame").addEventListener("click", resetGame);
         }
@@ -1230,6 +1231,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
             account = accounts[0];
+
+            // अगर नया वॉलेट पिछले से अलग है, तो हिस्ट्री रीसेट नहीं करें
+            if (playerData.walletAddress && playerData.walletAddress !== account) {
+                playerData = {
+                    gamesPlayed: 0,
+                    totalRewards: 0,
+                    score: 0,
+                    pendingRewards: 0,
+                    totalReferrals: 0,
+                    referralRewards: 0,
+                    pendingReferral: null,
+                    pendingReferrerReward: 0,
+                    rewardHistory: [],
+                    hasClaimedWelcomeBonus: false,
+                    walletBalance: 0,
+                    walletAddress: account
+                };
+            } else {
+                playerData.walletAddress = account;
+            }
+
             const signer = await provider.getSigner();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
 
@@ -1242,8 +1264,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
             await loadPlayerHistory();
             await fetchWithdrawalFee();
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Error connecting wallet:", error);
@@ -1254,7 +1276,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function disconnectWallet() {
         account = null;
         contract = null;
-        playerData.walletBalance = 0;
         const connectBtn = document.getElementById("connectWallet");
         const disconnectBtn = document.getElementById("disconnectWallet");
         const walletAddr = document.getElementById("walletAddress");
@@ -1266,9 +1287,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadPlayerHistory() {
-        if (!contract || !account) return;
+        if (!contract || !account) {
+            updatePlayerHistoryUI(); // डिस्कनेक्ट होने पर UI अपडेट करें
+            return;
+        }
         try {
-            console.log("Loading player history...");
             const history = await contract.playerHistory(account);
             playerData.gamesPlayed = Number(history.gamesPlayed);
             playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
@@ -1285,7 +1308,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
             }));
 
-            console.log("Player history loaded:", playerData);
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
@@ -1301,8 +1323,8 @@ document.addEventListener("DOMContentLoaded", () => {
             totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
             referralRewards: `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`,
             pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`,
-            walletBalance: `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`,
-            totalRewardsHeader: `Total Rewards: ${playerData.totalRewards.toFixed(2)} BST`
+            walletBalance: `Wallet Balance: ${account ? playerData.walletBalance.toFixed(2) : "0"} BST`,
+            walletAddress: account ? `Connected: ${account.slice(0, 6)}...` : ""
         };
 
         for (const [id, value] of Object.entries(elements)) {
@@ -1313,11 +1335,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const historyList = document.getElementById("rewardHistoryList");
         if (historyList) {
             historyList.innerHTML = "";
-            playerData.rewardHistory.forEach(entry => {
-                const li = document.createElement("li");
-                li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}`;
-                historyList.appendChild(li);
-            });
+            if (account) {
+                playerData.rewardHistory.forEach(entry => {
+                    const li = document.createElement("li");
+                    li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}`;
+                    historyList.appendChild(li);
+                });
+            }
         }
     }
 
@@ -1332,4 +1356,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
+
+    // पेज लोड होने पर पुरानी हिस्ट्री दिखाएं
+    updatePlayerHistoryUI();
 });
