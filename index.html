@@ -18,19 +18,27 @@
         }
         #header {
             width: 100%;
-            background-color: #2a2a5d;
-            padding: 10px;
+            background: linear-gradient(90deg, #2a2a5d, #00ffcc);
+            padding: 20px;
             text-align: center;
             position: fixed;
             top: 0;
             z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        #header h1 {
+            margin: 0;
+            font-size: 36px;
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
         #header p {
             margin: 5px;
             font-size: 18px;
         }
         #content {
-            margin-top: 100px;
+            margin-top: 120px;
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -39,14 +47,17 @@
         canvas {
             border: 2px solid #00ffcc;
             background-color: #0a0a23;
+            border-radius: 5px;
+            margin: 20px 0;
         }
         #gameInfo, #playerHistory {
             margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             background-color: #2a2a5d;
-            border-radius: 5px;
+            border-radius: 10px;
             width: 80%;
             max-width: 600px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         button {
             padding: 10px 20px;
@@ -56,6 +67,8 @@
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s;
         }
         button:hover {
             background-color: #00ccaa;
@@ -66,19 +79,23 @@
         }
         li {
             margin: 5px 0;
+            background-color: #3a3a7d;
+            padding: 5px;
+            border-radius: 3px;
         }
-        #withdrawalFeeInfo {
-            font-size: 14px;
-            color: #ff5555;
-            margin-top: 5px;
+        h2, h3 {
+            color: #00ffcc;
+        }
+        #gameOverPopup {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div id="header">
+        <h1>BlockSnakes: Play and Earn Real Crypto Currency BST Token</h1>
         <p id="walletAddress"></p>
         <p id="walletBalance">Wallet Balance: 0 BST</p>
-        <p id="totalRewardsHeader">Total Rewards: 0 BST</p>
     </div>
     <div id="content">
         <div id="gameInfo">
@@ -100,9 +117,7 @@
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
             <button id="getReferralLink">Get Referral Link</button>
             <button id="claimGameRewards">Claim Rewards</button>
-            <p id="withdrawalFeeInfo">Note: 0.01 USD (in BNB) fee required to claim rewards</p>
             <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-            <p id="withdrawalFeeInfo">Note: 0.01 USD (in BNB) fee required to claim bonus</p>
             <h3>Reward History</h3>
             <ul id="rewardHistoryList"></ul>
         </div>
