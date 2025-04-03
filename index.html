@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.binance.org wss://*.binance.org;">
     <title>BlockSnakes Game</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico"> <!-- फेविकॉन जोड़ा -->
     <style>
         body {
             margin: 0;
@@ -25,10 +26,19 @@
             top: 0;
             z-index: 1000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex; /* लोगो और हेडिंग को संरेखित करने के लिए */
+            align-items: center; /* वर्टिकली सेंटर */
+            justify-content: center; /* हॉरिजॉन्टली सेंटर */
+            flex-wrap: wrap; /* छोटी स्क्रीन पर रैप करने के लिए */
+        }
+        #header-logo {
+            width: 120px; /* लोगो की चौड़ाई */
+            height: 60px; /* लोगो की ऊंचाई */
+            margin-right: 15px; /* हेडिंग से दूरी */
         }
         #header h1 {
             margin: 0;
-            font-size: 36px;
+            font-size: 36px; /* पहले कोड से लिया गया */
             font-weight: bold;
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
@@ -38,7 +48,7 @@
             font-size: 18px;
         }
         #content {
-            margin-top: 120px;
+            margin-top: 120px; /* हेडर के नीचे जगह */
             width: 100%;
             display: flex;
             flex-direction: column;
@@ -93,6 +103,7 @@
 </head>
 <body>
     <div id="header">
+        <img src="/logo.png" alt="BlockSnakes Logo" id="header-logo"> <!-- लोगो जोड़ा -->
         <h1>BlockSnakes: Play and Earn Real Crypto Currency BST Token</h1>
         <p id="walletAddress"></p>
         <p id="walletBalance">Wallet Balance: 0 BST</p>
