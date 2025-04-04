@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract = null;
     let gameInterval = null;
     const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
-    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस, कॉन्ट्रैक्ट से अपडेट होगी
+    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         rewardHistory: [],
         hasClaimedWelcomeBonus: false,
         walletBalance: 0,
-        walletAddress: null // वॉलेट एड्रेस स्टोर करने के लिए
+        walletAddress: null
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xC645c5F13A511f3C55642483691Ba67241E0C6a2"; // यहाँ सही कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x2aFdEf414b7C82A1F82b54Eb0ad3fE1D48898f7A"; // अपडेट करें
     const contractABI = [
 	{
 		"inputs": [
@@ -159,6 +159,25 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "CustomAmountWithdrawn",
 		"type": "event"
 	},
 	{
@@ -518,6 +537,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -557,9 +581,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "withdrawCustomAmount",
+		"outputs": [],
+		"stateMutability": "payable",
+		"type": "function"
 	},
 	{
 		"inputs": [
@@ -900,9 +932,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 ];
 
+    // कैनवस और गेम लॉजिक (पहले जैसा ही)
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
-
     const gridWidth = 30;
     const gridHeight = 20;
     let gridSize;
@@ -934,12 +966,8 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < numBoxes; i++) {
             let newBox;
             do {
-                newBox = {
-                    x: Math.floor(Math.random() * gridWidth),
-                    y: Math.floor(Math.random() * gridHeight)
-                };
-            } while (snake.some(segment => segment.x === newBox.x && segment.y === newBox.y) ||
-                     boxes.some(b => b.x === newBox.x && b.y === newBox.y));
+                newBox = { x: Math.floor(Math.random() * gridWidth), y: Math.floor(Math.random() * gridHeight) };
+            } while (snake.some(segment => segment.x === newBox.x && segment.y === newBox.y) || boxes.some(b => b.x === newBox.x && b.y === newBox.y));
             boxes.push(newBox);
         }
     }
@@ -1189,13 +1217,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // अपडेटेड claimWelcomeBonus फंक्शन
     async function claimWelcomeBonus() {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
 
         try {
-            // यूज़र का BNB बैलेंस चेक करें
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
@@ -1203,23 +1229,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
             }
 
-            // कॉन्ट्रैक्ट बैलेंस चेक करें
             const contractBalance = await contract.contractBalance();
-            const welcomeBonusAmount = ethers.parseUnits("100", 18); // 100 BST
+            const welcomeBonusAmount = ethers.parseUnits("100", 18);
             if (contractBalance < welcomeBonusAmount) {
                 return alert("Contract does not have enough BST tokens to pay the welcome bonus.");
             }
 
-            // ट्रांज़ैक्शन भेजें
             console.log("Attempting to claim welcome bonus...");
-            const tx = await contract.claimWelcomeBonus({ 
-                value: feeWei, 
-                gasLimit: 300000 // गैस लिमिट बढ़ाया
-            });
+            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 300000 });
             const receipt = await tx.wait();
             console.log("Transaction successful:", receipt);
 
-            // डेटा अपडेट करें
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
@@ -1229,21 +1249,14 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            let errorMessage = "Failed to claim welcome bonus: ";
-            if (error.code === "CALL_EXCEPTION") {
-                errorMessage += "Transaction reverted. Check contract conditions or try again.";
-            } else if (error.message.includes("insufficient funds")) {
-                errorMessage += "Insufficient BNB for gas fee.";
-            } else {
-                errorMessage += error.message || "Unknown error";
-            }
-            alert(errorMessage);
+            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
         }
     }
 
     async function claimPendingRewards() {
         if (!contract || !account) return alert("Connect your wallet first!");
         if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
+
         try {
             await fetchWithdrawalFee();
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
@@ -1265,7 +1278,49 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || error.reason || "Unknown error"));
+            alert("Failed to claim rewards: " + (error.message || "Unknown error"));
+        }
+    }
+
+    // नया फंक्शन: कस्टम राशि निकालना
+    async function withdrawCustomAmount() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+        const amount = Number(document.getElementById("withdrawAmount").value);
+        if (!amount || amount < 10) return alert("Please enter an amount of at least 10 BST!");
+        if (amount > 1000) return alert("Maximum withdrawal limit is 1000 BST!");
+        if (amount > playerData.pendingRewards) return alert("Insufficient pending rewards!");
+
+        try {
+            await fetchWithdrawalFee();
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(account);
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
+            if (balance < feeWei) {
+                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+            }
+
+            const contractBalance = await contract.contractBalance();
+            const withdrawWei = ethers.parseUnits(amount.toString(), 18);
+            if (contractBalance < withdrawWei) {
+                return alert("Contract does not have enough BST tokens.");
+            }
+
+            console.log(`Attempting to withdraw ${amount} BST...`);
+            const tx = await contract.withdrawCustomAmount(withdrawWei, { value: feeWei, gasLimit: 300000 });
+            const receipt = await tx.wait();
+            console.log("Withdrawal successful:", receipt);
+
+            playerData.pendingRewards -= amount;
+            playerData.totalRewards += amount;
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: "Custom Withdrawal", referee: "N/A" });
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            document.getElementById("withdrawAmount").value = ""; // इनपुट रीसेट करें
+            alert(`${amount} BST withdrawn successfully!`);
+        } catch (error) {
+            console.error("Error withdrawing amount:", error);
+            alert("Failed to withdraw: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1301,7 +1356,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
             account = accounts[0];
 
-            // अगर नया वॉलेट पिछले से अलग है, तो हिस्ट्री रीसेट नहीं करें
             if (playerData.walletAddress && playerData.walletAddress !== account) {
                 playerData = {
                     gamesPlayed: 0,
@@ -1357,7 +1411,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function loadPlayerHistory() {
         if (!contract || !account) {
-            updatePlayerHistoryUI(); // डिस्कनेक्ट होने पर UI अपडेट करें
+            updatePlayerHistoryUI();
             return;
         }
         try {
@@ -1419,13 +1473,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const referralBtn = document.getElementById("getReferralLink");
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
+    const withdrawBtn = document.getElementById("withdrawButton"); // नया बटन
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
+    if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount); // नया इवेंट लिस्टनर
 
-    // पेज लोड होने पर पुरानी हिस्ट्री दिखाएं
     updatePlayerHistoryUI();
 });
