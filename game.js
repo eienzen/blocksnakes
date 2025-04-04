@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x2aFdEf414b7C82A1F82b54Eb0ad3fE1D48898f7A"; // अपडेट करें
+    const contractAddress = "0x7C6b1fF1A0Ba67520F805B1f7f7275c0ef66b6E9"; // अपडेट करें
     const contractABI = [
 	{
 		"inputs": [
@@ -537,11 +537,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -592,6 +587,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "payable",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
