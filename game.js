@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x1F0DF2a2A7582f62e8F309e508DF2bB1DEefEcA2"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
+    const contractAddress = "0xb7d71032C473adB99dB417F966B6Cd24BCc5FD40"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -167,19 +167,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			{
 				"indexed": true,
 				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
 				"name": "player",
 				"type": "address"
 			},
 			{
 				"indexed": false,
 				"internalType": "uint256",
-				"name": "amount",
+				"name": "bnbAmount",
 				"type": "uint256"
 			}
 		],
@@ -580,6 +574,11 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -630,11 +629,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "payable",
 		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
 	},
 	{
 		"inputs": [
@@ -1111,7 +1105,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        // पहले दीवार से टकराने की जांच
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
@@ -1119,7 +1112,6 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // फिर अपनी बॉडी से टकराने की जांच
         if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
             clearInterval(gameInterval);
             gameInterval = null;
@@ -1134,7 +1126,7 @@ document.addEventListener("DOMContentLoaded", () => {
             boxes.splice(eatenBoxIndex, 1);
             if (score % 100 === 0) {
                 const reward = 5;
-                const referrerReward = reward * 0.01; // 1% रेफरल रिवॉर्ड
+                const referrerReward = reward * 0.01;
                 playerData.pendingRewards += reward;
                 gameRewards += reward;
                 playerData.totalRewards += reward;
@@ -1388,6 +1380,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function mintTokens() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+
+        const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
+        if (account.toLowerCase() !== ownerAddress.toLowerCase()) return alert("Only the owner can mint tokens!");
+
+        const amount = Number(document.getElementById("mintAmount").value);
+        if (!amount || amount <= 0) return alert("Please enter a valid BST amount greater than 0!");
+
+        try {
+            const mintWei = ethers.parseUnits(amount.toString(), 18);
+            console.log(`Attempting to mint ${amount} BST...`);
+            const tx = await contract.mintTokens(mintWei, { gasLimit: 300000 });
+            const receipt = await tx.wait();
+            console.log("Tokens minted successfully:", receipt);
+
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            document.getElementById("mintAmount").value = "";
+            alert(`${amount} BST minted successfully!`);
+        } catch (error) {
+            console.error("Error minting tokens:", error);
+            alert("Failed to mint tokens: " + (error.message || "Unknown error"));
+        }
+    }
+
     async function transferBnbBonus() {
         if (!contract || !account) return alert("Connect your wallet first!");
 
@@ -1415,7 +1434,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             playerData.rewardHistory.push({ amount: bnbAmount, timestamp: Date.now(), rewardType: "BNB Bonus", referee: playerAddress });
 
-            // अगर यह यूज़र को मिला है, तो बैनर दिखाएं
             if (account.toLowerCase() === playerAddress.toLowerCase()) {
                 const totalBnbBonus = playerData.rewardHistory
                     .filter(r => r.rewardType === "BNB Bonus")
@@ -1423,7 +1441,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const banner = document.getElementById("bnbBonusBanner");
                 document.getElementById("bnbBonusTotal").textContent = totalBnbBonus.toFixed(2);
                 banner.style.display = "block";
-                setTimeout(() => { banner.style.display = "none"; }, 10000); // 10 सेकंड बाद छिपाएं
+                setTimeout(() => { banner.style.display = "none"; }, 10000);
             }
 
             updatePlayerHistoryUI();
@@ -1498,7 +1516,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (disconnectBtn) disconnectBtn.style.display = "block";
             if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
 
-            // ओनर चेक और कंट्रोल्स दिखाना
             const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
             if (account.toLowerCase() === ownerAddress.toLowerCase()) {
                 document.getElementById("ownerControls").style.display = "block";
@@ -1551,7 +1568,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
             }));
 
-            // कुल BNB बोनस गणना और बैनर दिखाएं
             const totalBnbBonus = playerData.rewardHistory
                 .filter(r => r.rewardType === "BNB Bonus")
                 .reduce((sum, r) => sum + r.amount, 0);
@@ -1605,6 +1621,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
     const withdrawBtn = document.getElementById("withdrawButton");
+    const mintBtn = document.getElementById("mintTokensButton");
     const transferBnbBtn = document.getElementById("transferBnbBonusButton");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
@@ -1613,6 +1630,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
     if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount);
+    if (mintBtn) mintBtn.addEventListener("click", mintTokens);
     if (transferBnbBtn) transferBnbBtn.addEventListener("click", transferBnbBonus);
 
     updatePlayerHistoryUI();
