@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x7C6b1fF1A0Ba67520F805B1f7f7275c0ef66b6E9"; // अपडेट करें
+    const contractAddress = "0x61C1963eCD3A9268F9855519C87554c4A50fe5F6"; // अपडेट करें
     const contractABI = [
 	{
 		"inputs": [
