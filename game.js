@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x61C1963eCD3A9268F9855519C87554c4A50fe5F6"; // अपडेट करें
+    const contractAddress = "0xd14582D4D2Be68C0F1E27EF6fD42d7EF9469B81b"; // अपडेट करें
     const contractABI = [
 	{
 		"inputs": [
@@ -159,6 +159,31 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"name": "Approval",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "BnbBonusTransferred",
 		"type": "event"
 	},
 	{
@@ -492,6 +517,24 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "bnbAmount",
+				"type": "uint256"
+			}
+		],
+		"name": "transferBnbBonus",
+		"outputs": [],
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
