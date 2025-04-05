@@ -1325,7 +1325,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // नया फंक्शन: कस्टम राशि निकालना
     async function withdrawCustomAmount() {
         if (!contract || !account) return alert("Connect your wallet first!");
         const amount = Number(document.getElementById("withdrawAmount").value);
@@ -1359,11 +1358,51 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: "Custom Withdrawal", referee: "N/A" });
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            document.getElementById("withdrawAmount").value = ""; // इनपुट रीसेट करें
+            document.getElementById("withdrawAmount").value = "";
             alert(`${amount} BST withdrawn successfully!`);
         } catch (error) {
             console.error("Error withdrawing amount:", error);
             alert("Failed to withdraw: " + (error.message || "Unknown error"));
+        }
+    }
+
+    // नया फंक्शन: ओनर द्वारा यूज़र को BNB बोनस ट्रांसफर करना
+    async function transferBnbBonus() {
+        if (!contract || !account) return alert("Connect your wallet first!");
+
+        // ओनर चेक: यहाँ मान लें कि ओनर का पता हार्डकोडेड है या कॉन्ट्रैक्ट से चेक करना चाहिए
+        const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता यहाँ डालें (अपडेट करें)
+        if (account.toLowerCase() !== ownerAddress.toLowerCase()) return alert("Only the owner can transfer BNB bonuses!");
+
+        const playerAddress = document.getElementById("bonusPlayerAddress").value;
+        const bnbAmount = Number(document.getElementById("bnbBonusAmount").value);
+
+        if (!ethers.isAddress(playerAddress)) return alert("Please enter a valid player address!");
+        if (!bnbAmount || bnbAmount <= 0) return alert("Please enter a valid BNB amount greater than 0!");
+
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(account);
+            const bnbWei = ethers.parseUnits(bnbAmount.toString(), 18);
+            if (balance < bnbWei) {
+                return alert(`Insufficient BNB balance. You need at least ${bnbAmount} BNB.`);
+            }
+
+            console.log(`Attempting to transfer ${bnbAmount} BNB to ${playerAddress}...`);
+            const tx = await contract.transferBnbBonus(playerAddress, bnbWei, { value: bnbWei, gasLimit: 300000 });
+            const receipt = await tx.wait();
+            console.log("BNB Bonus transfer successful:", receipt);
+
+            // UI अपडेट (हिस्ट्री में BNB बोनस दिखाने के लिए)
+            playerData.rewardHistory.push({ amount: bnbAmount, timestamp: Date.now(), rewardType: "BNB Bonus", referee: playerAddress });
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            document.getElementById("bonusPlayerAddress").value = "";
+            document.getElementById("bnbBonusAmount").value = "";
+            alert(`${bnbAmount} BNB bonus transferred to ${playerAddress} successfully!`);
+        } catch (error) {
+            console.error("Error transferring BNB bonus:", error);
+            alert("Failed to transfer BNB bonus: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1504,7 +1543,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (account) {
                 playerData.rewardHistory.forEach(entry => {
                     const li = document.createElement("li");
-                    li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}`;
+                    // BNB बोनस के लिए अलग यूनिट दिखाएं
+                    const amountDisplay = entry.rewardType === "BNB Bonus" ? `${entry.amount} BNB` : `${entry.amount.toFixed(2)} BST`;
+                    li.textContent = `${entry.rewardType}: ${amountDisplay} on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee})` : ""}`;
                     historyList.appendChild(li);
                 });
             }
@@ -1516,14 +1557,16 @@ document.addEventListener("DOMContentLoaded", () => {
     const referralBtn = document.getElementById("getReferralLink");
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
-    const withdrawBtn = document.getElementById("withdrawButton"); // नया बटन
+    const withdrawBtn = document.getElementById("withdrawButton");
+    const transferBnbBtn = document.getElementById("transferBnbBonusButton"); // नया बटन
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
-    if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount); // नया इवेंट लिस्टनर
+    if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount);
+    if (transferBnbBtn) transferBnbBtn.addEventListener("click", transferBnbBonus); // नया इवेंट लिस्टनर
 
     updatePlayerHistoryUI();
 });
