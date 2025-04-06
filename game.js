@@ -22,11 +22,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const referrerAddress = urlParams.get("ref");
-    if (referrerAddress && !playerData.pendingReferral) {
+    if (referrerAddress && !playerData.pendingReferral && ethers.isAddress(referrerAddress)) {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x4bfa51EA27346b0Cb9e2fa8796808b33AA5CA31b"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
+    const contractAddress = "0x4bfa51EA27346b0Cb9e2fa8796808b33AA5CA31b"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का सही पता डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -1098,7 +1098,7 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px;";
             document.body.appendChild(popup);
             document.getElementById("startNewGame").addEventListener("click", resetGame);
-            document.getElementById("withdrawRewards").addEventListener("click", withdrawCustomAmount);
+            document.getElementById("withdrawRewards").addEventListener("click", () => withdrawCustomAmount(true));
         }
         popup.style.display = "block";
     }
@@ -1228,11 +1228,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function withdrawCustomAmount() {
+    async function withdrawCustomAmount(fromGameOver = false) {
         if (!contract || !account) return alert("Connect your wallet first!");
-        const amount = playerData.pendingRewards; // गेम से पेंडिंग रिवॉर्ड्स को निकालें
-        if (amount < 10) return alert("Minimum 10 BST required to withdraw!");
-        if (amount > 1000) return alert("Maximum withdrawal limit is 1000 BST!");
+        let amount;
+        if (fromGameOver) {
+            amount = playerData.pendingRewards; // गेम ओवर से सीधे पेंडिंग रिवॉर्ड्स निकालें
+            if (amount < 10) return alert("Minimum 10 BST required to withdraw!");
+            if (amount > 1000) return alert("Maximum withdrawal limit is 1000 BST!");
+        } else {
+            amount = Number(document.getElementById("withdrawAmount").value);
+            if (!amount || amount < 10 || amount > 1000) return alert("Please enter an amount between 10 and 1000 BST!");
+            if (amount > playerData.walletBalance + playerData.pendingRewards) return alert("Insufficient rewards or balance!");
+        }
 
         try {
             await fetchWithdrawalFee();
@@ -1259,18 +1266,28 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Withdrawal successful:", receipt);
 
             const referrerReward = amount * 0.01; // 1% रेफरल कमीशन
-            playerData.totalRewards += amount;
-            playerData.pendingRewards = 0;
+            if (fromGameOver) {
+                playerData.pendingRewards = 0;
+                playerData.totalRewards += amount;
+            } else {
+                playerData.walletBalance -= amount;
+                playerData.totalRewards += amount;
+            }
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: "Game Reward", referee: playerData.pendingReferral || "N/A" });
-            if (playerData.pendingReferral) {
+            playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: fromGameOver ? "Game Reward" : "Custom Withdrawal", referee: playerData.pendingReferral || "N/A" });
+            if (playerData.pendingReferral && fromGameOver) {
                 playerData.referralRewards += referrerReward;
                 playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
             }
-            playerData.pendingReferral = null; // रेफरल रीसेट
+            playerData.pendingReferral = null; // गेम ओवर के बाद रेफरल रीसेट
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
+            if (!fromGameOver) document.getElementById("withdrawAmount").value = "";
             alert(`${amount} BST withdrawn successfully!`);
+            if (fromGameOver) {
+                const popup = document.getElementById("gameOverPopup");
+                if (popup) popup.style.display = "none";
+            }
         } catch (error) {
             console.error("Error withdrawing amount:", error);
             alert("Failed to withdraw: " + (error.message || "Unknown error"));
@@ -1503,8 +1520,9 @@ document.addEventListener("DOMContentLoaded", () => {
             historyList.innerHTML = "";
             if (account) {
                 playerData.rewardHistory.forEach(entry => {
-                    const amountDisplay = entry.rewardType === "BNB Bonus" ? `${entry.amount} BNB` : `${entry.amount.toFixed(2)} BST`;
-                    li.textContent = `${entry.rewardType}: ${amountDisplay} on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee})` : ""}`;
+                    const li = document.createElement("li");
+                    const amountDisplay = entry.rewardType === "BNB Bonus" ? `${entry.amount.toFixed(2)} BNB` : `${entry.amount.toFixed(2)} BST`;
+                    li.textContent = `${entry.rewardType}: ${amountDisplay} on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee.slice(0, 6)}...)` : ""}`;
                     historyList.appendChild(li);
                 });
             }
@@ -1523,7 +1541,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
-    if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount);
+    if (withdrawBtn) withdrawBtn.addEventListener("click", () => withdrawCustomAmount(false));
     if (mintBtn) mintBtn.addEventListener("click", mintTokens);
     if (transferBnbBtn) transferBnbBtn.addEventListener("click", transferBnbBonus);
 
