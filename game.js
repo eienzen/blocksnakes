@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract = null;
     let gameInterval = null;
     const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
-    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
+    let WITHDRAWAL_FEE_BNB = "0.0002";
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
@@ -26,8 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x53148a03a5d47692115ccb2e8ACA74D838e0E734"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का सही पता
+    const contractAddress = "0x38B13b235d38b4F4BD1655297DC39FfcfEf0aD91"; // आपके त्रुटि लॉग से लिया गया
     const contractABI = [
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
 	{
 		"inputs": [
 			{
@@ -408,6 +413,69 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "event"
 	},
 	{
+		"inputs": [],
+		"name": "MINIMUM_WITHDRAWAL",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REFERRAL_COMMISSION_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "WELCOME_BONUS",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -429,6 +497,25 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -470,204 +557,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "totalBnbToDistribute",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "numberOfPlayers",
-				"type": "uint256"
-			}
-		],
-		"name": "distributeBnbRewards",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "mintTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transfer",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newLimit",
-				"type": "uint256"
-			}
-		],
-		"name": "updateMaxWithdrawalLimit",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_newWallet",
-				"type": "address"
-			}
-		],
-		"name": "updateOwnerWallet",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newFeeInBnbWei",
-				"type": "uint256"
-			}
-		],
-		"name": "updateWithdrawalFee",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "withdrawAllTokens",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "contractBalance",
 		"outputs": [
@@ -704,6 +593,24 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "totalBnbToDistribute",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "numberOfPlayers",
+				"type": "uint256"
+			}
+		],
+		"name": "distributeBnbRewards",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -799,16 +706,16 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "MINIMUM_WITHDRAWAL",
-		"outputs": [
+		"inputs": [
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "amount",
 				"type": "uint256"
 			}
 		],
-		"stateMutability": "view",
+		"name": "mintTokens",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -909,19 +816,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -938,6 +832,13 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
@@ -1030,16 +931,115 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "WELCOME_BONUS",
-		"outputs": [
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
 			{
 				"internalType": "uint256",
-				"name": "",
+				"name": "value",
 				"type": "uint256"
 			}
 		],
-		"stateMutability": "view",
+		"name": "transfer",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "from",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "to",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "value",
+				"type": "uint256"
+			}
+		],
+		"name": "transferFrom",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newLimit",
+				"type": "uint256"
+			}
+		],
+		"name": "updateMaxWithdrawalLimit",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_newWallet",
+				"type": "address"
+			}
+		],
+		"name": "updateOwnerWallet",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newFeeInBnbWei",
+				"type": "uint256"
+			}
+		],
+		"name": "updateWithdrawalFee",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "withdrawAllTokens",
+		"outputs": [],
+		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -1057,7 +1057,6 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 ];
 
-    // कैनवस और गेम लॉजिक
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
     const gridWidth = 30;
@@ -1343,9 +1342,8 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             const feeWei = await contract.withdrawalFeeInBnb();
             WITHDRAWAL_FEE_BNB = ethers.formatUnits(feeWei, 18);
-            console.log("Updated withdrawal fee:", WITHDRAWAL_FEE_BNB, "BNB");
         } catch (error) {
-            console.error("Error fetching withdrawal fee:", error);
+            alert("Failed to fetch withdrawal fee: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1354,23 +1352,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
 
         try {
+            await fetchWithdrawalFee();
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) {
-                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-            }
+            if (balance < feeWei) return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
 
             const contractBalance = await contract.contractBalance();
             const welcomeBonusAmount = ethers.parseUnits("100", 18);
-            if (contractBalance < welcomeBonusAmount) {
-                return alert("Contract does not have enough BST tokens to pay the welcome bonus.");
-            }
+            if (contractBalance < welcomeBonusAmount) return alert("Contract does not have enough BST tokens.");
 
-            console.log("Attempting to claim welcome bonus...");
-            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 300000 });
-            const receipt = await tx.wait();
-            console.log("Transaction successful:", receipt);
+            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 500000 });
+            await tx.wait();
 
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
@@ -1380,8 +1373,10 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
-            console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
+            let message = "Failed to claim welcome bonus: ";
+            if (error.code === "CALL_EXCEPTION") message += "Transaction reverted. Check contract balance or if bonus is already claimed.";
+            else message += error.message || "Unknown error";
+            alert(message);
         }
     }
 
@@ -1394,7 +1389,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (amount > 1000) return alert("Maximum withdrawal limit is 1000 BST!");
         } else {
             amount = Number(document.getElementById("withdrawAmount").value);
-            if (!amount || amount < 10 || amount > 1000) return alert("Please enter an amount between 10 and 1000 BST!");
+            if (!amount || amount < 10 || amount > 1000) return alert("Enter an amount between 10 and 1000 BST!");
             if (amount > playerData.walletBalance + playerData.pendingRewards) return alert("Insufficient rewards or balance!");
         }
 
@@ -1403,24 +1398,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) {
-                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-            }
+            if (balance < feeWei) return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
 
             const contractBalance = await contract.contractBalance();
             const withdrawWei = ethers.parseUnits(amount.toString(), 18);
-            if (contractBalance < withdrawWei) {
-                return alert("Contract does not have enough BST tokens.");
-            }
+            if (contractBalance < withdrawWei) return alert("Contract does not have enough BST tokens.");
 
-            console.log(`Attempting to withdraw ${amount} BST with referrer ${playerData.pendingReferral || 'none'}...`);
             const tx = await contract.withdrawCustomAmount(
                 withdrawWei,
                 playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-                { value: feeWei, gasLimit: 300000 }
+                { value: feeWei, gasLimit: 500000 }
             );
-            const receipt = await tx.wait();
-            console.log("Withdrawal successful:", receipt);
+            await tx.wait();
 
             const referrerReward = amount * 0.01;
             if (fromGameOver) {
@@ -1441,31 +1430,24 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
             if (!fromGameOver) document.getElementById("withdrawAmount").value = "";
             alert(`${amount} BST withdrawn successfully!`);
-            if (fromGameOver) {
-                const popup = document.getElementById("gameOverPopup");
-                if (popup) popup.style.display = "none";
-            }
+            if (fromGameOver) document.getElementById("gameOverPopup").style.display = "none";
         } catch (error) {
-            console.error("Error withdrawing amount:", error);
             alert("Failed to withdraw: " + (error.message || "Unknown error"));
         }
     }
 
     async function mintTokens() {
         if (!contract || !account) return alert("Connect your wallet first!");
-
-        const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
+        const ownerAddress = "0xYourOwnerAddressHere"; // अपडेट करें
         if (account.toLowerCase() !== ownerAddress.toLowerCase()) return alert("Only the owner can mint tokens!");
 
         const amount = Number(document.getElementById("mintAmount").value);
-        if (!amount || amount <= 0) return alert("Please enter a valid BST amount greater than 0!");
+        if (!amount || amount <= 0) return alert("Enter a valid BST amount greater than 0!");
 
         try {
             const mintWei = ethers.parseUnits(amount.toString(), 18);
-            console.log(`Attempting to mint ${amount} BST...`);
-            const tx = await contract.mintTokens(mintWei, { gasLimit: 300000 });
-            const receipt = await tx.wait();
-            console.log("Tokens minted successfully:", receipt);
+            const tx = await contract.mintTokens(mintWei, { gasLimit: 500000 });
+            await tx.wait();
 
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
@@ -1473,7 +1455,6 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("mintAmount").value = "";
             alert(`${amount} BST minted successfully!`);
         } catch (error) {
-            console.error("Error minting tokens:", error);
             alert("Failed to mint tokens: " + (error.message || "Unknown error"));
         }
     }
@@ -1484,27 +1465,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             if (network.chainId.toString() !== TARGET_NETWORK_ID) {
-                try {
-                    await window.ethereum.request({
-                        method: "wallet_switchEthereumChain",
-                        params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
-                    });
-                } catch (switchError) {
-                    if (switchError.code === 4902) {
-                        await window.ethereum.request({
-                            method: "wallet_addEthereumChain",
-                            params: [{
-                                chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}`,
-                                chainName: "BNB Testnet",
-                                nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
-                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
-                                blockExplorerUrls: ["https://testnet.bscscan.com"],
-                            }],
-                        });
-                    } else {
-                        throw switchError;
-                    }
-                }
+                await window.ethereum.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
+                });
             }
 
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -1532,14 +1496,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const signer = await provider.getSigner();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
 
-            const connectBtn = document.getElementById("connectWallet");
-            const disconnectBtn = document.getElementById("disconnectWallet");
-            const walletAddr = document.getElementById("walletAddress");
-            if (connectBtn) connectBtn.style.display = "none";
-            if (disconnectBtn) disconnectBtn.style.display = "block";
-            if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
+            document.getElementById("connectWallet").style.display = "none";
+            document.getElementById("disconnectWallet").style.display = "block";
+            document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
 
-            const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
+            const ownerAddress = "0xYourOwnerAddressHere"; // अपडेट करें
             if (account.toLowerCase() === ownerAddress.toLowerCase()) {
                 document.getElementById("ownerControls").style.display = "block";
             }
@@ -1550,7 +1511,6 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Wallet connected successfully!");
         } catch (error) {
-            console.error("Error connecting wallet:", error);
             alert("Failed to connect wallet: " + (error.message || "Unknown error"));
         }
     }
@@ -1558,12 +1518,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function disconnectWallet() {
         account = null;
         contract = null;
-        const connectBtn = document.getElementById("connectWallet");
-        const disconnectBtn = document.getElementById("disconnectWallet");
-        const walletAddr = document.getElementById("walletAddress");
-        if (connectBtn) connectBtn.style.display = "block";
-        if (disconnectBtn) disconnectBtn.style.display = "none";
-        if (walletAddr) walletAddr.textContent = "";
+        document.getElementById("connectWallet").style.display = "block";
+        document.getElementById("disconnectWallet").style.display = "none";
+        document.getElementById("walletAddress").textContent = "";
         document.getElementById("ownerControls").style.display = "none";
         updatePlayerHistoryUI();
         alert("Wallet disconnected!");
@@ -1594,7 +1551,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
-            console.error("Error loading player history:", error);
+            alert("Failed to load player history: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1627,19 +1584,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    const connectBtn = document.getElementById("connectWallet");
-    const disconnectBtn = document.getElementById("disconnectWallet");
-    const referralBtn = document.getElementById("getReferralLink");
-    const welcomeBtn = document.getElementById("welcomeBonusButton");
-    const withdrawBtn = document.getElementById("withdrawButton");
-    const mintBtn = document.getElementById("mintTokensButton");
-
-    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
-    if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
-    if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
-    if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
-    if (withdrawBtn) withdrawBtn.addEventListener("click", () => withdrawCustomAmount(false));
-    if (mintBtn) mintBtn.addEventListener("click", mintTokens);
+    document.getElementById("connectWallet").addEventListener("click", connectWallet);
+    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
+    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
+    document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
+    document.getElementById("withdrawButton").addEventListener("click", () => withdrawCustomAmount(false));
+    document.getElementById("mintTokensButton").addEventListener("click", mintTokens);
 
     updatePlayerHistoryUI();
 });
