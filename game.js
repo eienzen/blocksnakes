@@ -27,7 +27,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // स्मार्ट कॉन्ट्रैक्ट डिटेल्स
-    const contractAddress = "0xd9145CCE52D386f254917e481eB44e9943F39138"; // यहाँ अपना डिप्लॉयड कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "
+0x6441DbcB9c701a08543912873Bf7217195A09fb5"; // यहाँ अपना डिप्लॉयड कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
