@@ -28,8 +28,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const contractAddress = "0xb7d71032C473adB99dB417F966B6Cd24BCc5FD40"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
     const contractABI = [
-	{
-		"inputs": [
+    {
+        "inputs": [
+            { "internalType": "uint256", "name": "totalReward", "type": "uint256" },
+            { "internalType": "address", "name": "referrer", "type": "address" }
+        ],
+        "name": "claimAllRewards",
+        "outputs": [],
+        "stateMutability": "payable",
+        "type": "function"
+    },
+    // अन्य फंक्शंस...
+];
 			{
 				"internalType": "address",
 				"name": "spender",
