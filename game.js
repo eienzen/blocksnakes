@@ -1279,7 +1279,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             console.log("Attempting to claim welcome bonus...");
-            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 300000 });
+            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 500000 });
             const receipt = await tx.wait();
             console.log("Transaction successful:", receipt);
 
