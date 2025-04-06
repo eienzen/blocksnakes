@@ -1297,16 +1297,51 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function claimPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
+    if (!contract || !account) return alert("Connect your wallet first!");
+    if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
 
-        try {
-            await fetchWithdrawalFee();
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const balance = await provider.getBalance(account);
-            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) {
-                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+    try {
+        await fetchWithdrawalFee();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(account);
+        const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
+        if (balance < feeWei) {
+            return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+        }
+
+        const contractBalance = await contract.contractBalance();
+        const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
+        if (contractBalance < rewardWei) {
+            return alert("Contract does not have enough BST tokens. Ask the owner to mint more.");
+        }
+
+        const gasPrice = await provider.getGasPrice();
+        console.log(`Attempting to claim ${playerData.pendingRewards} BST rewards with referrer: ${playerData.pendingReferral || 'none'}`);
+        const tx = await contract.claimAllRewards(
+            rewardWei,
+            playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
+            { value: feeWei, gasLimit: 500000, gasPrice }
+        );
+        const receipt = await tx.wait();
+        if (receipt.status === 0) {
+            throw new Error("Transaction failed: reverted by the EVM");
+        }
+        console.log("Rewards claimed successfully:", receipt.transactionHash);
+
+        playerData.totalRewards += playerData.pendingRewards;
+        playerData.referralRewards += playerData.pendingReferrerReward;
+        playerData.pendingRewards = 0;
+        playerData.pendingReferrerReward = 0;
+        playerData.pendingReferral = null;
+        playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+        alert("Rewards claimed successfully!");
+    } catch (error) {
+        console.error("Error claiming rewards:", error);
+        alert("Failed to claim rewards: " + (error.reason || error.message || "Transaction reverted. Check contract balance or BNB fee."));
+    }
+}
             }
 
             const contractBalance = await contract.contractBalance();
