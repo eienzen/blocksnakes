@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x38B13b235d38b4F4BD1655297DC39FfcfEf0aD91"; // आपके त्रुटि लॉग से लिया गया
+    const contractAddress = "0x38B13b235d38b4F4BD1655297DC39FfcfEf0aD91";
     const contractABI = [
 	{
 		"inputs": [],
@@ -1343,15 +1343,18 @@ document.addEventListener("DOMContentLoaded", () => {
             const feeWei = await contract.withdrawalFeeInBnb();
             WITHDRAWAL_FEE_BNB = ethers.formatUnits(feeWei, 18);
         } catch (error) {
-            alert("Failed to fetch withdrawal fee: " + (error.message || "Unknown error"));
+            throw new Error("Failed to fetch withdrawal fee: " + (error.message || "Unknown error"));
         }
     }
 
     async function claimWelcomeBonus() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
 
         try {
+            // पहले यूजर की स्थिति और कॉन्ट्रैक्ट बैलेंस चेक करें
+            const playerInfo = await contract.playerHistory(account);
+            if (playerInfo.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
+
             await fetchWithdrawalFee();
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
@@ -1360,22 +1363,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const contractBalance = await contract.contractBalance();
             const welcomeBonusAmount = ethers.parseUnits("100", 18);
-            if (contractBalance < welcomeBonusAmount) return alert("Contract does not have enough BST tokens.");
+            if (contractBalance < welcomeBonusAmount) return alert("Contract does not have enough BST tokens to pay the welcome bonus.");
 
+            // ट्रांजैक्शन भेजें
             const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 500000 });
             await tx.wait();
 
+            // लोकल डेटा अपडेट करें
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Welcome bonus of 100 BST claimed!");
+            alert("Welcome bonus of 100 BST claimed successfully!");
         } catch (error) {
             let message = "Failed to claim welcome bonus: ";
-            if (error.code === "CALL_EXCEPTION") message += "Transaction reverted. Check contract balance or if bonus is already claimed.";
-            else message += error.message || "Unknown error";
+            if (error.code === "CALL_EXCEPTION") {
+                message += "Transaction reverted. Possible reasons: insufficient contract balance, bonus already claimed, or insufficient BNB fee.";
+            } else {
+                message += error.message || "Unknown error";
+            }
             alert(message);
         }
     }
@@ -1438,7 +1446,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function mintTokens() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        const ownerAddress = "0xYourOwnerAddressHere"; // अपडेट करें
+        const ownerAddress = "0xYourOwnerAddressHere"; // अपने ओनर एड्रेस से बदलें
         if (account.toLowerCase() !== ownerAddress.toLowerCase()) return alert("Only the owner can mint tokens!");
 
         const amount = Number(document.getElementById("mintAmount").value);
@@ -1500,7 +1508,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("disconnectWallet").style.display = "block";
             document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
 
-            const ownerAddress = "0xYourOwnerAddressHere"; // अपडेट करें
+            const ownerAddress = "0xYourOwnerAddressHere"; // अपने ओनर एड्रेस से बदलें
             if (account.toLowerCase() === ownerAddress.toLowerCase()) {
                 document.getElementById("ownerControls").style.display = "block";
             }
@@ -1574,22 +1582,3 @@ document.addEventListener("DOMContentLoaded", () => {
         const historyList = document.getElementById("rewardHistoryList");
         if (historyList) {
             historyList.innerHTML = "";
-            if (account) {
-                playerData.rewardHistory.forEach(entry => {
-                    const li = document.createElement("li");
-                    li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee.slice(0, 6)}...)` : ""}`;
-                    historyList.appendChild(li);
-                });
-            }
-        }
-    }
-
-    document.getElementById("connectWallet").addEventListener("click", connectWallet);
-    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
-    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
-    document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
-    document.getElementById("withdrawButton").addEventListener("click", () => withdrawCustomAmount(false));
-    document.getElementById("mintTokensButton").addEventListener("click", mintTokens);
-
-    updatePlayerHistoryUI();
-});
