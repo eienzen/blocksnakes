@@ -111,19 +111,61 @@
             font-size: 16px;
             width: 200px;
         }
+        input[type="number"]::placeholder, input[type="text"]::placeholder {
+            color: #ccc;
+        }
+        ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        li {
+            margin: 5px 0;
+            background-color: #3a3a7d;
+            padding: 5px;
+            border-radius: 3px;
+        }
         h2, h3 {
             color: #00ffcc;
+        }
+        #gameOverPopup {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #2a2a5d;
+            padding: 20px;
+            border: 2px solid #00ffcc;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+        }
+        #gameOverPopup h2 {
+            margin: 0 0 10px;
+            color: #00ffcc;
+        }
+        #gameOverPopup p {
+            margin: 5px 0;
+        }
+        #gameOverPopup button {
+            margin-top: 10px;
+        }
+        #ownerControls {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div id="header">
-        <img src="logo.png" alt="BlockSnakes Logo" id="header-logo">
+        <img src="/logo.png" alt="BlockSnakes Logo" id="header-logo">
         <div>
             <h1>BlockSnakes: Play and Earn Real Crypto Currency BST Token</h1>
             <p id="walletAddress"></p>
             <p id="walletBalance">Wallet Balance: 0 BST</p>
         </div>
+    </div>
+    <div id="bnbBonusBanner">
+        You Earned <span id="bnbBonusTotal">0</span> BNB Bonus for Great Gameplay!
     </div>
     <div id="content">
         <div id="gameInfo">
@@ -142,15 +184,27 @@
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
+            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
             <button id="claimGameRewards">Claim Rewards</button>
             <div>
                 <input type="number" id="withdrawAmount" placeholder="Enter BST amount to withdraw" min="10" step="0.01">
                 <button id="withdrawButton">Withdraw</button>
             </div>
             <button id="getReferralLink">Get Referral Link</button>
+            <button id="welcomeBonusButton">Claim Welcome Bonus</button>
+            <div id="ownerControls">
+                <h3>Owner Controls</h3>
+                <input type="number" id="mintAmount" placeholder="Enter BST amount to mint" min="0" step="1">
+                <button id="mintTokensButton">Mint Tokens</button>
+                <input type="text" id="bonusPlayerAddress" placeholder="Enter player address">
+                <input type="number" id="bnbBonusAmount" placeholder="Enter BNB amount" min="0" step="0.01">
+                <button id="transferBnbBonusButton">Transfer BNB Bonus</button>
+            </div>
+            <h3>Reward History</h3>
+            <ul id="rewardHistoryList"></ul>
         </div>
     </div>
-    <script src="https://unpkg.com/ethers@latest/dist/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
