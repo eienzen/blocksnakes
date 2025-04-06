@@ -22,7 +22,6 @@
             background: linear-gradient(90deg, #2a2a5d, #00ffcc);
             padding: 20px;
             text-align: center;
-            z-index: 1000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             display: flex;
             align-items: center;
@@ -140,18 +139,10 @@
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             z-index: 2000;
         }
-        #gameOverPopup h2 {
-            margin: 0 0 10px;
-            color: #00ffcc;
-        }
-        #gameOverPopup p {
-            margin: 5px 0;
-        }
-        #gameOverPopup button {
+        #status {
             margin-top: 10px;
-        }
-        #ownerControls {
-            display: none;
+            font-weight: bold;
+            color: #ff5555;
         }
     </style>
 </head>
@@ -159,7 +150,7 @@
     <div id="header">
         <img src="/logo.png" alt="BlockSnakes Logo" id="header-logo">
         <div>
-            <h1>BlockSnakes: Play and Earn Real Crypto Currency BST Token</h1>
+            <h1>BlockSnakes: Play and Earn BST Tokens</h1>
             <p id="walletAddress"></p>
             <p id="walletBalance">Wallet Balance: 0 BST</p>
         </div>
@@ -192,17 +183,10 @@
             </div>
             <button id="getReferralLink">Get Referral Link</button>
             <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-            <div id="ownerControls">
-                <h3>Owner Controls</h3>
-                <input type="number" id="mintAmount" placeholder="Enter BST amount to mint" min="0" step="1">
-                <button id="mintTokensButton">Mint Tokens</button>
-                <input type="text" id="bonusPlayerAddress" placeholder="Enter player address">
-                <input type="number" id="bnbBonusAmount" placeholder="Enter BNB amount" min="0" step="0.01">
-                <button id="transferBnbBonusButton">Transfer BNB Bonus</button>
-            </div>
             <h3>Reward History</h3>
             <ul id="rewardHistoryList"></ul>
         </div>
+        <div id="status"></div>
     </div>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="game.js"></script>
