@@ -1,38 +1,20 @@
-document.addEventListener("DOMContentLoaded", () => {
-    let account = null;
-    let contract = null;
-    let gameInterval = null;
-    const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
-    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
+// Global variables
+let contract;
+let account;
+let playerData = JSON.parse(localStorage.getItem("playerData")) || {
+    totalRewards: 0,
+    referralRewards: 0,
+    pendingRewards: 0,
+    pendingReferrerReward: 0,
+    pendingReferral: null,
+    walletBalance: 0,
+    gamesPlayed: 0,
+    totalReferrals: 0
+};
+const CONTRACT_ADDRESS = "0xBBC3cd22Eff40F70Bf2f9eB482787E5e0D285586";
+const WITHDRAWAL_FEE_BNB = "0.0002";
 
-    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
-        gamesPlayed: 0,
-        totalRewards: 0,
-        score: 0,
-        pendingRewards: 0,
-        totalReferrals: 0,
-        referralRewards: 0,
-        pendingReferral: null,
-        pendingReferrerReward: 0,
-        rewardHistory: [],
-        hasClaimedWelcomeBonus: false,
-        walletBalance: 0,
-        walletAddress: null
-    };
-
-    const urlParams = new URLSearchParams(window.location.search);
-    const referrerAddress = urlParams.get("ref");
-    if (referrerAddress && !playerData.pendingReferral) {
-        playerData.pendingReferral = referrerAddress;
-    }
-
-    const contractAddress = "0xBBC3cd22Eff40F70Bf2f9eB482787E5e0D285586"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
-    const contractABI = [
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
+const contractABI = [
 	{
 		"inputs": [
 			{
@@ -413,69 +395,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "event"
 	},
 	{
-		"inputs": [],
-		"name": "MINIMUM_WITHDRAWAL",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "WELCOME_BONUS",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "address",
@@ -497,25 +416,6 @@ document.addEventListener("DOMContentLoaded", () => {
 			}
 		],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -557,86 +457,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	},
 	{
-		"inputs": [],
-		"name": "contractBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "decimals",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "getRewardHistory",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "rewardType",
-						"type": "string"
-					},
-					{
-						"internalType": "address",
-						"name": "referee",
-						"type": "address"
-					}
-				],
-				"internalType": "struct BlockSnakesGame.Reward[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "maxWithdrawalLimit",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
 		"inputs": [
 			{
 				"internalType": "uint256",
@@ -651,171 +471,9 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
-		"name": "name",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "ownerWallet",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "playerHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "gamesPlayed",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReferrals",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referralRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "hasClaimedWelcomeBonus",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "referrals",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
 		"name": "renounceOwnership",
 		"outputs": [],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "rewardHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "totalSupply",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
 		"type": "function"
 	},
 	{
@@ -956,6 +614,335 @@ document.addEventListener("DOMContentLoaded", () => {
 	},
 	{
 		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "owner",
+				"type": "address"
+			},
+			{
+				"internalType": "address",
+				"name": "spender",
+				"type": "address"
+			}
+		],
+		"name": "allowance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "balanceOf",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "contractBalance",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [
+			{
+				"internalType": "uint8",
+				"name": "",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "player",
+				"type": "address"
+			}
+		],
+		"name": "getRewardHistory",
+		"outputs": [
+			{
+				"components": [
+					{
+						"internalType": "uint256",
+						"name": "amount",
+						"type": "uint256"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "rewardType",
+						"type": "string"
+					},
+					{
+						"internalType": "address",
+						"name": "referee",
+						"type": "address"
+					}
+				],
+				"internalType": "struct BlockSnakesGame.Reward[]",
+				"name": "",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "maxWithdrawalLimit",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "MINIMUM_WITHDRAWAL",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "name",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "owner",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "ownerWallet",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "playerHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "gamesPlayed",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "totalReferrals",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "referralRewards",
+				"type": "uint256"
+			},
+			{
+				"internalType": "bool",
+				"name": "hasClaimedWelcomeBonus",
+				"type": "bool"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "REFERRAL_COMMISSION_RATE",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "referrals",
+		"outputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "rewardHistory",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "timestamp",
+				"type": "uint256"
+			},
+			{
+				"internalType": "string",
+				"name": "rewardType",
+				"type": "string"
+			},
+			{
+				"internalType": "address",
+				"name": "referee",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "symbol",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "totalSupply",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "WELCOME_BONUS",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [],
 		"name": "withdrawalFeeInBnb",
 		"outputs": [
 			{
@@ -968,6 +955,124 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	}
 ];
+
+async function connectWallet() {
+    if (window.ethereum) {
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.send("eth_requestAccounts", []);
+            account = accounts[0];
+            document.getElementById("walletAddress").textContent = `Wallet: ${account.slice(0, 6)}...${account.slice(-4)}`;
+            await initContract();
+            await updatePlayerData();
+            console.log("Connected:", account);
+        } catch (error) {
+            console.error("Wallet connection failed:", error);
+            alert("Failed to connect wallet. Please install MetaMask.");
+        }
+    } else {
+        alert("Please install MetaMask!");
+    }
+}
+
+async function initContract() {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
+}
+
+async function updatePlayerData() {
+    if (!contract || !account) return;
+    playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+    document.getElementById("walletBalance").textContent = `Wallet Balance: ${playerData.walletBalance} BST`;
+    updatePlayerHistoryUI();
+    localStorage.setItem("playerData", JSON.stringify(playerData));
+}
+
+async function fetchWithdrawalFee() {
+    const fee = await contract.withdrawalFee(); // अगर यह फंक्शन मौजूद है
+    const feeBNB = ethers.formatUnits(fee, 18);
+    console.log("Updated withdrawal fee:", feeBNB);
+    return feeBNB;
+}
+
+async function claimPendingRewards() {
+    if (!contract || !account) return alert("Connect your wallet first!");
+    if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
+
+    try {
+        await fetchWithdrawalFee();
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const balance = await provider.getBalance(account);
+        const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
+        if (balance < feeWei) {
+            return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+        }
+
+        const contractBalance = await contract.contractBalance();
+        const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
+        if (contractBalance < rewardWei) {
+            return alert("Contract does not have enough BST tokens. Ask the owner to mint more.");
+        }
+
+        const gasPrice = await provider.getGasPrice();
+        console.log(`Attempting to claim ${playerData.pendingRewards} BST rewards with referrer: ${playerData.pendingReferral || 'none'}`);
+        const tx = await contract.claimAllRewards(
+            rewardWei,
+            playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
+            { value: feeWei, gasLimit: 500000, gasPrice }
+        );
+        const receipt = await tx.wait();
+        if (receipt.status === 0) {
+            throw new Error("Transaction failed: reverted by the EVM");
+        }
+        console.log("Rewards claimed successfully:", receipt.transactionHash);
+
+        playerData.totalRewards += playerData.pendingRewards;
+        playerData.referralRewards += playerData.pendingReferrerReward;
+        playerData.pendingRewards = 0;
+        playerData.pendingReferrerReward = 0;
+        playerData.pendingReferral = null;
+        playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+        alert("Rewards claimed successfully!");
+    } catch (error) {
+        console.error("Error claiming rewards:", error);
+        alert("Failed to claim rewards: " + (error.reason || error.message || "Transaction reverted. Check contract or parameters."));
+    }
+}
+
+function updatePlayerHistoryUI() {
+    const historyDiv = document.getElementById("playerHistory");
+    if (historyDiv) {
+        historyDiv.innerHTML = `
+            <h3>Player History</h3>
+            <p>Games Played: ${playerData.gamesPlayed}</p>
+            <p>Total Game Rewards: ${playerData.totalRewards} BST</p>
+            <p>Total Referrals: ${playerData.totalReferrals}</p>
+            <p>Referral Rewards: ${playerData.referralRewards} BST</p>
+            <p>Pending Rewards: ${playerData.pendingRewards} BST</p>
+            <button id="claimGameRewards">Claim Rewards</button>
+            <button id="withdrawBtn">Withdraw</button>
+            <button id="getReferralLink">Get Referral Link</button>
+            <button id="claimWelcomeBonus">Claim Welcome Bonus</button>
+            <div id="rewardHistory"></div>
+        `;
+        document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
+        // अन्य बटन इवेंट लिस्नर जोड़ें...
+    }
+}
+
+// इवेंट लिस्नर जोड़ें
+document.addEventListener("DOMContentLoaded", () => {
+    const connectBtn = document.getElementById("connectWallet");
+    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
+
+    updatePlayerHistoryUI();
+});
+
+// अन्य फंक्शंस (withdraw, referral, welcome bonus) यहाँ जोड़ें...
 
     // कैनवस और गेम लॉजिक
     const canvas = document.getElementById("gameCanvas");
