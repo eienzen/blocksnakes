@@ -1,20 +1,33 @@
-// Global variables
-let contract;
-let account;
-let playerData = JSON.parse(localStorage.getItem("playerData")) || {
-    totalRewards: 0,
-    referralRewards: 0,
-    pendingRewards: 0,
-    pendingReferrerReward: 0,
-    pendingReferral: null,
-    walletBalance: 0,
-    gamesPlayed: 0,
-    totalReferrals: 0
-};
-const CONTRACT_ADDRESS = "0xBBC3cd22Eff40F70Bf2f9eB482787E5e0D285586";
-const WITHDRAWAL_FEE_BNB = "0.0002";
+document.addEventListener("DOMContentLoaded", () => {
+    let account = null;
+    let contract = null;
+    let gameInterval = null;
+    const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
+    let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
 
-const contractABI = [
+    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
+        gamesPlayed: 0,
+        totalRewards: 0,
+        score: 0,
+        pendingRewards: 0,
+        totalReferrals: 0,
+        referralRewards: 0,
+        pendingReferral: null,
+        pendingReferrerReward: 0,
+        rewardHistory: [],
+        hasClaimedWelcomeBonus: false,
+        walletBalance: 0,
+        walletAddress: null
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrerAddress = urlParams.get("ref");
+    if (referrerAddress && !playerData.pendingReferral) {
+        playerData.pendingReferral = referrerAddress;
+    }
+
+    const contractAddress = "0x4bfa51EA27346b0Cb9e2fa8796808b33AA5CA31b"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
+    const contractABI = [
 	{
 		"inputs": [
 			{
@@ -152,44 +165,6 @@ const contractABI = [
 		"anonymous": false,
 		"inputs": [
 			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "bnbAmount",
-				"type": "uint256"
-			}
-		],
-		"name": "BnbBonusTransferred",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "CustomAmountWithdrawn",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
 				"indexed": false,
 				"internalType": "uint256",
 				"name": "newLimit",
@@ -284,7 +259,7 @@ const contractABI = [
 				"type": "uint256"
 			}
 		],
-		"name": "RewardsClaimed",
+		"name": "RewardsWithdrawn",
 		"type": "event"
 	},
 	{
@@ -432,24 +407,6 @@ const contractABI = [
 		"type": "function"
 	},
 	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			}
-		],
-		"name": "claimAllRewards",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
 		"inputs": [],
 		"name": "claimWelcomeBonus",
 		"outputs": [],
@@ -498,24 +455,6 @@ const contractABI = [
 			}
 		],
 		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "bnbAmount",
-				"type": "uint256"
-			}
-		],
-		"name": "transferBnbBonus",
-		"outputs": [],
-		"stateMutability": "payable",
 		"type": "function"
 	},
 	{
@@ -605,6 +544,11 @@ const contractABI = [
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
+			},
+			{
+				"internalType": "address",
+				"name": "referrer",
+				"type": "address"
 			}
 		],
 		"name": "withdrawCustomAmount",
@@ -956,124 +900,6 @@ const contractABI = [
 	}
 ];
 
-async function connectWallet() {
-    if (window.ethereum) {
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const accounts = await provider.send("eth_requestAccounts", []);
-            account = accounts[0];
-            document.getElementById("walletAddress").textContent = `Wallet: ${account.slice(0, 6)}...${account.slice(-4)}`;
-            await initContract();
-            await updatePlayerData();
-            console.log("Connected:", account);
-        } catch (error) {
-            console.error("Wallet connection failed:", error);
-            alert("Failed to connect wallet. Please install MetaMask.");
-        }
-    } else {
-        alert("Please install MetaMask!");
-    }
-}
-
-async function initContract() {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    contract = new ethers.Contract(CONTRACT_ADDRESS, contractABI, signer);
-}
-
-async function updatePlayerData() {
-    if (!contract || !account) return;
-    playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-    document.getElementById("walletBalance").textContent = `Wallet Balance: ${playerData.walletBalance} BST`;
-    updatePlayerHistoryUI();
-    localStorage.setItem("playerData", JSON.stringify(playerData));
-}
-
-async function fetchWithdrawalFee() {
-    const fee = await contract.withdrawalFee(); // अगर यह फंक्शन मौजूद है
-    const feeBNB = ethers.formatUnits(fee, 18);
-    console.log("Updated withdrawal fee:", feeBNB);
-    return feeBNB;
-}
-
-async function claimPendingRewards() {
-    if (!contract || !account) return alert("Connect your wallet first!");
-    if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
-
-    try {
-        await fetchWithdrawalFee();
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const balance = await provider.getBalance(account);
-        const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-        if (balance < feeWei) {
-            return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-        }
-
-        const contractBalance = await contract.contractBalance();
-        const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
-        if (contractBalance < rewardWei) {
-            return alert("Contract does not have enough BST tokens. Ask the owner to mint more.");
-        }
-
-        const gasPrice = await provider.getGasPrice();
-        console.log(`Attempting to claim ${playerData.pendingRewards} BST rewards with referrer: ${playerData.pendingReferral || 'none'}`);
-        const tx = await contract.claimAllRewards(
-            rewardWei,
-            playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-            { value: feeWei, gasLimit: 500000, gasPrice }
-        );
-        const receipt = await tx.wait();
-        if (receipt.status === 0) {
-            throw new Error("Transaction failed: reverted by the EVM");
-        }
-        console.log("Rewards claimed successfully:", receipt.transactionHash);
-
-        playerData.totalRewards += playerData.pendingRewards;
-        playerData.referralRewards += playerData.pendingReferrerReward;
-        playerData.pendingRewards = 0;
-        playerData.pendingReferrerReward = 0;
-        playerData.pendingReferral = null;
-        playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-        alert("Rewards claimed successfully!");
-    } catch (error) {
-        console.error("Error claiming rewards:", error);
-        alert("Failed to claim rewards: " + (error.reason || error.message || "Transaction reverted. Check contract or parameters."));
-    }
-}
-
-function updatePlayerHistoryUI() {
-    const historyDiv = document.getElementById("playerHistory");
-    if (historyDiv) {
-        historyDiv.innerHTML = `
-            <h3>Player History</h3>
-            <p>Games Played: ${playerData.gamesPlayed}</p>
-            <p>Total Game Rewards: ${playerData.totalRewards} BST</p>
-            <p>Total Referrals: ${playerData.totalReferrals}</p>
-            <p>Referral Rewards: ${playerData.referralRewards} BST</p>
-            <p>Pending Rewards: ${playerData.pendingRewards} BST</p>
-            <button id="claimGameRewards">Claim Rewards</button>
-            <button id="withdrawBtn">Withdraw</button>
-            <button id="getReferralLink">Get Referral Link</button>
-            <button id="claimWelcomeBonus">Claim Welcome Bonus</button>
-            <div id="rewardHistory"></div>
-        `;
-        document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
-        // अन्य बटन इवेंट लिस्नर जोड़ें...
-    }
-}
-
-// इवेंट लिस्नर जोड़ें
-document.addEventListener("DOMContentLoaded", () => {
-    const connectBtn = document.getElementById("connectWallet");
-    if (connectBtn) connectBtn.addEventListener("click", connectWallet);
-
-    updatePlayerHistoryUI();
-});
-
-// अन्य फंक्शंस (withdraw, referral, welcome bonus) यहाँ जोड़ें...
-
     // कैनवस और गेम लॉजिक
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -1234,9 +1060,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 const referrerReward = reward * 0.01;
                 playerData.pendingRewards += reward;
                 gameRewards += reward;
-                playerData.totalRewards += reward;
 
-                playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
+                playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: playerData.pendingReferral || "N/A" });
                 if (playerData.pendingReferral) {
                     playerData.pendingReferrerReward += referrerReward;
                     playerData.referralRewards += referrerReward;
@@ -1268,10 +1093,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p id="finalPotentialBST">Potential BST: ${(score / 100 * 5).toFixed(2)}</p>
                 <p id="finalRewards">Rewards: ${gameRewards} BST</p>
                 <button id="startNewGame">Start New Game</button>
+                <button id="withdrawRewards">Withdraw Rewards</button>
             `;
             popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px;";
             document.body.appendChild(popup);
             document.getElementById("startNewGame").addEventListener("click", resetGame);
+            document.getElementById("withdrawRewards").addEventListener("click", withdrawCustomAmount);
         }
         popup.style.display = "block";
     }
@@ -1384,7 +1211,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             console.log("Attempting to claim welcome bonus...");
-            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 500000 });
+            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 300000 });
             const receipt = await tx.wait();
             console.log("Transaction successful:", receipt);
 
@@ -1401,90 +1228,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function claimPendingRewards() {
-    if (!contract || !account) return alert("Connect your wallet first!");
-    if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
-
-    try {
-        await fetchWithdrawalFee();
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const balance = await provider.getBalance(account);
-        const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-        if (balance < feeWei) {
-            return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-        }
-
-        const contractBalance = await contract.contractBalance();
-        const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
-        if (contractBalance < rewardWei) {
-            return alert("Contract does not have enough BST tokens. Ask the owner to mint more.");
-        }
-
-        const gasPrice = await provider.getGasPrice();
-        console.log(`Attempting to claim ${playerData.pendingRewards} BST rewards with referrer: ${playerData.pendingReferral || 'none'}`);
-        const tx = await contract.claimAllRewards(
-            rewardWei,
-            playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-            { value: feeWei, gasLimit: 500000, gasPrice }
-        );
-        const receipt = await tx.wait();
-        if (receipt.status === 0) {
-            throw new Error("Transaction failed: reverted by the EVM");
-        }
-        console.log("Rewards claimed successfully:", receipt.transactionHash);
-
-        playerData.totalRewards += playerData.pendingRewards;
-        playerData.referralRewards += playerData.pendingReferrerReward;
-        playerData.pendingRewards = 0;
-        playerData.pendingReferrerReward = 0;
-        playerData.pendingReferral = null;
-        playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-        updatePlayerHistoryUI();
-        localStorage.setItem("playerData", JSON.stringify(playerData));
-        alert("Rewards claimed successfully!");
-    } catch (error) {
-        console.error("Error claiming rewards:", error);
-        alert("Failed to claim rewards: " + (error.reason || error.message || "Transaction reverted. Check contract balance or BNB fee."));
-    }
-}
-            }
-
-            const contractBalance = await contract.contractBalance();
-            const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
-            if (contractBalance < rewardWei) {
-                return alert("Contract does not have enough BST tokens.");
-            }
-
-            console.log(`Attempting to claim ${playerData.pendingRewards} BST rewards...`);
-            const tx = await contract.claimAllRewards(
-                rewardWei,
-                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-                { value: feeWei, gasLimit: 300000 }
-            );
-            const receipt = await tx.wait();
-            console.log("Rewards claimed successfully:", receipt);
-
-            playerData.totalRewards += playerData.pendingRewards;
-            playerData.referralRewards += playerData.pendingReferrerReward;
-            playerData.pendingRewards = 0;
-            playerData.pendingReferrerReward = 0;
-            playerData.pendingReferral = null;
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Rewards claimed successfully!");
-        } catch (error) {
-            console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Unknown error"));
-        }
-    }
-
     async function withdrawCustomAmount() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        const amount = Number(document.getElementById("withdrawAmount").value);
-        if (!amount || amount < 10) return alert("Please enter an amount of at least 10 BST!");
+        const amount = playerData.pendingRewards; // गेम से पेंडिंग रिवॉर्ड्स को निकालें
+        if (amount < 10) return alert("Minimum 10 BST required to withdraw!");
         if (amount > 1000) return alert("Maximum withdrawal limit is 1000 BST!");
-        if (amount > playerData.pendingRewards) return alert("Insufficient pending rewards!");
 
         try {
             await fetchWithdrawalFee();
@@ -1501,18 +1249,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 return alert("Contract does not have enough BST tokens.");
             }
 
-            console.log(`Attempting to withdraw ${amount} BST...`);
-            const tx = await contract.withdrawCustomAmount(withdrawWei, { value: feeWei, gasLimit: 300000 });
+            console.log(`Attempting to withdraw ${amount} BST with referrer ${playerData.pendingReferral || 'none'}...`);
+            const tx = await contract.withdrawCustomAmount(
+                withdrawWei,
+                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
+                { value: feeWei, gasLimit: 300000 }
+            );
             const receipt = await tx.wait();
             console.log("Withdrawal successful:", receipt);
 
-            playerData.pendingRewards -= amount;
+            const referrerReward = amount * 0.01; // 1% रेफरल कमीशन
             playerData.totalRewards += amount;
+            playerData.pendingRewards = 0;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: "Custom Withdrawal", referee: "N/A" });
+            playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: "Game Reward", referee: playerData.pendingReferral || "N/A" });
+            if (playerData.pendingReferral) {
+                playerData.referralRewards += referrerReward;
+                playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
+            }
+            playerData.pendingReferral = null; // रेफरल रीसेट
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            document.getElementById("withdrawAmount").value = "";
             alert(`${amount} BST withdrawn successfully!`);
         } catch (error) {
             console.error("Error withdrawing amount:", error);
@@ -1746,7 +1503,6 @@ document.addEventListener("DOMContentLoaded", () => {
             historyList.innerHTML = "";
             if (account) {
                 playerData.rewardHistory.forEach(entry => {
-                    const li = document.createElement("li");
                     const amountDisplay = entry.rewardType === "BNB Bonus" ? `${entry.amount} BNB` : `${entry.amount.toFixed(2)} BST`;
                     li.textContent = `${entry.rewardType}: ${amountDisplay} on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee})` : ""}`;
                     historyList.appendChild(li);
@@ -1758,7 +1514,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const connectBtn = document.getElementById("connectWallet");
     const disconnectBtn = document.getElementById("disconnectWallet");
     const referralBtn = document.getElementById("getReferralLink");
-    const claimRewardsBtn = document.getElementById("claimGameRewards");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
     const withdrawBtn = document.getElementById("withdrawButton");
     const mintBtn = document.getElementById("mintTokensButton");
@@ -1767,7 +1522,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
-    if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
     if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount);
     if (mintBtn) mintBtn.addEventListener("click", mintTokens);
