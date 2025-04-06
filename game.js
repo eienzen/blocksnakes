@@ -26,911 +26,13 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xE5Bcf5a26702a982A02cb5b0EB2d863c963031cb"; // अपने डिप्लॉय्ड कॉन्ट्रैक्ट का पता डालें
-    const contractABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "allowance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "needed",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC20InsufficientAllowance",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "balance",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "needed",
-				"type": "uint256"
-			}
-		],
-		"name": "ERC20InsufficientBalance",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "approver",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidApprover",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "receiver",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidReceiver",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "sender",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidSender",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "ERC20InvalidSpender",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			}
-		],
-		"name": "OwnableInvalidOwner",
-		"type": "error"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "OwnableUnauthorizedAccount",
-		"type": "error"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Approval",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "CustomAmountWithdrawn",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newLimit",
-				"type": "uint256"
-			}
-		],
-		"name": "MaxWithdrawalLimitUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "oldWallet",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newWallet",
-				"type": "address"
-			}
-		],
-		"name": "OwnerWalletUpdated",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "previousOwner",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "OwnershipTransferred",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"name": "ReferralAdded",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "referrerReward",
-				"type": "uint256"
-			}
-		],
-		"name": "RewardsClaimed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "TokensBurned",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "totalAmount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "ownerAmount",
-				"type": "uint256"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "contractAmount",
-				"type": "uint256"
-			}
-		],
-		"name": "TokensMinted",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "Transfer",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": true,
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			},
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "WelcomeBonusClaimed",
-		"type": "event"
-	},
-	{
-		"anonymous": false,
-		"inputs": [
-			{
-				"indexed": false,
-				"internalType": "uint256",
-				"name": "newFeeInBnbWei",
-				"type": "uint256"
-			}
-		],
-		"name": "WithdrawalFeeUpdated",
-		"type": "event"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "approve",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "burnTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "totalReward",
-				"type": "uint256"
-			},
-			{
-				"internalType": "address",
-				"name": "referrer",
-				"type": "address"
-			}
-		],
-		"name": "claimAllRewards",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "claimWelcomeBonus",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "mintTokens",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "renounceOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transfer",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "from",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "to",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "value",
-				"type": "uint256"
-			}
-		],
-		"name": "transferFrom",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "newOwner",
-				"type": "address"
-			}
-		],
-		"name": "transferOwnership",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newLimit",
-				"type": "uint256"
-			}
-		],
-		"name": "updateMaxWithdrawalLimit",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "_newWallet",
-				"type": "address"
-			}
-		],
-		"name": "updateOwnerWallet",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "_newFeeInBnbWei",
-				"type": "uint256"
-			}
-		],
-		"name": "updateWithdrawalFee",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			}
-		],
-		"name": "withdrawCustomAmount",
-		"outputs": [],
-		"stateMutability": "payable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "owner",
-				"type": "address"
-			},
-			{
-				"internalType": "address",
-				"name": "spender",
-				"type": "address"
-			}
-		],
-		"name": "allowance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "account",
-				"type": "address"
-			}
-		],
-		"name": "balanceOf",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "contractBalance",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "decimals",
-		"outputs": [
-			{
-				"internalType": "uint8",
-				"name": "",
-				"type": "uint8"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "player",
-				"type": "address"
-			}
-		],
-		"name": "getRewardHistory",
-		"outputs": [
-			{
-				"components": [
-					{
-						"internalType": "uint256",
-						"name": "amount",
-						"type": "uint256"
-					},
-					{
-						"internalType": "uint256",
-						"name": "timestamp",
-						"type": "uint256"
-					},
-					{
-						"internalType": "string",
-						"name": "rewardType",
-						"type": "string"
-					},
-					{
-						"internalType": "address",
-						"name": "referee",
-						"type": "address"
-					}
-				],
-				"internalType": "struct BlockSnakesGame.Reward[]",
-				"name": "",
-				"type": "tuple[]"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "maxWithdrawalLimit",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "MINIMUM_WITHDRAWAL",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "name",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "owner",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "ownerWallet",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "playerHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "gamesPlayed",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "totalReferrals",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "referralRewards",
-				"type": "uint256"
-			},
-			{
-				"internalType": "bool",
-				"name": "hasClaimedWelcomeBonus",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "REFERRAL_COMMISSION_RATE",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"name": "referrals",
-		"outputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
-				"name": "",
-				"type": "address"
-			},
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"name": "rewardHistory",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "amount",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "timestamp",
-				"type": "uint256"
-			},
-			{
-				"internalType": "string",
-				"name": "rewardType",
-				"type": "string"
-			},
-			{
-				"internalType": "address",
-				"name": "referee",
-				"type": "address"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "symbol",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "totalSupply",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "WELCOME_BONUS",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"name": "withdrawalFeeInBnb",
-		"outputs": [
-			{
-				"internalType": "uint256",
-				"name": "",
-				"type": "uint256"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-];
+    // स्मार्ट कॉन्ट्रैक्ट डिटेल्स
+    const contractAddress = "YOUR_CONTRACT_ADDRESS"; // यहाँ अपना डिप्लॉयड कॉन्ट्रैक्ट एड्रेस डालें
+    const contractABI = [ /* यहाँ रीमिक्स से कॉपी किया गया ABI पेस्ट करें */ ]; // पूरा ABI यहाँ डालें
+    const gameOraclePrivateKey = "YOUR_GAME_ORACLE_PRIVATE_KEY"; // GameOracle की प्राइवेट की यहाँ डालें
+    const gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/");
+    const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
+    const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
 
     // कैनवस और गेम लॉजिक
     const canvas = document.getElementById("gameCanvas");
@@ -1068,14 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
-            clearInterval(gameInterval);
-            gameInterval = null;
-            showGameOverPopup();
-            return;
-        }
-
-        if (snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
             clearInterval(gameInterval);
             gameInterval = null;
             showGameOverPopup();
@@ -1136,6 +231,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function resetGame() {
         if (gameInterval) clearInterval(gameInterval);
+        if (gameRewards > 0 && account) {
+            await submitGameReward(gameRewards); // गेम रिवॉर्ड्स सबमिट करें
+        }
         playerData.gamesPlayed += 1;
         score = 0;
         gameRewards = 0;
@@ -1148,6 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
         draw();
         const popup = document.getElementById("gameOverPopup");
         if (popup) popup.style.display = "none";
+        if (account) gameInterval = setInterval(move, currentSnakeSpeed);
     }
 
     let touchStartX = 0;
@@ -1241,21 +340,51 @@ document.addEventListener("DOMContentLoaded", () => {
                 return alert("Contract does not have enough BST tokens to pay the welcome bonus.");
             }
 
-            console.log("Attempting to claim welcome bonus...");
             const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 300000 });
-            const receipt = await tx.wait();
-            console.log("Transaction successful:", receipt);
+            await tx.wait();
 
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
+            playerData.pendingRewards += 100; // वेलकम बोनस को पेंडिंग रिवॉर्ड्स में जोड़ा
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
             alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
+        }
+    }
+
+    async function submitGameReward(rewardAmount) {
+        if (!account) return alert("Connect your wallet first!");
+        if (rewardAmount < 10) return alert("Minimum 10 BST required to claim!");
+
+        try {
+            const rewardWei = ethers.parseUnits(rewardAmount.toString(), 18);
+            const tx = await gameOracleContract.claimAllRewards(
+                rewardWei,
+                account,
+                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
+                { gasLimit: 300000 }
+            );
+            await tx.wait();
+
+            playerData.totalRewards += rewardAmount;
+            if (playerData.pendingReferral) {
+                const referrerReward = rewardAmount * 0.01;
+                playerData.referralRewards += referrerReward;
+                playerData.pendingReferrerReward = 0;
+            }
+            playerData.pendingRewards += rewardAmount;
+            playerData.pendingReferral = null;
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+            alert(`${rewardAmount} BST rewards submitted successfully!`);
+        } catch (error) {
+            console.error("Error submitting game rewards:", error);
+            alert("Failed to submit rewards: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1278,143 +407,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 return alert("Contract does not have enough BST tokens.");
             }
 
-            console.log(`Attempting to claim ${playerData.pendingRewards} BST rewards...`);
-            const tx = await contract.claimAllRewards(
-                rewardWei,
-                playerData.pendingReferral || "0x0000000000000000000000000000000000000000",
-                { value: feeWei, gasLimit: 300000 }
-            );
-            const receipt = await tx.wait();
-            console.log("Rewards claimed successfully:", receipt);
+            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 300000 });
+            await tx.wait();
 
-            playerData.totalRewards += playerData.pendingRewards;
-            playerData.referralRewards += playerData.pendingReferrerReward;
-            playerData.pendingRewards = 0;
-            playerData.pendingReferrerReward = 0;
-            playerData.pendingReferral = null;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.pendingRewards = 0;
+            playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Rewards claimed successfully!");
+            alert("Pending rewards withdrawn successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
             alert("Failed to claim rewards: " + (error.message || "Unknown error"));
-        }
-    }
-
-    async function withdrawCustomAmount() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        const amount = Number(document.getElementById("withdrawAmount").value);
-        if (!amount || amount < 10) return alert("Please enter an amount of at least 10 BST!");
-        if (amount > 1000) return alert("Maximum withdrawal limit is 1000 BST!");
-        if (amount > playerData.pendingRewards) return alert("Insufficient pending rewards!");
-
-        try {
-            await fetchWithdrawalFee();
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const balance = await provider.getBalance(account);
-            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) {
-                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-            }
-
-            const contractBalance = await contract.contractBalance();
-            const withdrawWei = ethers.parseUnits(amount.toString(), 18);
-            if (contractBalance < withdrawWei) {
-                return alert("Contract does not have enough BST tokens.");
-            }
-
-            console.log(`Attempting to withdraw ${amount} BST...`);
-            const tx = await contract.withdrawCustomAmount(withdrawWei, { value: feeWei, gasLimit: 300000 });
-            const receipt = await tx.wait();
-            console.log("Withdrawal successful:", receipt);
-
-            playerData.pendingRewards -= amount;
-            playerData.totalRewards += amount;
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            playerData.rewardHistory.push({ amount: amount, timestamp: Date.now(), rewardType: "Custom Withdrawal", referee: "N/A" });
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            document.getElementById("withdrawAmount").value = "";
-            alert(`${amount} BST withdrawn successfully!`);
-        } catch (error) {
-            console.error("Error withdrawing amount:", error);
-            alert("Failed to withdraw: " + (error.message || "Unknown error"));
-        }
-    }
-
-    async function mintTokens() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-
-        const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
-        if (account.toLowerCase() !== ownerAddress.toLowerCase()) return alert("Only the owner can mint tokens!");
-
-        const amount = Number(document.getElementById("mintAmount").value);
-        if (!amount || amount <= 0) return alert("Please enter a valid BST amount greater than 0!");
-
-        try {
-            const mintWei = ethers.parseUnits(amount.toString(), 18);
-            console.log(`Attempting to mint ${amount} BST...`);
-            const tx = await contract.mintTokens(mintWei, { gasLimit: 300000 });
-            const receipt = await tx.wait();
-            console.log("Tokens minted successfully:", receipt);
-
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            document.getElementById("mintAmount").value = "";
-            alert(`${amount} BST minted successfully!`);
-        } catch (error) {
-            console.error("Error minting tokens:", error);
-            alert("Failed to mint tokens: " + (error.message || "Unknown error"));
-        }
-    }
-
-    async function transferBnbBonus() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-
-        const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
-        if (account.toLowerCase() !== ownerAddress.toLowerCase()) return alert("Only the owner can transfer BNB bonuses!");
-
-        const playerAddress = document.getElementById("bonusPlayerAddress").value;
-        const bnbAmount = Number(document.getElementById("bnbBonusAmount").value);
-
-        if (!ethers.isAddress(playerAddress)) return alert("Please enter a valid player address!");
-        if (!bnbAmount || bnbAmount <= 0) return alert("Please enter a valid BNB amount greater than 0!");
-
-        try {
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const balance = await provider.getBalance(account);
-            const bnbWei = ethers.parseUnits(bnbAmount.toString(), 18);
-            if (balance < bnbWei) {
-                return alert(`Insufficient BNB balance. You need at least ${bnbAmount} BNB.`);
-            }
-
-            console.log(`Attempting to transfer ${bnbAmount} BNB to ${playerAddress}...`);
-            const tx = await contract.transferBnbBonus(playerAddress, bnbWei, { value: bnbWei, gasLimit: 300000 });
-            const receipt = await tx.wait();
-            console.log("BNB Bonus transfer successful:", receipt);
-
-            playerData.rewardHistory.push({ amount: bnbAmount, timestamp: Date.now(), rewardType: "BNB Bonus", referee: playerAddress });
-
-            if (account.toLowerCase() === playerAddress.toLowerCase()) {
-                const totalBnbBonus = playerData.rewardHistory
-                    .filter(r => r.rewardType === "BNB Bonus")
-                    .reduce((sum, r) => sum + r.amount, 0);
-                const banner = document.getElementById("bnbBonusBanner");
-                document.getElementById("bnbBonusTotal").textContent = totalBnbBonus.toFixed(2);
-                banner.style.display = "block";
-                setTimeout(() => { banner.style.display = "none"; }, 10000);
-            }
-
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            document.getElementById("bonusPlayerAddress").value = "";
-            document.getElementById("bnbBonusAmount").value = "";
-            alert(`${bnbAmount} BNB bonus transferred to ${playerAddress} successfully!`);
-        } catch (error) {
-            console.error("Error transferring BNB bonus:", error);
-            alert("Failed to transfer BNB bonus: " + (error.message || "Unknown error"));
         }
     }
 
@@ -1424,27 +428,10 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             if (network.chainId.toString() !== TARGET_NETWORK_ID) {
-                try {
-                    await window.ethereum.request({
-                        method: "wallet_switchEthereumChain",
-                        params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
-                    });
-                } catch (switchError) {
-                    if (switchError.code === 4902) {
-                        await window.ethereum.request({
-                            method: "wallet_addEthereumChain",
-                            params: [{
-                                chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}`,
-                                chainName: "BNB Testnet",
-                                nativeCurrency: { name: "BNB", symbol: "tBNB", decimals: 18 },
-                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
-                                blockExplorerUrls: ["https://testnet.bscscan.com"],
-                            }],
-                        });
-                    } else {
-                        throw switchError;
-                    }
-                }
+                await window.ethereum.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
+                });
             }
 
             const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
@@ -1479,11 +466,6 @@ document.addEventListener("DOMContentLoaded", () => {
             if (disconnectBtn) disconnectBtn.style.display = "block";
             if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
 
-            const ownerAddress = "0xYourOwnerAddressHere"; // ओनर का पता अपडेट करें
-            if (account.toLowerCase() === ownerAddress.toLowerCase()) {
-                document.getElementById("ownerControls").style.display = "block";
-            }
-
             await loadPlayerHistory();
             await fetchWithdrawalFee();
             updatePlayerHistoryUI();
@@ -1504,7 +486,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (connectBtn) connectBtn.style.display = "block";
         if (disconnectBtn) disconnectBtn.style.display = "none";
         if (walletAddr) walletAddr.textContent = "";
-        document.getElementById("ownerControls").style.display = "none";
         updatePlayerHistoryUI();
         alert("Wallet disconnected!");
     }
@@ -1522,6 +503,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
 
             const rewards = await contract.getRewardHistory(account);
             playerData.rewardHistory = rewards.map(r => ({
@@ -1530,16 +512,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 rewardType: r.rewardType,
                 referee: r.referee === "0x0000000000000000000000000000000000000000" ? "N/A" : r.referee
             }));
-
-            const totalBnbBonus = playerData.rewardHistory
-                .filter(r => r.rewardType === "BNB Bonus")
-                .reduce((sum, r) => sum + r.amount, 0);
-            if (totalBnbBonus > 0) {
-                const banner = document.getElementById("bnbBonusBanner");
-                document.getElementById("bnbBonusTotal").textContent = totalBnbBonus.toFixed(2);
-                banner.style.display = "block";
-                setTimeout(() => { banner.style.display = "none"; }, 10000);
-            }
 
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
@@ -1570,8 +542,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (account) {
                 playerData.rewardHistory.forEach(entry => {
                     const li = document.createElement("li");
-                    const amountDisplay = entry.rewardType === "BNB Bonus" ? `${entry.amount} BNB` : `${entry.amount.toFixed(2)} BST`;
-                    li.textContent = `${entry.rewardType}: ${amountDisplay} on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee})` : ""}`;
+                    li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee})` : ""}`;
                     historyList.appendChild(li);
                 });
             }
@@ -1584,17 +555,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const claimRewardsBtn = document.getElementById("claimGameRewards");
     const welcomeBtn = document.getElementById("welcomeBonusButton");
     const withdrawBtn = document.getElementById("withdrawButton");
-    const mintBtn = document.getElementById("mintTokensButton");
-    const transferBnbBtn = document.getElementById("transferBnbBonusButton");
 
     if (connectBtn) connectBtn.addEventListener("click", connectWallet);
     if (disconnectBtn) disconnectBtn.addEventListener("click", disconnectWallet);
     if (referralBtn) referralBtn.addEventListener("click", generateReferralLink);
     if (claimRewardsBtn) claimRewardsBtn.addEventListener("click", claimPendingRewards);
     if (welcomeBtn) welcomeBtn.addEventListener("click", claimWelcomeBonus);
-    if (withdrawBtn) withdrawBtn.addEventListener("click", withdrawCustomAmount);
-    if (mintBtn) mintBtn.addEventListener("click", mintTokens);
-    if (transferBnbBtn) transferBnbBtn.addEventListener("click", transferBnbBonus);
+    if (withdrawBtn) withdrawBtn.addEventListener("click", claimPendingRewards); // withdrawCustomAmount हटाया, अब claimPendingRewards यूज करें
 
     updatePlayerHistoryUI();
 });
