@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.binance.org wss://*.binance.org;">
     <title>BlockSnakes Game</title>
-    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         body {
             margin: 0;
@@ -157,8 +157,7 @@
 </head>
 <body>
     <div id="header">
-        <img src="logo.png" alt="BlockSnakes Logo" id="header-logo">
-<link rel="icon" type="image/x-icon" href="favicon.ico">
+        <img src="/logo.png" alt="BlockSnakes Logo" id="header-logo">
         <div>
             <h1>BlockSnakes: Play and Earn Real Crypto Currency BST Token</h1>
             <p id="walletAddress"></p>
@@ -186,9 +185,8 @@
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
             <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <button id="claimGameRewards">Claim Rewards</button>
             <div>
-                <input type="number" id="withdrawAmount" placeholder="Enter BST amount to withdraw" min="10" step="0.01">
+                <input type="number" id="withdrawAmount" placeholder="Enter BST amount to withdraw (min 10)" min="10" step="0.01">
                 <button id="withdrawButton">Withdraw</button>
             </div>
             <button id="getReferralLink">Get Referral Link</button>
@@ -205,7 +203,7 @@
             <ul id="rewardHistoryList"></ul>
         </div>
     </div>
-    <script src="https://unpkg.com/ethers@latest/dist/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="game.js"></script>
 </body>
 </html>
