@@ -27,8 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // स्मार्ट कॉन्ट्रैक्ट डिटेल्स
-    const contractAddress = "
-0x6441DbcB9c701a08543912873Bf7217195A09fb5"; // यहाँ अपना डिप्लॉयड कॉन्ट्रैक्ट एड्रेस डालें
+    const contractAddress = "0x56e49c04e4A2F34E9FDA7e740Ed2111F1D4C103b"; // यहाँ अपना डिप्लॉयड कॉन्ट्रैक्ट एड्रेस डालें
     const contractABI = [
 	{
 		"inputs": [
@@ -572,17 +571,6 @@ document.addEventListener("DOMContentLoaded", () => {
 		"inputs": [
 			{
 				"internalType": "address",
-				"name": "_gameOracle",
-				"type": "address"
-			}
-		],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "address",
 				"name": "_newOracle",
 				"type": "address"
 			}
@@ -637,6 +625,17 @@ document.addEventListener("DOMContentLoaded", () => {
 		"outputs": [],
 		"stateMutability": "payable",
 		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_gameOracle",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
 	},
 	{
 		"inputs": [
