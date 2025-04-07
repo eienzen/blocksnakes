@@ -6,16 +6,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
-        gamesPlayed: 0,
+        boxesEaten: 0,
         totalRewards: 0,
-        score: 0,
         pendingRewards: 0,
         totalReferrals: 0,
         referralRewards: 0,
         pendingReferral: null,
         pendingReferrerReward: 0,
         rewardHistory: [],
-        hasClaimedWelcomeBonus: false,
         walletBalance: 0,
         walletAddress: null
     };
@@ -493,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "stateMutability": "view",
             "type": "function"
         }
-    ]; // प्रदान किया गया ABI
+    ];
     const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0"; // GameOracle पता
     const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c"; // GameOracle की प्राइवेट की यहाँ डालें
     const gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/");
@@ -509,10 +507,9 @@ document.addEventListener("DOMContentLoaded", () => {
     let snake = [{ x: 10, y: 10 }];
     let boxes = [];
     let direction = 'right';
-    let score = 0;
-    let gameRewards = 0;
     let baseSnakeSpeed = 300;
     let currentSnakeSpeed = baseSnakeSpeed;
+    let isGameActive = false;
 
     function updateCanvasSize() {
         const screenWidth = window.innerWidth * 0.9;
@@ -624,19 +621,21 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
         });
 
-        document.getElementById('score').textContent = `Score: ${score}`;
-        document.getElementById('potentialBST').textContent = `Potential BST: ${(score / 100 * 5).toFixed(2)}`;
-        document.getElementById('gameRewards').textContent = `Game Rewards: ${gameRewards} BST`;
+        document.getElementById('boxesEaten').textContent = `Boxes Eaten: ${playerData.boxesEaten}`;
+        document.getElementById('pendingRewards').textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
     }
 
     async function move() {
+        if (!isGameActive) return;
+
         let head = { x: snake[0].x, y: snake[0].y };
         if (direction === 'right') head.x++;
         if (direction === 'left') head.x--;
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        // बॉडी से टकराने से रोकें
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
             showGameOverPopup();
@@ -646,24 +645,21 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
         if (eatenBoxIndex !== -1) {
-            score += 10;
-            boxes.splice(eatenBoxIndex, 1);
-            if (score % 100 === 0) {
-                const reward = 5;
+            playerData.boxesEaten++;
+            const reward = 0.5; // हर बॉक्स पर 0.5 BST
+            playerData.pendingRewards += reward;
+            playerData.totalRewards += reward;
+            playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
+            if (playerData.pendingReferral) {
                 const referrerReward = reward * 0.01;
-                playerData.pendingRewards += reward;
-                gameRewards += reward;
-                playerData.totalRewards += reward;
-
-                playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
-                if (playerData.pendingReferral) {
-                    playerData.pendingReferrerReward += referrerReward;
-                    playerData.referralRewards += referrerReward;
-                    playerData.totalReferrals += 1;
-                    playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
-                }
-
-                currentSnakeSpeed = Math.max(50, currentSnakeSpeed * 0.995);
+                playerData.pendingReferrerReward += referrerReward;
+                playerData.referralRewards += referrerReward;
+                playerData.totalReferrals += 1;
+                playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
+            }
+            boxes.splice(eatenBoxIndex, 1);
+            if (playerData.boxesEaten % 10 === 0) {
+                currentSnakeSpeed *= 0.995; // 0.5% स्पीड बढ़ाएं
                 clearInterval(gameInterval);
                 gameInterval = setInterval(move, currentSnakeSpeed);
             }
@@ -683,26 +679,25 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.id = "gameOverPopup";
             popup.innerHTML = `
                 <h2>Game Over!</h2>
-                <p id="finalScore">Score: ${score}</p>
-                <p id="finalPotentialBST">Potential BST: ${(score / 100 * 5).toFixed(2)}</p>
-                <p id="finalRewards">Rewards: ${gameRewards} BST</p>
-                <button id="startNewGame">Start New Game</button>
+                <p id="finalBoxesEaten">Boxes Eaten: ${playerData.boxesEaten}</p>
+                <p id="finalRewards">Earned BST: ${playerData.pendingRewards.toFixed(2)} BST</p>
+                <button id="closePopup">X</button>
             `;
-            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px;";
+            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px; z-index: 1000;";
             document.body.appendChild(popup);
-            document.getElementById("startNewGame").addEventListener("click", resetGame);
+            document.getElementById("closePopup").addEventListener("click", () => {
+                popup.style.display = "none";
+            });
         }
         popup.style.display = "block";
     }
 
-    async function resetGame() {
+    function resetGame() {
         if (gameInterval) clearInterval(gameInterval);
-        if (gameRewards > 0 && account) {
-            await submitGameReward(gameRewards);
+        if (playerData.pendingRewards > 0 && account) {
+            submitGameReward(playerData.pendingRewards);
         }
-        playerData.gamesPlayed += 1;
-        score = 0;
-        gameRewards = 0;
+        playerData.boxesEaten = 0;
         snake = [{ x: 10, y: 10 }];
         direction = 'right';
         currentSnakeSpeed = baseSnakeSpeed;
@@ -710,9 +705,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
-        const popup = document.getElementById("gameOverPopup");
-        if (popup) popup.style.display = "none";
-        if (account) gameInterval = setInterval(move, currentSnakeSpeed);
+        isGameActive = false;
     }
 
     let touchStartX = 0;
@@ -766,7 +759,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playGameBtn.addEventListener('click', () => {
             if (!account) return alert("Please connect your wallet!");
             enterFullscreen();
-            resetGame();
+            isGameActive = true;
             if (!gameInterval) gameInterval = setInterval(move, currentSnakeSpeed);
         });
     }
@@ -790,16 +783,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function claimWelcomeBonus() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
-
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
-            const balance = await provider.getBalance(account);
-            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) {
-                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-            }
-
             const contractBalance = await contract.contractBalance();
             const welcomeBonusAmount = ethers.parseUnits("100", 18);
             if (contractBalance < welcomeBonusAmount) {
@@ -809,7 +794,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.claimWelcomeBonus({ gasLimit: 300000 });
             await tx.wait();
 
-            playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
             playerData.pendingRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
@@ -825,7 +809,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function submitGameReward(rewardAmount) {
         if (!account) return alert("Connect your wallet first!");
-        if (rewardAmount < 10) return; // साइलेंटली स्किप करें अगर रिवॉर्ड 10 से कम है (MINIMUM_WITHDRAWAL)
+        if (rewardAmount < 0.5) return; // न्यूनतम 0.5 BST चेक
 
         try {
             const rewardWei = ethers.parseUnits(rewardAmount.toString(), 18);
@@ -843,8 +827,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.referralRewards += referrerReward;
                 playerData.pendingReferrerReward = 0;
             }
-            playerData.pendingRewards += rewardAmount;
-            playerData.pendingReferral = null;
+            playerData.pendingRewards = 0; // पेंडिंग रिवॉर्ड्स रीसेट
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert(`${rewardAmount} BST rewards submitted successfully!`);
@@ -856,7 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function claimPendingRewards() {
         if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim!");
+        if (playerData.pendingRewards < 0.5) return alert("Minimum 0.5 BST required to claim!");
 
         try {
             await fetchWithdrawalFee();
@@ -876,7 +859,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 300000 });
             await tx.wait();
 
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.walletBalance += playerData.pendingRewards;
             playerData.pendingRewards = 0;
             playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
             updatePlayerHistoryUI();
@@ -905,16 +888,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (playerData.walletAddress && playerData.walletAddress !== account) {
                 playerData = {
-                    gamesPlayed: 0,
+                    boxesEaten: 0,
                     totalRewards: 0,
-                    score: 0,
                     pendingRewards: 0,
                     totalReferrals: 0,
                     referralRewards: 0,
                     pendingReferral: null,
                     pendingReferrerReward: 0,
                     rewardHistory: [],
-                    hasClaimedWelcomeBonus: false,
                     walletBalance: 0,
                     walletAddress: account
                 };
@@ -924,13 +905,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const signer = await provider.getSigner();
             contract = new ethers.Contract(contractAddress, contractABI, signer);
-
-            const connectBtn = document.getElementById("connectWallet");
-            const disconnectBtn = document.getElementById("disconnectWallet");
-            const walletAddr = document.getElementById("walletAddress");
-            if (connectBtn) connectBtn.style.display = "none";
-            if (disconnectBtn) disconnectBtn.style.display = "block";
-            if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
 
             await loadPlayerHistory();
             await fetchWithdrawalFee();
@@ -963,11 +937,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             const history = await contract.playerHistory(account);
-            playerData.gamesPlayed = Number(history.gamesPlayed);
+            playerData.boxesEaten = Number(history.gamesPlayed); // gamesPlayed को boxesEaten के लिए रीयूज
             playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
-            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
 
@@ -988,7 +961,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updatePlayerHistoryUI() {
         const elements = {
-            gamesPlayed: `Games Played: ${playerData.gamesPlayed}`,
+            boxesEaten: `Boxes Eaten: ${playerData.boxesEaten}`,
             totalGameRewards: `Total Game Rewards: ${playerData.totalRewards.toFixed(2)} BST`,
             totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
             referralRewards: `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`,
