@@ -1015,7 +1015,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0"; // GameOracle पता
     const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c"; // GameOracle की प्राइवेट की यहाँ डालें
 
-    // WebSocketProvider को सही तरीके से कॉन्फ़िगर करें
+    // WebSocketProvider के लिए बैकअप URL
     let gameOracleProvider;
     try {
         gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", {
@@ -1023,9 +1023,18 @@ document.addEventListener("DOMContentLoaded", () => {
             name: "BNB Testnet"
         });
     } catch (error) {
-        console.error("Failed to initialize WebSocketProvider:", error);
-        alert("Failed to connect to the blockchain network. Please check your internet connection or try a different RPC URL.");
-        gameOracleProvider = null; // फॉल्बैक के लिए null सेट करें
+        console.error("Failed to connect to primary WebSocket URL:", error);
+        try {
+            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-2-s1.binance.org:8545/", {
+                chainId: 97,
+                name: "BNB Testnet"
+            });
+            console.log("Switched to backup WebSocket URL.");
+        } catch (backupError) {
+            console.error("Failed to connect to backup WebSocket URL:", backupError);
+            alert("Failed to connect to the blockchain network. Please check your internet connection or try again later.");
+            gameOracleProvider = null;
+        }
     }
 
     const gameOracleWallet = gameOracleProvider ? new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider) : null;
@@ -1329,7 +1338,8 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Updated withdrawal fee:", WITHDRAWAL_FEE_BNB, "BNB");
         } catch (error) {
             console.error("Error fetching withdrawal fee:", error);
-            alert("Failed to fetch withdrawal fee. Please check your network connection.");
+            alert("Failed to fetch withdrawal fee. Using default value: 0.0002 BNB.");
+            WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट वैल्यू
         }
     }
 
@@ -1415,7 +1425,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const contractBalance = await contract.contractBalance();
             const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
             if (contractBalance < rewardWei) {
-                return alert("Contract does not have enough BST tokens.");
+                return alert("Contract does not have enough BST tokens. Current balance: " + ethers.formatUnits(contractBalance, 18) + " BST");
             }
 
             const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 300000 });
@@ -1428,11 +1438,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert("Pending rewards withdrawn successfully to your wallet!");
             } else {
-                throw new Error("Transaction failed on the blockchain. Reason: " + (receipt.reason || "Unknown"));
+                console.error("Transaction reverted. Receipt:", receipt);
+                throw new Error("Transaction failed on the blockchain. Status: " + receipt.status + ". Please check contract logs or contact support.");
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Network issue. Please ensure you have enough pending rewards and try again."));
+            alert("Failed to claim rewards: " + (error.message || "Network issue or contract reverted. Please ensure you have enough pending rewards and try again."));
         }
     }
 
