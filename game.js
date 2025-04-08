@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // स्मार्ट कॉन्ट्रैक्ट डिटेल्स
-    const contractAddress = "0xC891379810E8Fc54dd5B69633F3bd61F96Fd40B9"; // डिप्लॉय हुआ एड्रेस
+    const contractAddress = "0xC891379810E8Fc54dd5B69633F3bd61F96Fd40B9"; // अपडेटेड कॉन्ट्रैक्ट एड्रेस
     const contractABI = [
 	{
 		"inputs": [
@@ -1153,7 +1153,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
+        // केवल दीवारों से टकराव चेक, बॉडी से टकराव हटाया
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
             showGameOverPopup();
@@ -1202,18 +1203,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p id="finalRewards">Earned BST: ${gameRewards.toFixed(2)} BST</p>
                 <button id="closePopup">X</button>
             `;
-            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px; z-index: 2000; text-align: center;";
+            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px; z-index: 2000; text-align: center; max-width: 90%; max-height: 90vh; overflow-y: auto;";
             document.body.appendChild(popup);
-            const closeBtn = document.getElementById("closePopup");
-            if (closeBtn) {
-                closeBtn.addEventListener("click", () => {
-                    popup.style.display = "none";
-                    resetGame();
-                });
-            }
         } else {
             document.getElementById("finalBoxesEaten").textContent = `Boxes Eaten: ${boxesEaten}`;
             document.getElementById("finalRewards").textContent = `Earned BST: ${gameRewards.toFixed(2)} BST`;
+        }
+        const closeBtn = document.getElementById("closePopup");
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                popup.style.display = "none";
+                resetGame();
+            };
         }
         popup.style.display = "block";
     }
@@ -1292,7 +1293,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function generateReferralLink() {
-        if (!account) return alert("Connect your wallet first!");
+        if (!account) return alert("Please connect your wallet first!");
         const referralLink = `${window.location.origin}${window.location.pathname}?ref=${account}`;
         navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
     }
@@ -1309,7 +1310,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function claimWelcomeBonus() {
-        if (!contract || !account) return alert("Connect your wallet first!");
+        if (!contract || !account) return alert("Please connect your wallet first!");
         if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
 
         try {
@@ -1339,12 +1340,12 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error"));
+            alert("Failed to claim welcome bonus: " + (error.message || "Unknown error. Please try again."));
         }
     }
 
     async function submitGameReward(rewardAmount) {
-        if (!account) return alert("Connect your wallet first!");
+        if (!account) return alert("Please connect your wallet first!");
         if (rewardAmount < 0.5) return alert("Minimum 0.5 BST required to submit!");
 
         try {
@@ -1371,13 +1372,12 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(`${rewardAmount} BST rewards submitted successfully!`);
         } catch (error) {
             console.error("Error submitting game rewards:", error);
-            alert("Failed to submit rewards: " + (error.message || "Unknown error"));
+            alert("Failed to submit rewards: " + (error.message || "Unknown error. Please try again."));
         }
     }
 
     async function claimPendingRewards() {
-        if (!contract || !account) return alert("Connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert(`Minimum 10 BST required to claim! Current pending rewards: ${playerData.pendingRewards.toFixed(2)} BST`);
+        if (!contract || !account) return alert("Please connect your wallet first!");
 
         try {
             await fetchWithdrawalFee();
@@ -1386,6 +1386,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             if (balance < feeWei) {
                 return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+            }
+
+            // न्यूनतम निकासी राशि चेक
+            let minimumWithdrawal = await contract.MINIMUM_WITHDRAWAL(); // कॉन्ट्रैक्ट से फेच करें
+            minimumWithdrawal = Number(ethers.formatUnits(minimumWithdrawal, 18));
+            if (playerData.pendingRewards < minimumWithdrawal) {
+                return alert(`Minimum withdrawal amount is ${minimumWithdrawal} BST. Current pending rewards: ${playerData.pendingRewards.toFixed(2)} BST. Please accumulate more rewards.`);
             }
 
             const contractBalance = await contract.contractBalance();
@@ -1408,7 +1415,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Unknown error. Check console for details."));
+            alert("Failed to claim rewards: " + (error.message || "Unknown error. Please ensure you have enough pending rewards and try again."));
         }
     }
 
@@ -1465,7 +1472,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Wallet connection error:", error);
-            alert("Failed to connect wallet: " + error.message);
+            alert("Failed to connect wallet: " + error.message + ". Please install or update MetaMask/Phantom.");
         }
     }
 
