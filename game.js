@@ -634,7 +634,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        // बॉडी से टकराने से रोकें
+        // केवल बाउंड्री पर टकराने से गेम ओवर
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
@@ -683,7 +683,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p id="finalRewards">Earned BST: ${playerData.pendingRewards.toFixed(2)} BST</p>
                 <button id="closePopup">X</button>
             `;
-            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px; z-index: 1000;";
+            popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px; z-index: 2000; text-align: center;";
             document.body.appendChild(popup);
             document.getElementById("closePopup").addEventListener("click", () => {
                 popup.style.display = "none";
@@ -872,18 +872,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function connectWallet() {
-        if (!window.ethereum) return alert("Please install MetaMask!");
         try {
+            if (!window.ethereum) return alert("Please install MetaMask or Phantom!");
             const provider = new ethers.BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
             const network = await provider.getNetwork();
-            if (network.chainId.toString() !== TARGET_NETWORK_ID) {
+            if (network.chainId !== 97) {
                 await window.ethereum.request({
                     method: "wallet_switchEthereumChain",
-                    params: [{ chainId: `0x${parseInt(TARGET_NETWORK_ID).toString(16)}` }],
+                    params: [{ chainId: "0x61" }],
                 });
             }
-
-            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+            console.log("Connected to network:", network.name);
+            const accounts = await provider.send("eth_requestAccounts", []);
             account = accounts[0];
 
             if (playerData.walletAddress && playerData.walletAddress !== account) {
@@ -910,10 +911,18 @@ document.addEventListener("DOMContentLoaded", () => {
             await fetchWithdrawalFee();
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
+
+            const connectBtn = document.getElementById("connectWallet");
+            const disconnectBtn = document.getElementById("disconnectWallet");
+            const walletAddr = document.getElementById("walletAddress");
+            if (connectBtn) connectBtn.style.display = "none";
+            if (disconnectBtn) disconnectBtn.style.display = "block";
+            if (walletAddr) walletAddr.textContent = `Connected: ${account.slice(0, 6)}...`;
+
             alert("Wallet connected successfully!");
         } catch (error) {
-            console.error("Error connecting wallet:", error);
-            alert("Failed to connect wallet: " + (error.message || "Unknown error"));
+            console.error("Wallet connection error:", error);
+            alert("Failed to connect wallet: " + error.message);
         }
     }
 
@@ -937,7 +946,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             const history = await contract.playerHistory(account);
-            playerData.boxesEaten = Number(history.gamesPlayed); // gamesPlayed को boxesEaten के लिए रीयूज
+            playerData.boxesEaten = Number(history.gamesPlayed);
             playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
@@ -961,13 +970,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updatePlayerHistoryUI() {
         const elements = {
+            walletAddress: account ? `Connected: ${account.slice(0, 6)}...` : "",
+            walletBalance: `Wallet Balance: ${account ? playerData.walletBalance.toFixed(2) : "0"} BST`,
             boxesEaten: `Boxes Eaten: ${playerData.boxesEaten}`,
             totalGameRewards: `Total Game Rewards: ${playerData.totalRewards.toFixed(2)} BST`,
             totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
             referralRewards: `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`,
             pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`,
-            walletBalance: `Wallet Balance: ${account ? playerData.walletBalance.toFixed(2) : "0"} BST`,
-            walletAddress: account ? `Connected: ${account.slice(0, 6)}...` : ""
+            gamesPlayed: `Games Played: ${playerData.boxesEaten}` // gamesPlayed को boxesEaten के लिए रीयूज
         };
 
         for (const [id, value] of Object.entries(elements)) {
