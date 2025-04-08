@@ -3,12 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.binance.org wss://*.binance.org;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://*.binance.org wss://*.binance.org;">
     <title>BlockSnakes Game</title>
-    <!-- Favicon और Logo के रॉ URL -->
     <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico">
-    <link rel="stylesheet" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/style.css" crossorigin="anonymous">
-    <!-- Banner और Logo के लिए -->
     <style>
         body {
             margin: 0;
@@ -149,8 +146,8 @@
     <div id="content">
         <div id="gameInfo">
             <h2>Game Info</h2>
-            <p id="boxesEaten">Boxes Eaten: 0</p> <!-- Score हटाकर Boxes Eaten -->
-            <p id="pendingRewards">Pending Rewards: 0 BST</p> <!-- potentialBST हटाया -->
+            <p id="boxesEaten">Boxes Eaten: 0</p>
+            <p id="pendingRewards">Pending Rewards: 0 BST</p>
             <button id="playGame">Play Game</button>
             <button id="connectWallet">Connect Wallet</button>
             <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
@@ -158,7 +155,7 @@
         <canvas id="gameCanvas"></canvas>
         <div id="playerHistory">
             <h2>Player History</h2>
-            <p id="gamesPlayed">Games Played: 0</p> <!-- अब Boxes Eaten के लिए -->
+            <p id="gamesPlayed">Games Played: 0</p>
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
@@ -176,9 +173,7 @@
         <p id="finalRewards">Earned BST: 0 BST</p>
         <button id="closePopup">X</button>
     </div>
-    <!-- Ethers.js v6.13.2 -->
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
-    <!-- game.js (अपडेटेड) -->
     <script src="game.js"></script>
 </body>
 </html>
