@@ -1014,12 +1014,22 @@ document.addEventListener("DOMContentLoaded", () => {
 ];
     const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0"; // GameOracle पता
     const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c"; // GameOracle की प्राइवेट की यहाँ डालें
-    const gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", {
-        chainId: 97,
-        name: "BNB Testnet"
-    });
-    const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
-    const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
+
+    // WebSocketProvider को सही तरीके से कॉन्फ़िगर करें
+    let gameOracleProvider;
+    try {
+        gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", {
+            chainId: 97,
+            name: "BNB Testnet"
+        });
+    } catch (error) {
+        console.error("Failed to initialize WebSocketProvider:", error);
+        alert("Failed to connect to the blockchain network. Please check your internet connection or try a different RPC URL.");
+        gameOracleProvider = null; // फॉल्बैक के लिए null सेट करें
+    }
+
+    const gameOracleWallet = gameOracleProvider ? new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider) : null;
+    const gameOracleContract = gameOracleProvider ? new ethers.Contract(contractAddress, contractABI, gameOracleWallet) : null;
 
     // कैनवस और गेम लॉजिक
     const canvas = document.getElementById("gameCanvas");
@@ -1226,7 +1236,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function resetGame() {
         if (gameInterval) clearInterval(gameInterval);
-        if (gameRewards > 0 && account) {
+        if (gameRewards > 0 && account && gameOracleContract) {
             try {
                 await submitGameReward(gameRewards);
             } catch (error) {
@@ -1359,7 +1369,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function submitGameReward(rewardAmount) {
-        if (!account) return alert("Please connect your wallet first!");
+        if (!account || !gameOracleContract) return alert("Please connect your wallet and ensure network connection!");
         if (rewardAmount < 0.5) return alert("Minimum 0.5 BST required to submit!");
 
         try {
