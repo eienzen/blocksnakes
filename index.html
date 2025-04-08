@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.binance.org wss://*.binance.org;">
     <title>BlockSnakes Game</title>
-    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <!-- Favicon और Logo के रॉ URL -->
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico">
+    <link rel="stylesheet" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/style.css" crossorigin="anonymous">
+    <!-- Banner और Logo के लिए -->
     <style>
         body {
             margin: 0;
@@ -33,6 +36,12 @@
             width: 120px;
             height: 60px;
             margin-right: 15px;
+        }
+        #header-banner {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            margin-bottom: 10px;
         }
         #header h1 {
             margin: 0;
@@ -106,6 +115,7 @@
             border-radius: 10px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
             z-index: 2000;
+            text-align: center;
         }
         #gameOverPopup h2 {
             margin: 0 0 10px;
@@ -114,14 +124,22 @@
         #gameOverPopup p {
             margin: 5px 0;
         }
-        #gameOverPopup button {
-            margin-top: 10px;
+        #closePopup {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div id="header">
-        <img src="/logo.png" alt="BlockSnakes Logo" id="header-logo">
+        <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/banner.jpg" alt="Banner" id="header-banner">
+        <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/logo.png" alt="BlockSnakes Logo" id="header-logo">
         <div>
             <h1>BlockSnakes: Play and Earn BST Token</h1>
             <p id="walletAddress"></p>
@@ -131,9 +149,8 @@
     <div id="content">
         <div id="gameInfo">
             <h2>Game Info</h2>
-            <p id="score">Score: 0</p>
-            <p id="potentialBST">Potential BST: 0</p>
-            <p id="gameRewards">Game Rewards: 0 BST</p>
+            <p id="boxesEaten">Boxes Eaten: 0</p> <!-- Score हटाकर Boxes Eaten -->
+            <p id="pendingRewards">Pending Rewards: 0 BST</p> <!-- potentialBST हटाया -->
             <button id="playGame">Play Game</button>
             <button id="connectWallet">Connect Wallet</button>
             <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
@@ -141,7 +158,7 @@
         <canvas id="gameCanvas"></canvas>
         <div id="playerHistory">
             <h2>Player History</h2>
-            <p id="gamesPlayed">Games Played: 0</p>
+            <p id="gamesPlayed">Games Played: 0</p> <!-- अब Boxes Eaten के लिए -->
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
@@ -153,7 +170,15 @@
             <ul id="rewardHistoryList"></ul>
         </div>
     </div>
+    <div id="gameOverPopup">
+        <h2>Game Over!</h2>
+        <p id="finalBoxesEaten">Boxes Eaten: 0</p>
+        <p id="finalRewards">Earned BST: 0 BST</p>
+        <button id="closePopup">X</button>
+    </div>
+    <!-- Ethers.js v6.13.2 -->
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+    <!-- game.js (अपडेटेड) -->
     <script src="game.js"></script>
 </body>
 </html>
