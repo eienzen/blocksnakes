@@ -1014,7 +1014,13 @@ document.addEventListener("DOMContentLoaded", () => {
 ];
     const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0"; // GameOracle पता
     const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c"; // GameOracle की प्राइवेट की यहाँ डालें
-    const gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/");
+    const gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", {
+        timeout: 10000,
+        retry: {
+            count: 3,
+            delay: 2000
+        }
+    });
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
     const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
 
@@ -1153,7 +1159,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        // केवल दीवारों से टकराव चेक, बॉडी से टकराव हटाया
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             clearInterval(gameInterval);
             gameInterval = null;
@@ -1213,7 +1218,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (closeBtn) {
             closeBtn.onclick = () => {
                 popup.style.display = "none";
-                resetGame();
+                resetGame().catch(err => {
+                    console.error("Error resetting game:", err);
+                    alert("Failed to reset game. Please try again.");
+                });
             };
         }
         popup.style.display = "block";
@@ -1222,7 +1230,12 @@ document.addEventListener("DOMContentLoaded", () => {
     async function resetGame() {
         if (gameInterval) clearInterval(gameInterval);
         if (gameRewards > 0 && account) {
-            await submitGameReward(gameRewards);
+            try {
+                await submitGameReward(gameRewards);
+            } catch (error) {
+                console.error("Failed to submit rewards:", error);
+                alert("Failed to submit rewards: " + (error.message || "Unknown error. Please try again or check your network."));
+            }
         }
         playerData.gamesPlayed += 1;
         boxesEaten = 0;
@@ -1287,7 +1300,10 @@ document.addEventListener("DOMContentLoaded", () => {
         playGameBtn.addEventListener('click', () => {
             if (!account) return alert("Please connect your wallet!");
             enterFullscreen();
-            resetGame();
+            resetGame().catch(err => {
+                console.error("Error starting game:", err);
+                alert("Failed to start game. Please try again.");
+            });
             if (!gameInterval) gameInterval = setInterval(move, currentSnakeSpeed);
         });
     }
@@ -1306,6 +1322,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.log("Updated withdrawal fee:", WITHDRAWAL_FEE_BNB, "BNB");
         } catch (error) {
             console.error("Error fetching withdrawal fee:", error);
+            alert("Failed to fetch withdrawal fee. Please check your network connection.");
         }
     }
 
@@ -1372,7 +1389,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(`${rewardAmount} BST rewards submitted successfully!`);
         } catch (error) {
             console.error("Error submitting game rewards:", error);
-            alert("Failed to submit rewards: " + (error.message || "Unknown error. Please try again."));
+            alert("Failed to submit rewards: " + (error.message || "Network issue. Please check your connection and try again."));
         }
     }
 
@@ -1388,8 +1405,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
             }
 
-            // न्यूनतम निकासी राशि चेक
-            let minimumWithdrawal = await contract.MINIMUM_WITHDRAWAL(); // कॉन्ट्रैक्ट से फेच करें
+            let minimumWithdrawal = await contract.MINIMUM_WITHDRAWAL().catch(() => ethers.parseUnits("10", 18)); // डिफॉल्ट 10 BST
             minimumWithdrawal = Number(ethers.formatUnits(minimumWithdrawal, 18));
             if (playerData.pendingRewards < minimumWithdrawal) {
                 return alert(`Minimum withdrawal amount is ${minimumWithdrawal} BST. Current pending rewards: ${playerData.pendingRewards.toFixed(2)} BST. Please accumulate more rewards.`);
@@ -1415,7 +1431,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Unknown error. Please ensure you have enough pending rewards and try again."));
+            alert("Failed to claim rewards: " + (error.message || "Network issue. Please ensure you have enough pending rewards and try again."));
         }
     }
 
@@ -1472,7 +1488,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Wallet connection error:", error);
-            alert("Failed to connect wallet: " + error.message + ". Please install or update MetaMask/Phantom.");
+            alert("Failed to connect wallet: " + error.message + ". Please install or update MetaMask/Phantom and check your network.");
         }
     }
 
@@ -1517,6 +1533,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
             console.error("Error loading player history:", error);
+            alert("Failed to load player history. Please check your network connection.");
         }
     }
 
