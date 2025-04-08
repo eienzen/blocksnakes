@@ -1015,11 +1015,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0"; // GameOracle पता
     const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c"; // GameOracle की प्राइवेट की यहाँ डालें
     const gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", {
-        timeout: 10000,
-        retry: {
-            count: 3,
-            delay: 2000
-        }
+        chainId: 97,
+        name: "BNB Testnet"
     });
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
     const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
@@ -1403,12 +1400,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             if (balance < feeWei) {
                 return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
-            }
-
-            let minimumWithdrawal = await contract.MINIMUM_WITHDRAWAL().catch(() => ethers.parseUnits("10", 18)); // डिफॉल्ट 10 BST
-            minimumWithdrawal = Number(ethers.formatUnits(minimumWithdrawal, 18));
-            if (playerData.pendingRewards < minimumWithdrawal) {
-                return alert(`Minimum withdrawal amount is ${minimumWithdrawal} BST. Current pending rewards: ${playerData.pendingRewards.toFixed(2)} BST. Please accumulate more rewards.`);
             }
 
             const contractBalance = await contract.contractBalance();
