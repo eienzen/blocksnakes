@@ -6,14 +6,16 @@ document.addEventListener("DOMContentLoaded", () => {
     let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
-        boxesEaten: 0,
+        gamesPlayed: 0,
         totalRewards: 0,
+        boxesEaten: 0,
         pendingRewards: 0,
         totalReferrals: 0,
         referralRewards: 0,
         pendingReferral: null,
         pendingReferrerReward: 0,
         rewardHistory: [],
+        hasClaimedWelcomeBonus: false,
         walletBalance: 0,
         walletAddress: null
     };
@@ -507,9 +509,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let snake = [{ x: 10, y: 10 }];
     let boxes = [];
     let direction = 'right';
+    let boxesEaten = 0;
+    let gameRewards = 0;
     let baseSnakeSpeed = 300;
     let currentSnakeSpeed = baseSnakeSpeed;
-    let isGameActive = false;
 
     function updateCanvasSize() {
         const screenWidth = window.innerWidth * 0.9;
@@ -621,21 +624,18 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
         });
 
-        document.getElementById('boxesEaten').textContent = `Boxes Eaten: ${playerData.boxesEaten}`;
+        document.getElementById('boxesEaten').textContent = `Boxes Eaten: ${boxesEaten}`;
         document.getElementById('pendingRewards').textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
     }
 
     async function move() {
-        if (!isGameActive) return;
-
         let head = { x: snake[0].x, y: snake[0].y };
         if (direction === 'right') head.x++;
         if (direction === 'left') head.x--;
         if (direction === 'up') head.y--;
         if (direction === 'down') head.y++;
 
-        // केवल बाउंड्री पर टकराने से गेम ओवर
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
             clearInterval(gameInterval);
             gameInterval = null;
             showGameOverPopup();
@@ -645,9 +645,10 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
         if (eatenBoxIndex !== -1) {
-            playerData.boxesEaten++;
+            boxesEaten++;
             const reward = 0.5; // हर बॉक्स पर 0.5 BST
             playerData.pendingRewards += reward;
+            gameRewards += reward;
             playerData.totalRewards += reward;
             playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
             if (playerData.pendingReferral) {
@@ -658,7 +659,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
             }
             boxes.splice(eatenBoxIndex, 1);
-            if (playerData.boxesEaten % 10 === 0) {
+            if (boxesEaten % 10 === 0) {
                 currentSnakeSpeed *= 0.995; // 0.5% स्पीड बढ़ाएं
                 clearInterval(gameInterval);
                 gameInterval = setInterval(move, currentSnakeSpeed);
@@ -679,25 +680,28 @@ document.addEventListener("DOMContentLoaded", () => {
             popup.id = "gameOverPopup";
             popup.innerHTML = `
                 <h2>Game Over!</h2>
-                <p id="finalBoxesEaten">Boxes Eaten: ${playerData.boxesEaten}</p>
-                <p id="finalRewards">Earned BST: ${playerData.pendingRewards.toFixed(2)} BST</p>
+                <p id="finalBoxesEaten">Boxes Eaten: ${boxesEaten}</p>
+                <p id="finalRewards">Earned BST: ${gameRewards.toFixed(2)} BST</p>
                 <button id="closePopup">X</button>
             `;
             popup.style.cssText = "position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: #2a2a5d; color: #fff; padding: 20px; border: 2px solid #00ffcc; border-radius: 10px; z-index: 2000; text-align: center;";
             document.body.appendChild(popup);
             document.getElementById("closePopup").addEventListener("click", () => {
                 popup.style.display = "none";
+                resetGame();
             });
         }
         popup.style.display = "block";
     }
 
-    function resetGame() {
+    async function resetGame() {
         if (gameInterval) clearInterval(gameInterval);
-        if (playerData.pendingRewards > 0 && account) {
-            submitGameReward(playerData.pendingRewards);
+        if (gameRewards > 0 && account) {
+            await submitGameReward(gameRewards);
         }
-        playerData.boxesEaten = 0;
+        playerData.gamesPlayed += 1;
+        boxesEaten = 0;
+        gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
         direction = 'right';
         currentSnakeSpeed = baseSnakeSpeed;
@@ -705,7 +709,6 @@ document.addEventListener("DOMContentLoaded", () => {
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
         draw();
-        isGameActive = false;
     }
 
     let touchStartX = 0;
@@ -759,7 +762,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playGameBtn.addEventListener('click', () => {
             if (!account) return alert("Please connect your wallet!");
             enterFullscreen();
-            isGameActive = true;
+            resetGame();
             if (!gameInterval) gameInterval = setInterval(move, currentSnakeSpeed);
         });
     }
@@ -783,8 +786,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function claimWelcomeBonus() {
         if (!contract || !account) return alert("Connect your wallet first!");
+        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
+
         try {
             const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(account);
+            const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
+            if (balance < feeWei) {
+                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+            }
+
             const contractBalance = await contract.contractBalance();
             const welcomeBonusAmount = ethers.parseUnits("100", 18);
             if (contractBalance < welcomeBonusAmount) {
@@ -794,10 +805,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const tx = await contract.claimWelcomeBonus({ gasLimit: 300000 });
             await tx.wait();
 
+            playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
             playerData.pendingRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Welcome bonus of 100 BST claimed!");
@@ -809,7 +821,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function submitGameReward(rewardAmount) {
         if (!account) return alert("Connect your wallet first!");
-        if (rewardAmount < 0.5) return; // न्यूनतम 0.5 BST चेक
+        if (rewardAmount < 0.5) return alert("Minimum 0.5 BST required to submit!");
 
         try {
             const rewardWei = ethers.parseUnits(rewardAmount.toString(), 18);
@@ -827,7 +839,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.referralRewards += referrerReward;
                 playerData.pendingReferrerReward = 0;
             }
-            playerData.pendingRewards = 0; // पेंडिंग रिवॉर्ड्स रीसेट
+            playerData.pendingRewards += rewardAmount;
+            playerData.pendingReferral = null;
+            gameRewards = 0; // रिवॉर्ड्स रीसेट
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert(`${rewardAmount} BST rewards submitted successfully!`);
@@ -857,17 +871,20 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 300000 });
-            await tx.wait();
-
-            playerData.walletBalance += playerData.pendingRewards;
-            playerData.pendingRewards = 0;
-            playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
-            updatePlayerHistoryUI();
-            localStorage.setItem("playerData", JSON.stringify(playerData));
-            alert("Pending rewards withdrawn successfully!");
+            const receipt = await tx.wait();
+            if (receipt.status === 1) { // ट्रांजैक्शन सफल
+                playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+                playerData.pendingRewards = 0;
+                playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
+                updatePlayerHistoryUI();
+                localStorage.setItem("playerData", JSON.stringify(playerData));
+                alert("Pending rewards withdrawn successfully to your wallet!");
+            } else {
+                throw new Error("Transaction failed on the blockchain.");
+            }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Unknown error"));
+            alert("Failed to claim rewards: " + (error.message || "Unknown error. Check console for details."));
         }
     }
 
@@ -889,14 +906,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
             if (playerData.walletAddress && playerData.walletAddress !== account) {
                 playerData = {
-                    boxesEaten: 0,
+                    gamesPlayed: 0,
                     totalRewards: 0,
+                    boxesEaten: 0,
                     pendingRewards: 0,
                     totalReferrals: 0,
                     referralRewards: 0,
                     pendingReferral: null,
                     pendingReferrerReward: 0,
                     rewardHistory: [],
+                    hasClaimedWelcomeBonus: false,
                     walletBalance: 0,
                     walletAddress: account
                 };
@@ -946,10 +965,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             const history = await contract.playerHistory(account);
-            playerData.boxesEaten = Number(history.gamesPlayed);
+            playerData.gamesPlayed = Number(history.gamesPlayed);
             playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
+            playerData.boxesEaten = Number(history.gamesPlayed); // gamesPlayed को boxesEaten के लिए रीयूज
             playerData.totalReferrals = Number(history.totalReferrals);
             playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
+            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
 
@@ -970,14 +991,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updatePlayerHistoryUI() {
         const elements = {
-            walletAddress: account ? `Connected: ${account.slice(0, 6)}...` : "",
-            walletBalance: `Wallet Balance: ${account ? playerData.walletBalance.toFixed(2) : "0"} BST`,
-            boxesEaten: `Boxes Eaten: ${playerData.boxesEaten}`,
+            gamesPlayed: `Games Played: ${playerData.gamesPlayed}`,
             totalGameRewards: `Total Game Rewards: ${playerData.totalRewards.toFixed(2)} BST`,
             totalReferrals: `Total Referrals: ${playerData.totalReferrals}`,
             referralRewards: `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`,
             pendingRewardsText: `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`,
-            gamesPlayed: `Games Played: ${playerData.boxesEaten}` // gamesPlayed को boxesEaten के लिए रीयूज
+            walletBalance: `Wallet Balance: ${account ? playerData.walletBalance.toFixed(2) : "0"} BST`,
+            walletAddress: account ? `Connected: ${account.slice(0, 6)}...` : "",
+            boxesEaten: `Boxes Eaten: ${boxesEaten}`
         };
 
         for (const [id, value] of Object.entries(elements)) {
