@@ -28,8 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xC4c1d1377186a7B35Bf0a8D5067434237d094c73";
-    const contractABI = [
+    const contractAddress = "0x8B0B6856F834AAeB162666D961695Aa373E97e42";
+    const contractABI = [
 	{
 		"inputs": [
 			{
@@ -1042,8 +1042,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	}
 ];
-    const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0";
-    const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c";
+    const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0";
+    const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c";
 
     let gameOracleProvider;
     try {
