@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x5c9c44E717E34DaB1925CE0e48737Fe65F6F85Ad";
+    const contractAddress = "0xC891379810E8Fc54dd5B69633F3bd61F96Fd40B9";
     const contractABI = [
 	{
 		"inputs": [
@@ -1067,10 +1067,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let gridSize;
     let snake = [{ x: 10, y: 10 }];
     let boxes = [];
-    let direction = 'right';
+    let direction = "right";
     let boxesEaten = 0;
     let gameRewards = 0;
-    const baseSnakeSpeed = 100; // स्पीड को 100 पर सेट, धीमी और नियंत्रित
+    const baseSnakeSpeed = 100; // 100ms प्रति मूव, धीमी गति
     let lastMoveTime = 0;
 
     const eatingSound = document.getElementById("eatingSound");
@@ -1095,7 +1095,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function enterFullscreen() {
         if (!document.fullscreenEnabled) {
-            alert("Fullscreen is not supported or blocked by your browser. Please allow fullscreen mode.");
+            alert("Fullscreen is not supported or blocked by your browser.");
             return;
         }
         try {
@@ -1104,7 +1104,7 @@ document.addEventListener("DOMContentLoaded", () => {
             updateCanvasSize();
         } catch (error) {
             console.error("Fullscreen request failed:", error);
-            alert("Failed to enter fullscreen mode. Please try again or check browser permissions.");
+            alert("Failed to enter fullscreen mode. Please try again.");
         } finally {
             showLoading(false);
         }
@@ -1123,10 +1123,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
-        const gradientBackground = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
-        gradientBackground.addColorStop(0, "#0a0a23");
-        gradientBackground.addColorStop(1, "#1a1a3d");
-        ctx.fillStyle = gradientBackground;
+        ctx.fillStyle = "rgba(10, 10, 35, 0.8)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
@@ -1145,36 +1142,36 @@ document.addEventListener("DOMContentLoaded", () => {
                 const eyeSize = gridSize * 0.25;
                 const pupilSize = eyeSize * 0.6;
 
-                if (direction === 'right' || direction === 'left') {
+                if (direction === "right" || direction === "left") {
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + (direction === 'right' ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + eyeOffset, eyeSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + eyeOffset, eyeSize, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + (direction === 'right' ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + gridSize - eyeOffset, eyeSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + gridSize - eyeOffset, eyeSize, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeOffset, segment.y * gridSize + (direction === 'up' ? eyeOffset : gridSize - eyeOffset), eyeSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + eyeOffset, segment.y * gridSize + (direction === "up" ? eyeOffset : gridSize - eyeOffset), eyeSize, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeOffset, segment.y * gridSize + (direction === 'up' ? eyeOffset : gridSize - eyeOffset), eyeSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + gridSize - eyeOffset, segment.y * gridSize + (direction === "up" ? eyeOffset : gridSize - eyeOffset), eyeSize, 0, Math.PI * 2);
                     ctx.fill();
                 }
 
                 ctx.fillStyle = "#000000";
-                if (direction === 'right' || direction === 'left') {
+                if (direction === "right" || direction === "left") {
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + (direction === 'right' ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + eyeOffset, pupilSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + eyeOffset, pupilSize, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + (direction === 'right' ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + gridSize - eyeOffset, pupilSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + gridSize - eyeOffset, pupilSize, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + eyeOffset, segment.y * gridSize + (direction === 'up' ? eyeOffset : gridSize - eyeOffset), pupilSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + eyeOffset, segment.y * gridSize + (direction === "up" ? eyeOffset : gridSize - eyeOffset), pupilSize, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + gridSize - eyeOffset, segment.y * gridSize + (direction === 'up' ? eyeOffset : gridSize - eyeOffset), pupilSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + gridSize - eyeOffset, segment.y * gridSize + (direction === "up" ? eyeOffset : gridSize - eyeOffset), pupilSize, 0, Math.PI * 2);
                     ctx.fill();
                 }
             }
@@ -1185,8 +1182,8 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
         });
 
-        document.getElementById('boxesEaten').textContent = `Boxes Eaten: ${boxesEaten}`;
-        document.getElementById('pendingRewards').textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
+        document.getElementById("boxesEaten").textContent = `Boxes Eaten: ${boxesEaten}`;
+        document.getElementById("pendingRewards").textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
     }
 
     function gameLoop(currentTime) {
@@ -1200,15 +1197,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function move() {
-        if (isGamePaused) return;
+        if (isGamePaused || !isGameRunning) return;
 
         let head = { x: snake[0].x, y: snake[0].y };
-        if (direction === 'right') head.x++;
-        if (direction === 'left') head.x--;
-        if (direction === 'up') head.y--;
-        if (direction === 'down') head.y++;
+        if (direction === "right") head.x++;
+        if (direction === "left") head.x--;
+        if (direction === "up") head.y--;
+        if (direction === "down") head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
             gameOverSound.play();
             showGameOverPopup();
             return;
@@ -1276,7 +1273,7 @@ document.addEventListener("DOMContentLoaded", () => {
         boxesEaten = 0;
         gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
-        direction = 'right';
+        direction = "right";
         generateBoxes();
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
@@ -1285,82 +1282,11 @@ document.addEventListener("DOMContentLoaded", () => {
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 
-    function pauseGame() {
-        isGamePaused = !isGamePaused;
-        const pauseBtn = document.getElementById('pauseGame');
-        pauseBtn.textContent = isGamePaused ? 'Resume Game' : 'Pause Game';
-    }
-
-    let touchStartX = 0;
-    let touchStartY = 0;
-    let lastMoveTime = 0;
-    const touchThreshold = 20;
-
-    canvas.addEventListener('touchstart', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        lastMoveTime = Date.now();
-    });
-
-    canvas.addEventListener('touchmove', (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        const now = Date.now();
-
-        if (now - lastMoveTime < 100) return;
-
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
-            if (deltaX > 0 && direction !== 'left') direction = 'right';
-            else if (deltaX < 0 && direction !== 'right') direction = 'left';
-            lastMoveTime = now;
-        } else if (Math.abs(deltaY) > touchThreshold) {
-            if (deltaY > 0 && direction !== 'up') direction = 'down';
-            else if (deltaY < 0 && direction !== 'down') direction = 'up';
-            lastMoveTime = now;
-        }
-    });
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'ArrowUp' && direction !== 'down') direction = 'up';
-        if (event.key === 'ArrowDown' && direction !== 'up') direction = 'down';
-        if (event.key === 'ArrowLeft' && direction !== 'right') direction = 'left';
-        if (event.key === 'ArrowRight' && direction !== 'left') direction = 'right';
-    });
-
-    window.addEventListener('resize', updateCanvasSize);
-    window.addEventListener('orientationchange', updateCanvasSize);
-
-    updateCanvasSize();
-    generateBoxes();
-    draw();
-
-    const playGameBtn = document.getElementById('playGame');
-    if (playGameBtn) {
-        playGameBtn.addEventListener('click', async () => {
-            if (!account) return alert("Please connect your wallet!");
-            playGameBtn.disabled = true;
-            try {
-                showLoading(true);
-                await enterFullscreen();
-                if (!isGameRunning) {
-                    await resetGame();
-                }
-            } catch (err) {
-                console.error("Error starting game:", err);
-                alert("Failed to start game. Please try again.");
-            } finally {
-                showLoading(false);
-                playGameBtn.disabled = false;
-            }
-        });
-    }
-
     function generateReferralLink() {
-        if (!account) return alert("Please connect your wallet first!");
+        if (!account) {
+            alert("Please connect your wallet first!");
+            return;
+        }
         const referralLink = `${window.location.origin}${window.location.pathname}?ref=${account}`;
         navigator.clipboard.writeText(referralLink).then(() => alert("Referral link copied: " + referralLink));
     }
@@ -1380,19 +1306,31 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function claimWelcomeBonus() {
-        if (!contract || !account) return alert("Please connect your wallet first!");
-        if (playerData.hasClaimedWelcomeBonus) return alert("Welcome bonus already claimed!");
+        if (!contract || !account) {
+            alert("Please connect your wallet first!");
+            return;
+        }
+        if (playerData.hasClaimedWelcomeBonus) {
+            alert("Welcome bonus already claimed!");
+            return;
+        }
 
         try {
             showLoading(true);
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+            if (balance < feeWei) {
+                alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
+                return;
+            }
 
             const contractBalance = await contract.contractBalance();
             const welcomeBonusWei = ethers.parseUnits("100", 18);
-            if (contractBalance < welcomeBonusWei) return alert("Contract does not have enough BST tokens.");
+            if (contractBalance < welcomeBonusWei) {
+                alert("Contract does not have enough BST tokens.");
+                return;
+            }
 
             const tx = await contract.claimWelcomeBonus({ gasLimit: 300000 });
             await tx.wait();
@@ -1416,9 +1354,13 @@ document.addEventListener("DOMContentLoaded", () => {
     async function submitGameReward(rewardAmount) {
         if (!account || !gameOracleContract) {
             console.error("No account or gameOracleContract available");
-            return alert("Please ensure network connection and wallet are active!");
+            alert("Please ensure network connection and wallet are active!");
+            return;
         }
-        if (rewardAmount < 0.5) return alert("Minimum 0.5 BST required to submit!");
+        if (rewardAmount < 0.5) {
+            alert("Minimum 0.5 BST required to submit!");
+            return;
+        }
 
         try {
             showLoading(true);
@@ -1454,7 +1396,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function claimPendingRewards() {
-        if (!contract || !account) return alert("Please connect your wallet first!");
+        if (!contract || !account) {
+            alert("Please connect your wallet first!");
+            return;
+        }
 
         try {
             showLoading(true);
@@ -1464,20 +1409,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             if (balance < feeWei) {
                 document.getElementById("withdrawalStatus").textContent = "Error: Insufficient BNB for fee.";
-                return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
+                alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
+                return;
             }
 
             const internalBalance = await contract.getInternalBalance(account);
             const pendingRewardsWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
             if (ethers.toBigInt(internalBalance) < ethers.toBigInt(pendingRewardsWei)) {
                 document.getElementById("withdrawalStatus").textContent = "Error: Insufficient internal balance in contract.";
-                return alert("Insufficient internal balance. Please contact support.");
+                alert("Insufficient internal balance. Please contact support.");
+                return;
             }
 
             const contractBalance = await contract.contractBalance();
             if (ethers.toBigInt(contractBalance) < ethers.toBigInt(pendingRewardsWei)) {
                 document.getElementById("withdrawalStatus").textContent = "Error: Insufficient contract balance.";
-                return alert("Insufficient contract balance.");
+                alert("Insufficient contract balance.");
+                return;
             }
 
             const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 300000 });
@@ -1505,11 +1453,16 @@ document.addEventListener("DOMContentLoaded", () => {
     async function connectWallet() {
         try {
             showLoading(true);
-            if (!window.ethereum) return alert("Please install MetaMask or a Web3 wallet!");
+            if (!window.ethereum) {
+                alert("Please install MetaMask or a Web3 wallet!");
+                return;
+            }
             const provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             const network = await provider.getNetwork();
-            if (network.chainId !== 97) await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
+            if (network.chainId !== 97) {
+                await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
+            }
 
             const accounts = await provider.send("eth_requestAccounts", []);
             account = accounts[0];
@@ -1529,7 +1482,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Wallet connection error:", error);
-            alert("Failed to connect wallet: " + error.message);
+            alert("Failed to connect wallet: " + (error.message || "Unknown error."));
         } finally {
             showLoading(false);
         }
@@ -1546,7 +1499,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function loadPlayerHistory() {
-        if (!contract || !account) return updatePlayerHistoryUI();
+        if (!contract || !account) {
+            updatePlayerHistoryUI();
+            return;
+        }
         try {
             showLoading(true);
             const history = await contract.playerHistory(account);
@@ -1605,13 +1561,105 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    document.getElementById("connectWallet").addEventListener("click", connectWallet);
-    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
-    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
-    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
-    document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
+    // बटन इवेंट लिसनर्स
+    const playGameBtn = document.getElementById("playGame");
+    if (playGameBtn) {
+        playGameBtn.addEventListener("click", async () => {
+            if (!account) {
+                alert("Please connect your wallet!");
+                return;
+            }
+            playGameBtn.disabled = true;
+            try {
+                showLoading(true);
+                await enterFullscreen();
+                if (!isGameRunning) {
+                    await resetGame();
+                }
+            } catch (err) {
+                console.error("Error starting game:", err);
+                alert("Failed to start game. Please try again.");
+            } finally {
+                showLoading(false);
+                playGameBtn.disabled = false;
+            }
+        });
+    }
 
-    updatePlayerHistoryUI();
-    lastMoveTime = performance.now();
+    const connectWalletBtn = document.getElementById("connectWallet");
+    if (connectWalletBtn) {
+        connectWalletBtn.addEventListener("click", connectWallet);
+    }
+
+    const disconnectWalletBtn = document.getElementById("disconnectWallet");
+    if (disconnectWalletBtn) {
+        disconnectWalletBtn.addEventListener("click", disconnectWallet);
+    }
+
+    const getReferralLinkBtn = document.getElementById("getReferralLink");
+    if (getReferralLinkBtn) {
+        getReferralLinkBtn.addEventListener("click", generateReferralLink);
+    }
+
+    const claimGameRewardsBtn = document.getElementById("claimGameRewards");
+    if (claimGameRewardsBtn) {
+        claimGameRewardsBtn.addEventListener("click", claimPendingRewards);
+    }
+
+    const welcomeBonusBtn = document.getElementById("welcomeBonusButton");
+    if (welcomeBonusBtn) {
+        welcomeBonusBtn.addEventListener("click", claimWelcomeBonus);
+    }
+
+    // गेम कंट्रोल
+    document.addEventListener("keydown", (event) => {
+        if (isGameRunning && !isGamePaused) {
+            if (event.key === "ArrowUp" && direction !== "down") direction = "up";
+            if (event.key === "ArrowDown" && direction !== "up") direction = "down";
+            if (event.key === "ArrowLeft" && direction !== "right") direction = "left";
+            if (event.key === "ArrowRight" && direction !== "left") direction = "right";
+        }
+    });
+
+    let touchStartX = 0;
+    let touchStartY = 0;
+    const touchThreshold = 20;
+
+    canvas.addEventListener("touchstart", (event) => {
+        event.preventDefault();
+        const touch = event.touches[0];
+        touchStartX = touch.clientX;
+        touchStartY = touch.clientY;
+        lastMoveTime = Date.now();
+    });
+
+    canvas.addEventListener("touchmove", (event) => {
+        event.preventDefault();
+        if (!isGameRunning || isGamePaused) return;
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        const now = Date.now();
+
+        if (now - lastMoveTime < 100) return;
+
+        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
+            if (deltaX > 0 && direction !== "left") direction = "right";
+            else if (deltaX < 0 && direction !== "right") direction = "left";
+            lastMoveTime = now;
+        } else if (Math.abs(deltaY) > touchThreshold) {
+            if (deltaY > 0 && direction !== "up") direction = "down";
+            else if (deltaY < 0 && direction !== "down") direction = "up";
+            lastMoveTime = now;
+        }
+    });
+
+    window.addEventListener("resize", updateCanvasSize);
+    window.addEventListener("orientationchange", updateCanvasSize);
+
+    updateCanvasSize();
+    generateBoxes();
+    draw();
     animationFrameId = requestAnimationFrame(gameLoop);
+    updatePlayerHistoryUI();
 });
