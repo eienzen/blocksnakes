@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xC891379810E8Fc54dd5B69633F3bd61F96Fd40B9";
+    const contractAddress = "0xC4c1d1377186a7B35Bf0a8D5067434237d094c73";
     const contractABI = [
 	{
 		"inputs": [
@@ -1079,7 +1079,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showLoading(show) {
         const loadingIndicator = document.getElementById("loadingIndicator");
-        loadingIndicator.style.display = show ? "block" : "none";
+        if (loadingIndicator) {
+            loadingIndicator.style.display = show ? "block" : "none";
+        } else {
+            console.error("Loading indicator not found in DOM");
+        }
     }
 
     function updateCanvasSize() {
@@ -1141,8 +1145,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
 
                 ctx.fillStyle = "#ffffff";
-                const eyeOffset = gridSize * 0.3; // बड़ाई गई ऑफसेट
-                const eyeSize = gridSize * 0.25; // बड़ी और गोल आँखें
+                const eyeOffset = gridSize * 0.3;
+                const eyeSize = gridSize * 0.25;
                 const pupilSize = eyeSize * 0.6;
 
                 if (direction === 'right' || direction === 'left') {
@@ -1289,7 +1293,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function pauseGame() {
         isGamePaused = !isGamePaused;
         const pauseBtn = document.getElementById('pauseGame');
-        pauseBtn.textContent = isGamePaused ? 'Resume Game' : 'Pause Game';
+        if (pauseBtn) {
+            pauseBtn.textContent = isGamePaused ? 'Resume Game' : 'Pause Game';
+        }
     }
 
     let touchStartX = 0;
