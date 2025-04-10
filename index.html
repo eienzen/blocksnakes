@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://raw.githubusercontent.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com https://github.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://raw.githubusercontent.com https://github.com;">
     <title>BlockSnakes Game</title>
-    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico"> <!-- Favicon मौजूद है -->
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico">
     <style>
         body {
             margin: 0;
@@ -139,6 +139,19 @@
             padding: 0;
             line-height: 1;
         }
+        #loadingIndicator {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.7);
+            padding: 15px;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 18px;
+            z-index: 3000;
+        }
         @media (orientation: portrait) {
             canvas { max-height: 60vh; }
             #header { padding: 10px; }
@@ -188,9 +201,10 @@
         <p id="finalRewards">Earned BST: 0 BST</p>
         <button id="closePopup">X</button>
     </div>
-    <audio id="eatingSound" src="https://github.com/eienzen/blocksnakes/blob/main/eating-sound-effect-36186.mp3?raw=true"></audio>
-    <audio id="gameOverSound" src="https://github.com/eienzen/blocksnakes/blob/main/game-over-arcade-6435.mp3?raw=true"></audio>
-    <audio id="victorySound" src="https://github.com/eienzen/blocksnakes/blob/main/victory-sound-101319.mp3?raw=true"></audio>
+    <div id="loadingIndicator">Loading... <span class="spinner">⏳</span></div>
+    <audio id="eatingSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/eating-sound-effect-36186.mp3"></audio>
+    <audio id="gameOverSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/game-over-arcade-6435.mp3"></audio>
+    <audio id="victorySound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/victory-sound-101319.mp3"></audio>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="game.js"></script>
 </body>
