@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM fully loaded, initializing game...");
+
     let account = null;
     let contract = null;
     let animationFrameId = null;
@@ -28,7 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xC891379810E8Fc54dd5B69633F3bd61F96Fd40B9";
+    const contractAddress = "0x5c9c44E717E34DaB1925CE0e48737Fe65F6F85Ad";
     const contractABI = [
 	{
 		"inputs": [
@@ -1048,20 +1050,24 @@ document.addEventListener("DOMContentLoaded", () => {
     let gameOracleProvider;
     try {
         gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        console.log("Connected to primary WebSocket provider.");
     } catch (error) {
         console.error("Failed to connect to primary WebSocket URL:", error);
         try {
             gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+            console.log("Connected to backup WebSocket provider.");
         } catch (backupError) {
             console.error("Failed to connect to backup WebSocket URL:", backupError);
             gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+            console.log("Fallback to JSON-RPC provider.");
         }
     }
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
     const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
 
     const canvas = document.getElementById("gameCanvas");
-    const ctx = canvas.getContext("2d");
+    if (!canvas) console.error("Canvas element not found!");
+    const ctx = canvas ? canvas.getContext("2d") : null;
     const gridWidth = 30;
     const gridHeight = 20;
     let gridSize;
@@ -1070,7 +1076,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = "right";
     let boxesEaten = 0;
     let gameRewards = 0;
-    const baseSnakeSpeed = 100; // 100ms प्रति मूव, धीमी गति
+    const baseSnakeSpeed = 100; // 100ms प्रति मूव
     let lastMoveTime = 0;
 
     const eatingSound = document.getElementById("eatingSound");
@@ -1080,9 +1086,11 @@ document.addEventListener("DOMContentLoaded", () => {
     function showLoading(show) {
         const loadingIndicator = document.getElementById("loadingIndicator");
         if (loadingIndicator) loadingIndicator.style.display = show ? "block" : "none";
+        else console.error("Loading indicator not found!");
     }
 
     function updateCanvasSize() {
+        if (!canvas) return console.error("Canvas not available for resizing!");
         const screenWidth = window.innerWidth * 0.9;
         const screenHeight = window.innerHeight * 0.7;
         gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
@@ -1098,6 +1106,7 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Fullscreen is not supported or blocked by your browser.");
             return;
         }
+        if (!canvas) return console.error("Canvas not available for fullscreen!");
         try {
             showLoading(true);
             await canvas.requestFullscreen({ navigationUI: "hide" });
@@ -1123,6 +1132,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
+        if (!ctx) return console.error("Canvas context not available!");
         ctx.fillStyle = "rgba(10, 10, 35, 0.8)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1182,8 +1192,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
         });
 
-        document.getElementById("boxesEaten").textContent = `Boxes Eaten: ${boxesEaten}`;
-        document.getElementById("pendingRewards").textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
+        const boxesEatenElement = document.getElementById("boxesEaten");
+        const pendingRewardsElement = document.getElementById("pendingRewards");
+        if (boxesEatenElement) boxesEatenElement.textContent = `Boxes Eaten: ${boxesEaten}`;
+        if (pendingRewardsElement) pendingRewardsElement.textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
     }
 
     function gameLoop(currentTime) {
@@ -1197,7 +1209,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function move() {
-        if (isGamePaused || !isGameRunning) return;
+        if (isGamePaused || !isGameRunning || !ctx) return console.error("Game paused or context unavailable!");
 
         let head = { x: snake[0].x, y: snake[0].y };
         if (direction === "right") head.x++;
@@ -1214,7 +1226,7 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.unshift(head);
         const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
         if (eatenBoxIndex !== -1) {
-            eatingSound.play();
+            if (eatingSound) eatingSound.play();
             boxesEaten++;
             const reward = 0.5;
             playerData.pendingRewards += reward;
@@ -1230,7 +1242,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             boxes.splice(eatenBoxIndex, 1);
             if (boxes.length < 5) generateBoxes();
-            if (boxesEaten % 10 === 0 || boxesEaten % 20 === 0 || boxesEaten % 30 === 0) victorySound.play();
+            if (boxesEaten % 10 === 0 || boxesEaten % 20 === 0 || boxesEaten % 30 === 0) if (victorySound) victorySound.play();
         } else {
             snake.pop();
         }
@@ -1241,18 +1253,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showGameOverPopup() {
         const popup = document.getElementById("gameOverPopup");
-        document.getElementById("finalBoxesEaten").textContent = `Boxes Eaten: ${boxesEaten}`;
-        document.getElementById("finalRewards").textContent = `Earned BST: ${gameRewards.toFixed(2)} BST`;
+        if (!popup) return console.error("Game over popup not found!");
+        const finalBoxesEaten = document.getElementById("finalBoxesEaten");
+        const finalRewards = document.getElementById("finalRewards");
+        if (finalBoxesEaten) finalBoxesEaten.textContent = `Boxes Eaten: ${boxesEaten}`;
+        if (finalRewards) finalRewards.textContent = `Earned BST: ${gameRewards.toFixed(2)} BST`;
         popup.style.display = "block";
         isGameRunning = false;
         const closeBtn = document.getElementById("closePopup");
-        closeBtn.onclick = () => {
-            popup.style.display = "none";
-            resetGame().catch(err => {
-                console.error("Error resetting game:", err);
-                alert("Failed to reset game. Please try again.");
-            });
-        };
+        if (closeBtn) {
+            closeBtn.onclick = () => {
+                popup.style.display = "none";
+                resetGame().catch(err => {
+                    console.error("Error resetting game:", err);
+                    alert("Failed to reset game. Please try again.");
+                });
+            };
+        } else {
+            console.error("Close popup button not found!");
+        }
     }
 
     async function resetGame() {
@@ -1263,7 +1282,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 await submitGameReward(gameRewards);
             } catch (error) {
                 console.error("Failed to submit rewards:", error);
-                document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Unknown error submitting rewards."}`;
+                const withdrawalStatus = document.getElementById("withdrawalStatus");
+                if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Unknown error submitting rewards."}`;
                 alert("Failed to submit rewards: " + (error.message || "Unknown error. Please check network or contract."));
             } finally {
                 showLoading(false);
@@ -1388,7 +1408,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error submitting game rewards:", error);
-            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Network issue. Please check connection."}`;
+            const withdrawalStatus = document.getElementById("withdrawalStatus");
+            if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Network issue. Please check connection."}`;
             alert("Failed to submit rewards: " + (error.message || "Network issue. Please check connection."));
         } finally {
             showLoading(false);
@@ -1408,7 +1429,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             if (balance < feeWei) {
-                document.getElementById("withdrawalStatus").textContent = "Error: Insufficient BNB for fee.";
+                const withdrawalStatus = document.getElementById("withdrawalStatus");
+                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient BNB for fee.";
                 alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
                 return;
             }
@@ -1416,14 +1438,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const internalBalance = await contract.getInternalBalance(account);
             const pendingRewardsWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
             if (ethers.toBigInt(internalBalance) < ethers.toBigInt(pendingRewardsWei)) {
-                document.getElementById("withdrawalStatus").textContent = "Error: Insufficient internal balance in contract.";
+                const withdrawalStatus = document.getElementById("withdrawalStatus");
+                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient internal balance in contract.";
                 alert("Insufficient internal balance. Please contact support.");
                 return;
             }
 
             const contractBalance = await contract.contractBalance();
             if (ethers.toBigInt(contractBalance) < ethers.toBigInt(pendingRewardsWei)) {
-                document.getElementById("withdrawalStatus").textContent = "Error: Insufficient contract balance.";
+                const withdrawalStatus = document.getElementById("withdrawalStatus");
+                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient contract balance.";
                 alert("Insufficient contract balance.");
                 return;
             }
@@ -1435,7 +1459,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.pendingRewards = 0;
                 playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
                 updatePlayerHistoryUI();
-                document.getElementById("withdrawalStatus").textContent = "Success: Rewards withdrawn!";
+                const withdrawalStatus = document.getElementById("withdrawalStatus");
+                if (withdrawalStatus) withdrawalStatus.textContent = "Success: Rewards withdrawn!";
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert("Rewards withdrawn successfully!");
             } else {
@@ -1443,7 +1468,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Network issue or contract reverted. Please try again."}`;
+            const withdrawalStatus = document.getElementById("withdrawalStatus");
+            if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Network issue or contract reverted. Please try again."}`;
             alert("Failed to claim rewards: " + (error.message || "Network issue or contract reverted. Please ensure sufficient BNB and try again."));
         } finally {
             showLoading(false);
@@ -1476,9 +1502,16 @@ document.addEventListener("DOMContentLoaded", () => {
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
 
-            document.getElementById("connectWallet").style.display = "none";
-            document.getElementById("disconnectWallet").style.display = "block";
-            document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
+            const connectWalletBtn = document.getElementById("connectWallet");
+            const disconnectWalletBtn = document.getElementById("disconnectWallet");
+            const walletAddress = document.getElementById("walletAddress");
+            if (connectWalletBtn && disconnectWalletBtn && walletAddress) {
+                connectWalletBtn.style.display = "none";
+                disconnectWalletBtn.style.display = "block";
+                walletAddress.textContent = `Connected: ${account.slice(0, 6)}...`;
+            } else {
+                console.error("Button or wallet address element not found!");
+            }
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Wallet connection error:", error);
@@ -1491,9 +1524,16 @@ document.addEventListener("DOMContentLoaded", () => {
     function disconnectWallet() {
         account = null;
         contract = null;
-        document.getElementById("connectWallet").style.display = "block";
-        document.getElementById("disconnectWallet").style.display = "none";
-        document.getElementById("walletAddress").textContent = "";
+        const connectWalletBtn = document.getElementById("connectWallet");
+        const disconnectWalletBtn = document.getElementById("disconnectWallet");
+        const walletAddress = document.getElementById("walletAddress");
+        if (connectWalletBtn && disconnectWalletBtn && walletAddress) {
+            connectWalletBtn.style.display = "block";
+            disconnectWalletBtn.style.display = "none";
+            walletAddress.textContent = "";
+        } else {
+            console.error("Button or wallet address element not found!");
+        }
         updatePlayerHistoryUI();
         alert("Wallet disconnected!");
     }
@@ -1548,6 +1588,7 @@ document.addEventListener("DOMContentLoaded", () => {
         for (const [id, value] of Object.entries(elements)) {
             const element = document.getElementById(id);
             if (element) element.textContent = value;
+            else console.error(`Element with id '${id}' not found!`);
         }
 
         const historyList = document.getElementById("rewardHistoryList");
@@ -1558,6 +1599,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee.slice(0, 6)}...)` : ""}`;
                 historyList.appendChild(li);
             });
+        } else {
+            console.error("Reward history list not found!");
         }
     }
 
@@ -1565,6 +1608,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const playGameBtn = document.getElementById("playGame");
     if (playGameBtn) {
         playGameBtn.addEventListener("click", async () => {
+            console.log("Play game button clicked.");
             if (!account) {
                 alert("Please connect your wallet!");
                 return;
@@ -1584,31 +1628,43 @@ document.addEventListener("DOMContentLoaded", () => {
                 playGameBtn.disabled = false;
             }
         });
+    } else {
+        console.error("Play game button not found!");
     }
 
     const connectWalletBtn = document.getElementById("connectWallet");
     if (connectWalletBtn) {
         connectWalletBtn.addEventListener("click", connectWallet);
+    } else {
+        console.error("Connect wallet button not found!");
     }
 
     const disconnectWalletBtn = document.getElementById("disconnectWallet");
     if (disconnectWalletBtn) {
         disconnectWalletBtn.addEventListener("click", disconnectWallet);
+    } else {
+        console.error("Disconnect wallet button not found!");
     }
 
     const getReferralLinkBtn = document.getElementById("getReferralLink");
     if (getReferralLinkBtn) {
         getReferralLinkBtn.addEventListener("click", generateReferralLink);
+    } else {
+        console.error("Get referral link button not found!");
     }
 
     const claimGameRewardsBtn = document.getElementById("claimGameRewards");
     if (claimGameRewardsBtn) {
         claimGameRewardsBtn.addEventListener("click", claimPendingRewards);
+    } else {
+        console.error("Claim game rewards button not found!");
     }
 
     const welcomeBonusBtn = document.getElementById("welcomeBonusButton");
     if (welcomeBonusBtn) {
         welcomeBonusBtn.addEventListener("click", claimWelcomeBonus);
+    } else {
+        console.error("Welcome bonus button not found!");
     }
 
     // गेम कंट्रोल
@@ -1625,34 +1681,38 @@ document.addEventListener("DOMContentLoaded", () => {
     let touchStartY = 0;
     const touchThreshold = 20;
 
-    canvas.addEventListener("touchstart", (event) => {
-        event.preventDefault();
-        const touch = event.touches[0];
-        touchStartX = touch.clientX;
-        touchStartY = touch.clientY;
-        lastMoveTime = Date.now();
-    });
+    if (canvas) {
+        canvas.addEventListener("touchstart", (event) => {
+            event.preventDefault();
+            const touch = event.touches[0];
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
+            lastMoveTime = Date.now();
+        });
 
-    canvas.addEventListener("touchmove", (event) => {
-        event.preventDefault();
-        if (!isGameRunning || isGamePaused) return;
-        const touch = event.touches[0];
-        const deltaX = touch.clientX - touchStartX;
-        const deltaY = touch.clientY - touchStartY;
-        const now = Date.now();
+        canvas.addEventListener("touchmove", (event) => {
+            event.preventDefault();
+            if (!isGameRunning || isGamePaused) return;
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+            const now = Date.now();
 
-        if (now - lastMoveTime < 100) return;
+            if (now - lastMoveTime < 100) return;
 
-        if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
-            if (deltaX > 0 && direction !== "left") direction = "right";
-            else if (deltaX < 0 && direction !== "right") direction = "left";
-            lastMoveTime = now;
-        } else if (Math.abs(deltaY) > touchThreshold) {
-            if (deltaY > 0 && direction !== "up") direction = "down";
-            else if (deltaY < 0 && direction !== "down") direction = "up";
-            lastMoveTime = now;
-        }
-    });
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
+                if (deltaX > 0 && direction !== "left") direction = "right";
+                else if (deltaX < 0 && direction !== "right") direction = "left";
+                lastMoveTime = now;
+            } else if (Math.abs(deltaY) > touchThreshold) {
+                if (deltaY > 0 && direction !== "up") direction = "down";
+                else if (deltaY < 0 && direction !== "down") direction = "up";
+                lastMoveTime = now;
+            }
+        });
+    } else {
+        console.error("Canvas not found for touch events!");
+    }
 
     window.addEventListener("resize", updateCanvasSize);
     window.addEventListener("orientationchange", updateCanvasSize);
