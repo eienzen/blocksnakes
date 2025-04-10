@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const contractAddress = "0xC4c1d1377186a7B35Bf0a8D5067434237d094c73";
-    const contractABI = [
+    const contractABI = [
 	{
 		"inputs": [
 			{
@@ -1042,8 +1042,8 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	}
 ];
-    const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0";
-    const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c";
+    const gameOracleAddress = "0x1fAC26109AC7f829448c67DF5110bcf37Ffcd4f0";
+    const gameOraclePrivateKey = "ce9bfae66ef0d42b84f7e396a06aef134baaa516c356f953583e157d3c431a3c";
 
     let gameOracleProvider;
     try {
@@ -1051,7 +1051,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
         console.error("Failed to connect to primary WebSocket URL:", error);
         try {
-            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         } catch (backupError) {
             console.error("Failed to connect to backup WebSocket URL:", backupError);
             gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
@@ -1070,7 +1070,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = 'right';
     let boxesEaten = 0;
     let gameRewards = 0;
-    const baseSnakeSpeed = 100; // स्थिर स्पीड
+    const baseSnakeSpeed = 300; // स्पीड को काफी कम किया गया (ऊँचा मान = धीमी स्पीड)
     let lastTime = performance.now();
 
     const eatingSound = document.getElementById("eatingSound");
@@ -1079,11 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showLoading(show) {
         const loadingIndicator = document.getElementById("loadingIndicator");
-        if (loadingIndicator) {
-            loadingIndicator.style.display = show ? "block" : "none";
-        } else {
-            console.error("Loading indicator not found in DOM");
-        }
+        loadingIndicator.style.display = show ? "block" : "none";
     }
 
     function updateCanvasSize() {
@@ -1293,9 +1289,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function pauseGame() {
         isGamePaused = !isGamePaused;
         const pauseBtn = document.getElementById('pauseGame');
-        if (pauseBtn) {
-            pauseBtn.textContent = isGamePaused ? 'Resume Game' : 'Pause Game';
-        }
+        pauseBtn.textContent = isGamePaused ? 'Resume Game' : 'Pause Game';
     }
 
     let touchStartX = 0;
@@ -1461,7 +1455,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function claimPendingRewards() {
         if (!contract || !account) return alert("Please connect your wallet first!");
-        if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim.");
+        // न्यूनतम 10 BST की सीमा हटाई गई
+        // if (playerData.pendingRewards < 10) return alert("Minimum 10 BST required to claim.");
 
         try {
             showLoading(true);
@@ -1469,7 +1464,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
-            if (balance < feeWei) return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
+            if (balance < feeWei) return alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB for the fee.`);
 
             const contractBalance = await contract.contractBalance();
             const rewardWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
@@ -1479,17 +1474,17 @@ document.addEventListener("DOMContentLoaded", () => {
             const receipt = await tx.wait();
             if (receipt.status === 1) {
                 playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-                playerData.pendingRewards = 0;
+                playerData.pendingRewards = 0; // पूरी राशि निकालने के बाद पेंडिंग रिवार्ड्स शून्य करें
                 playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
                 updatePlayerHistoryUI();
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert("Rewards withdrawn successfully!");
             } else {
-                throw new Error("Transaction failed on blockchain.");
+                throw new Error("Transaction failed on blockchain. Please check network or contract status.");
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            alert("Failed to claim rewards: " + (error.message || "Network issue or contract reverted."));
+            alert("Failed to claim rewards: " + (error.message || "Network issue or contract reverted. Please ensure sufficient BNB and try again."));
         } finally {
             showLoading(false);
         }
