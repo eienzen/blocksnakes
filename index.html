@@ -3,20 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://raw.githubusercontent.com;">
     <title>BlockSnakes Game</title>
-    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico">
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico"> <!-- Favicon मौजूद है -->
     <style>
         body {
             margin: 0;
             padding: 0;
-            background-color: #1a1a3d;
+            background: linear-gradient(135deg, #0a0a23, #1a1a3d);
             color: #fff;
             font-family: Arial, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
             overflow-x: hidden;
+            min-height: 100vh;
         }
         #header {
             width: 100%;
@@ -29,11 +30,6 @@
             align-items: center;
             justify-content: center;
             flex-wrap: wrap;
-        }
-        #header-logo {
-            width: 120px;
-            height: 60px;
-            margin-right: 15px;
         }
         #header-banner {
             width: 100%;
@@ -61,7 +57,7 @@
         }
         canvas {
             border: 2px solid #00ffcc;
-            background-color: #0a0a23;
+            background: linear-gradient(45deg, #0a0a23, #1a1a3d);
             border-radius: 5px;
             margin: 20px 0;
             max-width: 90vw;
@@ -70,7 +66,7 @@
         #gameInfo, #playerHistory {
             margin-top: 20px;
             padding: 15px;
-            background-color: #2a2a5d;
+            background: linear-gradient(135deg, #2a2a5d, #3a3a7d);
             border-radius: 10px;
             width: 80%;
             max-width: 600px;
@@ -113,7 +109,7 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            background-color: #2a2a5d;
+            background: linear-gradient(135deg, #2a2a5d, #3a3a7d);
             padding: 20px;
             border: 2px solid #00ffcc;
             border-radius: 10px;
@@ -156,7 +152,6 @@
 <body>
     <div id="header">
         <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/banner.jpg" alt="Banner" id="header-banner">
-        <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/logo.png" alt="BlockSnakes Logo" id="header-logo">
         <div>
             <h1>BlockSnakes: Play and Earn BST Token</h1>
             <p id="walletAddress"></p>
@@ -193,6 +188,9 @@
         <p id="finalRewards">Earned BST: 0 BST</p>
         <button id="closePopup">X</button>
     </div>
+    <audio id="eatingSound" src="https://github.com/eienzen/blocksnakes/blob/main/eating-sound-effect-36186.mp3?raw=true"></audio>
+    <audio id="gameOverSound" src="https://github.com/eienzen/blocksnakes/blob/main/game-over-arcade-6435.mp3?raw=true"></audio>
+    <audio id="victorySound" src="https://github.com/eienzen/blocksnakes/blob/main/victory-sound-101319.mp3?raw=true"></audio>
     <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
     <script src="game.js"></script>
 </body>
