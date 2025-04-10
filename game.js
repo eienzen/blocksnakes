@@ -28,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x8B0B6856F834AAeB162666D961695Aa373E97e42";
+    const contractAddress = "0x5c9c44E717E34DaB1925CE0e48737Fe65F6F85Ad";
     const contractABI = [
 	{
 		"inputs": [
@@ -1070,8 +1070,8 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = 'right';
     let boxesEaten = 0;
     let gameRewards = 0;
-    const baseSnakeSpeed = 100; // स्पीड को 300 से 100 पर वापस लाया गया और ठीक किया गया
-    let lastTime = performance.now();
+    const baseSnakeSpeed = 100; // स्पीड को 100 पर सेट, धीमी और नियंत्रित
+    let lastMoveTime = 0;
 
     const eatingSound = document.getElementById("eatingSound");
     const gameOverSound = document.getElementById("gameOverSound");
@@ -1079,7 +1079,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function showLoading(show) {
         const loadingIndicator = document.getElementById("loadingIndicator");
-        loadingIndicator.style.display = show ? "block" : "none";
+        if (loadingIndicator) loadingIndicator.style.display = show ? "block" : "none";
     }
 
     function updateCanvasSize() {
@@ -1191,11 +1191,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function gameLoop(currentTime) {
         if (!isGamePaused && isGameRunning) {
-            const deltaTime = (currentTime - lastTime) / 1000; // समय अंतर
-            const moveSpeed = 1 / (baseSnakeSpeed * deltaTime); // स्पीड को नियंत्रित करने के लिए इनवर्स लॉजिक
-            if (moveSpeed >= 1) {
+            if (currentTime - lastMoveTime >= baseSnakeSpeed) {
                 move();
-                lastTime = currentTime;
+                lastMoveTime = currentTime;
             }
         }
         animationFrameId = requestAnimationFrame(gameLoop);
@@ -1268,6 +1266,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await submitGameReward(gameRewards);
             } catch (error) {
                 console.error("Failed to submit rewards:", error);
+                document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Unknown error submitting rewards."}`;
                 alert("Failed to submit rewards: " + (error.message || "Unknown error. Please check network or contract."));
             } finally {
                 showLoading(false);
@@ -1447,6 +1446,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         } catch (error) {
             console.error("Error submitting game rewards:", error);
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Network issue. Please check connection."}`;
             alert("Failed to submit rewards: " + (error.message || "Network issue. Please check connection."));
         } finally {
             showLoading(false);
@@ -1612,5 +1612,6 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
 
     updatePlayerHistoryUI();
+    lastMoveTime = performance.now();
     animationFrameId = requestAnimationFrame(gameLoop);
 });
