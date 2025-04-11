@@ -29,8 +29,8 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x9ae04aA10d09AB0b904AC9301d812B665fe392A5";
-    const contractABI =[
+    const contractAddress = "0xeaE84F45A984e7F739dE1A7d3561BFc0a97f2832";
+    const contractABI = [
 	{
 		"inputs": [
 			{
@@ -1043,7 +1043,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	}
 ];
-    const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
+    const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032"; // सही पता पुनःस्थापित
     const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
 
     let gameOracleProvider;
@@ -1364,7 +1364,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const tx = await contract.claimWelcomeBonus({ gasLimit: 350000 });
+            const tx = await contract.claimWelcomeBonus({ gasLimit: 500000 });
             await tx.wait();
 
             playerData.hasClaimedWelcomeBonus = true;
@@ -1436,7 +1436,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
             }
 
-            const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 350000 });
+            const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 500000 });
             console.log("Transaction sent, hash:", tx.hash);
             const receipt = await tx.wait();
             console.log("Transaction receipt:", receipt);
@@ -1456,9 +1456,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert(`${rewardAmount} BST rewards submitted successfully!`);
             } else {
-                const revertReason = await provider.call(tx, tx.blockNumber - 1); // रिवर्ट कारण
-                console.error("Transaction reverted. Reason:", revertReason);
-                throw new Error("Transaction failed on blockchain. Revert reason: " + revertReason);
+                const revertReason = receipt.revertReason || (await provider.call(tx, tx.blockNumber - 1));
+                console.error("Transaction reverted. Reason:", revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown");
+                throw new Error("Transaction failed on blockchain. Revert reason: " + (revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown"));
             }
         } catch (error) {
             console.error("Error submitting game rewards:", error);
@@ -1506,7 +1506,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 350000 });
+            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 500000 });
             console.log("Withdrawal transaction sent, hash:", tx.hash);
             const receipt = await tx.wait();
             console.log("Withdrawal transaction receipt:", receipt);
@@ -1521,9 +1521,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert("Rewards withdrawn successfully!");
             } else {
-                const revertReason = await provider.call(tx, tx.blockNumber - 1);
-                console.error("Transaction reverted. Reason:", revertReason);
-                throw new Error("Transaction failed on blockchain. Revert reason: " + revertReason);
+                const revertReason = receipt.revertReason || (await provider.call(tx, tx.blockNumber - 1));
+                console.error("Transaction reverted. Reason:", revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown");
+                throw new Error("Transaction failed on blockchain. Revert reason: " + (revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown"));
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
@@ -1784,7 +1784,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // CSP हेडर (HTML में जोड़ें)
     const meta = document.createElement("meta");
     meta.httpEquiv = "Content-Security-Policy";
-    meta.content = "default-src 'self'; script-src 'self' 'unsafe-eval'; connect-src 'self' wss://data-seed-prebsc-*.binance.org:8545/ https://data-seed-prebsc-*.binance.org:8545/;";
+    meta.content = "default-src 'self'; script-src 'self' 'unsafe-eval'; connect-src 'self' wss://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-2-s1.binance.org:8545/ https://data-seed-prebsc-1-s1.binance.org:8545/ https://data-seed-prebsc-2-s1.binance.org:8545/; img-src 'self' https://raw.githubusercontent.com;";
     document.head.appendChild(meta);
 
     updateCanvasSize();
