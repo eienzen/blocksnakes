@@ -7,7 +7,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const TARGET_NETWORK_ID = "97"; // BNB Testnet Chain ID
     let WITHDRAWAL_FEE_BNB = "0.0002"; // डिफॉल्ट फीस
     let isGameRunning = false;
-    let isGamePaused = false;
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
         gamesPlayed: 0,
@@ -1195,8 +1194,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function gameLoop(currentTime) {
-        console.log(`Game state - Running: ${isGameRunning}, Paused: ${isGamePaused}, Skipping move: ${!isGameRunning || isGamePaused}`);
-        if (!isGamePaused && isGameRunning) {
+        console.log(`Game state - Running: ${isGameRunning}, Skipping move: ${!isGameRunning}`);
+        if (isGameRunning) {
             if (!ctx) {
                 console.error("Canvas context lost, attempting to reinitialize...");
                 const newCanvas = document.getElementById("gameCanvas");
@@ -1215,8 +1214,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function move() {
-        if (isGamePaused || !isGameRunning || !ctx) {
-            console.log(`Move skipped: Paused: ${isGamePaused}, Running: ${isGameRunning}, Context: ${!!ctx}`);
+        if (!isGameRunning || !ctx) {
+            console.log(`Move skipped: Running: ${isGameRunning}, Context: ${!!ctx}`);
             return;
         }
 
@@ -1692,7 +1691,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // गेम कंट्रोल
     document.addEventListener("keydown", (event) => {
-        if (isGameRunning && !isGamePaused) {
+        if (isGameRunning) {
             if (event.key === "ArrowUp" && direction !== "down") direction = "up";
             if (event.key === "ArrowDown" && direction !== "up") direction = "down";
             if (event.key === "ArrowLeft" && direction !== "right") direction = "left";
@@ -1710,28 +1709,43 @@ document.addEventListener("DOMContentLoaded", () => {
             const touch = event.touches[0];
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
-            lastMoveTime = Date.now();
+            console.log("Touch started at:", touchStartX, touchStartY);
         });
 
         canvas.addEventListener("touchmove", (event) => {
             event.preventDefault();
-            if (!isGameRunning || isGamePaused) return;
+            if (!isGameRunning) return;
             const touch = event.touches[0];
             const deltaX = touch.clientX - touchStartX;
             const deltaY = touch.clientY - touchStartY;
             const now = Date.now();
 
-            if (now - lastMoveTime < 100) return;
+            if (now - lastMoveTime < 100) return; // Debounce to prevent rapid changes
 
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
-                if (deltaX > 0 && direction !== "left") direction = "right";
-                else if (deltaX < 0 && direction !== "right") direction = "left";
-                lastMoveTime = now;
+                if (deltaX > 0 && direction !== "left") {
+                    direction = "right";
+                    lastMoveTime = now;
+                } else if (deltaX < 0 && direction !== "right") {
+                    direction = "left";
+                    lastMoveTime = now;
+                }
             } else if (Math.abs(deltaY) > touchThreshold) {
-                if (deltaY > 0 && direction !== "up") direction = "down";
-                else if (deltaY < 0 && direction !== "down") direction = "up";
-                lastMoveTime = now;
+                if (deltaY > 0 && direction !== "up") {
+                    direction = "down";
+                    lastMoveTime = now;
+                } else if (deltaY < 0 && direction !== "down") {
+                    direction = "up";
+                    lastMoveTime = now;
+                }
             }
+            console.log("Touch move detected, new direction:", direction);
+        });
+
+        // Ensure touchend doesn't interfere
+        canvas.addEventListener("touchend", (event) => {
+            event.preventDefault();
+            console.log("Touch ended, game should continue.");
         });
     } else {
         console.error("Canvas not found for touch events!");
