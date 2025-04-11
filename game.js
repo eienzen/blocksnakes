@@ -1076,7 +1076,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = "right";
     let boxesEaten = 0;
     let gameRewards = 0;
-    const baseSnakeSpeed = 150; // स्पीड को 150ms प्रति मूव बढ़ाया (धीमा)
+    const baseSnakeSpeed = 150; // स्पीड 150ms प्रति मूव
     let lastMoveTime = 0;
 
     const eatingSound = document.getElementById("eatingSound");
@@ -1125,7 +1125,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function draw() {
-        if (!ctx) return console.error("Canvas context not available!");
+        if (!ctx) {
+            console.error("Canvas context not available!");
+            return;
+        }
         ctx.fillStyle = "rgba(10, 10, 35, 0.8)";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -1192,20 +1195,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function gameLoop(currentTime) {
-        if (!isGamePaused && isGameRunning && ctx) {
+        if (!isGamePaused && isGameRunning) {
+            if (!ctx) {
+                console.error("Canvas context lost, attempting to reinitialize...");
+                const newCanvas = document.getElementById("gameCanvas");
+                if (newCanvas) ctx = newCanvas.getContext("2d");
+                if (!ctx) {
+                    console.error("Failed to reinitialize canvas context, skipping move.");
+                    return;
+                }
+            }
             if (currentTime - lastMoveTime >= baseSnakeSpeed) {
                 move();
                 lastMoveTime = currentTime;
             }
         } else {
-            console.log("Game paused or context unavailable, skipping move.");
+            console.log(`Game state - Running: ${isGameRunning}, Paused: ${isGamePaused}, Skipping move.`);
         }
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 
     function move() {
         if (isGamePaused || !isGameRunning || !ctx) {
-            console.log("Move skipped: Game paused or context unavailable.");
+            console.log(`Move skipped: Paused: ${isGamePaused}, Running: ${isGameRunning}, Context: ${!!ctx}`);
             return;
         }
 
@@ -1274,6 +1286,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function resetGame() {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        isGameRunning = false; // Explicitly set to false before reset
         if (gameRewards > 0 && account && gameOracleContract) {
             try {
                 showLoading(true);
@@ -1293,10 +1306,11 @@ document.addEventListener("DOMContentLoaded", () => {
         snake = [{ x: 10, y: 10 }];
         direction = "right";
         generateBoxes();
+        updateCanvasSize(); // Reinitialize canvas
+        draw();
+        isGameRunning = true; // Set to true after reset
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
-        draw();
-        isGameRunning = true;
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 
@@ -1388,7 +1402,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
             }
             const rewardWei = ethers.parseUnits(rewardAmount.toString(), 18);
-            const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 300000 });
+            const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 350000 });
             const receipt = await tx.wait();
 
             if (receipt.status === 1) {
@@ -1440,8 +1454,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const pendingRewardsWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
             if (ethers.toBigInt(internalBalance) < ethers.toBigInt(pendingRewardsWei)) {
                 const withdrawalStatus = document.getElementById("withdrawalStatus");
-                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient internal balance in contract.";
-                alert("Insufficient internal balance. Please contact support.");
+                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient internal balance in contract. Please submit rewards first.";
+                alert("Insufficient internal balance. Please ensure rewards are submitted before withdrawal.");
                 return;
             }
 
@@ -1449,11 +1463,11 @@ document.addEventListener("DOMContentLoaded", () => {
             if (ethers.toBigInt(contractBalance) < ethers.toBigInt(pendingRewardsWei)) {
                 const withdrawalStatus = document.getElementById("withdrawalStatus");
                 if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient contract balance.";
-                alert("Insufficient contract balance.");
+                alert("Insufficient contract balance. Please try again later.");
                 return;
             }
 
-            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 300000 });
+            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 350000 });
             const receipt = await tx.wait();
             if (receipt.status === 1) {
                 playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
@@ -1617,7 +1631,6 @@ document.addEventListener("DOMContentLoaded", () => {
             playGameBtn.disabled = true;
             try {
                 showLoading(true);
-                // फुलस्क्रीन वैकल्पिक बनाया गया
                 enterFullscreen();
                 if (!isGameRunning) {
                     await resetGame();
