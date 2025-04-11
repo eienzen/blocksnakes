@@ -1364,7 +1364,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const tx = await contract.claimWelcomeBonus({ gasLimit: 350000 });
+            const tx = await contract.claimWelcomeBonus({ gasLimit: 500000 });
             await tx.wait();
 
             playerData.hasClaimedWelcomeBonus = true;
@@ -1436,7 +1436,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
             }
 
-            const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 350000 });
+            const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 500000 });
             console.log("Transaction sent, hash:", tx.hash);
             const receipt = await tx.wait();
             console.log("Transaction receipt:", receipt);
@@ -1456,9 +1456,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert(`${rewardAmount} BST rewards submitted successfully!`);
             } else {
-                const revertReason = await provider.call(tx, tx.blockNumber - 1); // रिवर्ट कारण
-                console.error("Transaction reverted. Reason:", revertReason);
-                throw new Error("Transaction failed on blockchain. Revert reason: " + revertReason);
+                const revertReason = receipt.revertReason || (await provider.call(tx, tx.blockNumber - 1));
+                console.error("Transaction reverted. Reason:", revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown");
+                throw new Error("Transaction failed on blockchain. Revert reason: " + (revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown"));
             }
         } catch (error) {
             console.error("Error submitting game rewards:", error);
@@ -1506,7 +1506,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 350000 });
+            const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 500000 });
             console.log("Withdrawal transaction sent, hash:", tx.hash);
             const receipt = await tx.wait();
             console.log("Withdrawal transaction receipt:", receipt);
@@ -1521,9 +1521,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert("Rewards withdrawn successfully!");
             } else {
-                const revertReason = await provider.call(tx, tx.blockNumber - 1);
-                console.error("Transaction reverted. Reason:", revertReason);
-                throw new Error("Transaction failed on blockchain. Revert reason: " + revertReason);
+                const revertReason = receipt.revertReason || (await provider.call(tx, tx.blockNumber - 1));
+                console.error("Transaction reverted. Reason:", revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown");
+                throw new Error("Transaction failed on blockchain. Revert reason: " + (revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown"));
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
