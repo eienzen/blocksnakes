@@ -1076,7 +1076,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let direction = "right";
     let boxesEaten = 0;
     let gameRewards = 0;
-    const baseSnakeSpeed = 100; // 100ms प्रति मूव
+    const baseSnakeSpeed = 150; // स्पीड को 150ms प्रति मूव बढ़ाया (धीमा)
     let lastMoveTime = 0;
 
     const eatingSound = document.getElementById("eatingSound");
@@ -1101,22 +1101,15 @@ document.addEventListener("DOMContentLoaded", () => {
         draw();
     }
 
-    async function enterFullscreen() {
-        if (!document.fullscreenEnabled) {
-            alert("Fullscreen is not supported or blocked by your browser.");
-            return;
+    function enterFullscreen() {
+        if (document.fullscreenEnabled && canvas) {
+            canvas.requestFullscreen({ navigationUI: "hide" }).catch(err => {
+                console.warn("Fullscreen not supported or blocked:", err);
+            });
+        } else {
+            console.warn("Fullscreen not supported or canvas unavailable, continuing in normal mode.");
         }
-        if (!canvas) return console.error("Canvas not available for fullscreen!");
-        try {
-            showLoading(true);
-            await canvas.requestFullscreen({ navigationUI: "hide" });
-            updateCanvasSize();
-        } catch (error) {
-            console.error("Fullscreen request failed:", error);
-            alert("Failed to enter fullscreen mode. Please try again.");
-        } finally {
-            showLoading(false);
-        }
+        updateCanvasSize();
     }
 
     function generateBoxes() {
@@ -1199,17 +1192,22 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function gameLoop(currentTime) {
-        if (!isGamePaused && isGameRunning) {
+        if (!isGamePaused && isGameRunning && ctx) {
             if (currentTime - lastMoveTime >= baseSnakeSpeed) {
                 move();
                 lastMoveTime = currentTime;
             }
+        } else {
+            console.log("Game paused or context unavailable, skipping move.");
         }
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 
     function move() {
-        if (isGamePaused || !isGameRunning || !ctx) return console.error("Game paused or context unavailable!");
+        if (isGamePaused || !isGameRunning || !ctx) {
+            console.log("Move skipped: Game paused or context unavailable.");
+            return;
+        }
 
         let head = { x: snake[0].x, y: snake[0].y };
         if (direction === "right") head.x++;
@@ -1218,7 +1216,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === "down") head.y++;
 
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-            gameOverSound.play();
+            if (gameOverSound) gameOverSound.play();
             showGameOverPopup();
             return;
         }
@@ -1385,7 +1383,10 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             showLoading(true);
             const provider = new ethers.BrowserProvider(window.ethereum);
-            await provider.getNetwork();
+            const network = await provider.getNetwork();
+            if (network.chainId !== 97) {
+                await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
+            }
             const rewardWei = ethers.parseUnits(rewardAmount.toString(), 18);
             const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 300000 });
             const receipt = await tx.wait();
@@ -1409,8 +1410,8 @@ document.addEventListener("DOMContentLoaded", () => {
         } catch (error) {
             console.error("Error submitting game rewards:", error);
             const withdrawalStatus = document.getElementById("withdrawalStatus");
-            if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Network issue. Please check connection."}`;
-            alert("Failed to submit rewards: " + (error.message || "Network issue. Please check connection."));
+            if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Network issue or insufficient gas. Please check connection and try again."}`;
+            alert("Failed to submit rewards: " + (error.message || "Network issue or insufficient gas. Please check connection and try again."));
         } finally {
             showLoading(false);
         }
@@ -1616,7 +1617,8 @@ document.addEventListener("DOMContentLoaded", () => {
             playGameBtn.disabled = true;
             try {
                 showLoading(true);
-                await enterFullscreen();
+                // फुलस्क्रीन वैकल्पिक बनाया गया
+                enterFullscreen();
                 if (!isGameRunning) {
                     await resetGame();
                 }
