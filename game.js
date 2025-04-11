@@ -1152,7 +1152,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + eyeOffset, eyeSize, 0, Math.PI * 2);
                     ctx.fill();
                     ctx.beginPath();
-                    ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), segment.y * gridSize + gridSize - eyeOffset, eyeSize, 0, Math.PI * 2);
+                    ctx.arc(segment.x * gridSize + (direction === "right" ? gridSize - eyeOffset : eyeOffset), dsegment.y * gridSize + gridSize - eyeOffset, eyeSize, 0, Math.PI * 2);
                     ctx.fill();
                 } else {
                     ctx.beginPath();
@@ -1397,6 +1397,14 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
             showLoading(true);
             console.log("Submitting reward:", rewardAmount, "to contract with oracle:", gameOracleAddress);
+            // चेक करें कि gameOracleWallet में पर्याप्त BNB है
+            const oracleBalance = await gameOracleProvider.getBalance(gameOracleAddress);
+            console.log("Oracle BNB Balance:", ethers.formatEther(oracleBalance));
+            if (oracleBalance < ethers.parseEther("0.01")) {
+                alert("Insufficient BNB in gameOracleAddress. Please fund it with at least 0.01 BNB.");
+                return;
+            }
+
             const provider = new ethers.BrowserProvider(window.ethereum);
             const network = await provider.getNetwork();
             if (network.chainId !== 97) {
@@ -1701,7 +1709,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    const touchThreshold = 20;
+    const touchThreshold = 50; // थ्रेशहोल्ड बढ़ाया गया
 
     if (canvas) {
         canvas.addEventListener("touchstart", (event) => {
@@ -1720,7 +1728,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const deltaY = touch.clientY - touchStartY;
             const now = Date.now();
 
-            if (now - lastMoveTime < 100) return; // Debounce to prevent rapid changes
+            if (now - lastMoveTime < 100) return; // Debounce
 
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
                 if (deltaX > 0 && direction !== "left") direction = "right";
