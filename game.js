@@ -1128,7 +1128,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Canvas context not available!");
             return;
         }
-        ctx.fillStyle = "rgba(10, 10, 35, 0.8)";
+        ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         const gradient = ctx.createLinearGradient(snake[0].x * gridSize, snake[0].y * gridSize, snake[snake.length - 1].x * gridSize, snake[snake.length - 1].y * gridSize);
@@ -1723,26 +1723,16 @@ document.addEventListener("DOMContentLoaded", () => {
             if (now - lastMoveTime < 100) return; // Debounce to prevent rapid changes
 
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
-                if (deltaX > 0 && direction !== "left") {
-                    direction = "right";
-                    lastMoveTime = now;
-                } else if (deltaX < 0 && direction !== "right") {
-                    direction = "left";
-                    lastMoveTime = now;
-                }
+                if (deltaX > 0 && direction !== "left") direction = "right";
+                else if (deltaX < 0 && direction !== "right") direction = "left";
             } else if (Math.abs(deltaY) > touchThreshold) {
-                if (deltaY > 0 && direction !== "up") {
-                    direction = "down";
-                    lastMoveTime = now;
-                } else if (deltaY < 0 && direction !== "down") {
-                    direction = "up";
-                    lastMoveTime = now;
-                }
+                if (deltaY > 0 && direction !== "up") direction = "down";
+                else if (deltaY < 0 && direction !== "down") direction = "up";
             }
+            lastMoveTime = now;
             console.log("Touch move detected, new direction:", direction);
         });
 
-        // Ensure touchend doesn't interfere
         canvas.addEventListener("touchend", (event) => {
             event.preventDefault();
             console.log("Touch ended, game should continue.");
