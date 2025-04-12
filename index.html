@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org http://localhost:3000; media-src 'self' https://github.com https://raw.githubusercontent.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -21,14 +21,18 @@
             align-items: center;
             overflow-x: hidden;
             min-height: 100vh;
-            touch-action: manipulation;
         }
         #header {
             width: 100%;
             background: linear-gradient(90deg, #2a2a5d, #00ffcc);
             padding: 20px;
             text-align: center;
+            z-index: 1000;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
         }
         #header-banner {
             width: 100%;
@@ -61,7 +65,6 @@
             margin: 20px 0;
             max-width: 90vw;
             max-height: 70vh;
-            touch-action: none;
         }
         #gameInfo, #playerHistory {
             margin-top: 20px;
@@ -72,7 +75,12 @@
             max-width: 600px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        #loadingIndicator, #errorModal {
+        #withdrawalStatus {
+            color: #ff5555;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+        #loadingIndicator {
             position: fixed;
             top: 50%;
             left: 50%;
@@ -83,11 +91,6 @@
             border-radius: 10px;
             display: none;
             z-index: 2000;
-            text-align: center;
-        }
-        #errorModal button {
-            background: #ff5555;
-            margin-top: 10px;
         }
         button {
             padding: 10px 20px;
@@ -106,22 +109,6 @@
         button:disabled {
             background-color: #666;
             cursor: not-allowed;
-        }
-        .tooltip {
-            position: relative;
-        }
-        .tooltip:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            background: #333;
-            color: #fff;
-            padding: 5px;
-            border-radius: 3px;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            white-space: nowrap;
-            z-index: 10;
         }
         ul {
             list-style-type: none;
@@ -150,6 +137,8 @@
             z-index: 2000;
             text-align: center;
             max-width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         #gameOverPopup h2 {
             margin: 0 0 10px;
@@ -159,8 +148,16 @@
             margin: 5px 0;
         }
         #closePopup {
-            background: #ff5555;
-            padding: 5px 10px;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            line-height: 1;
         }
         @media (orientation: portrait) {
             canvas { max-height: 60vh; }
@@ -178,16 +175,15 @@
         <div>
             <h1>BlockSnakes: Play and Earn BST Token</h1>
             <p id="walletAddress"></p>
-            <p id="walletBalance" class="tooltip" data-tooltip="BST tokens in your wallet">Wallet Balance: 0 BST</p>
+            <p id="walletBalance">Wallet Balance: 0 BST</p>
         </div>
     </div>
     <div id="content">
         <div id="gameInfo">
             <h2>Game Info</h2>
             <p id="boxesEaten">Boxes Eaten: 0</p>
-            <p id="pendingRewards" class="tooltip" data-tooltip="Rewards earned but not yet withdrawn">Pending Rewards: 0 BST</p>
+            <p id="pendingRewards">Pending Rewards: 0 BST</p>
             <button id="playGame">Play Game</button>
-            <button id="pauseGame" style="display: none;">Pause Game</button>
             <button id="connectWallet">Connect Wallet</button>
             <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
         </div>
@@ -198,10 +194,11 @@
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
             <p id="referralRewards">Referral Rewards: 0 BST</p>
-            <p id="pendingRewardsText" class="tooltip" data-tooltip="Rewards ready to withdraw">Pending Rewards: 0 BST</p>
-            <button id="claimGameRewards">Withdraw Rewards</button>
+            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
+            <button id="claimGameRewards">Claim Rewards</button>
             <button id="welcomeBonusButton">Claim Welcome Bonus</button>
             <button id="getReferralLink">Get Referral Link</button>
+            <p id="withdrawalStatus"></p>
             <h3>Reward History</h3>
             <ul id="rewardHistoryList"></ul>
         </div>
@@ -210,13 +207,9 @@
         <h2>Game Over!</h2>
         <p id="finalBoxesEaten">Boxes Eaten: 0</p>
         <p id="finalRewards">Earned BST: 0 BST</p>
-        <button id="closePopup">Close</button>
+        <button id="closePopup">X</button>
     </div>
     <div id="loadingIndicator">Loading...</div>
-    <div id="errorModal">
-        <p id="errorMessage"></p>
-        <button id="closeError">OK</button>
-    </div>
     <audio id="eatingSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/eating-sound-effect-36186.mp3"></audio>
     <audio id="gameOverSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/game-over-arcade-6435.mp3"></audio>
     <audio id="victorySound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/victory-sound-101319.mp3"></audio>
