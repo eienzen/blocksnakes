@@ -1,97 +1,98 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockSnakes Whitepaper</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com;">
+    <title>BlockSnakes - श्वेत पत्र</title>
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico">
     <style>
         body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            color: #e0e0e0;
             margin: 0;
             padding: 0;
+            background-color: #1a1a3d;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        header {
-            background: rgba(0, 0, 0, 0.8);
+        #header {
+            width: 100%;
+            background: linear-gradient(90deg, #2a2a5d, #00ffcc);
             padding: 20px;
             text-align: center;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
         }
-        header h1 {
+        #header-logo {
+            width: 120px;
+            height: 60px;
+            margin-right: 15px;
+        }
+        #header-banner {
+            width: 100%;
+            max-height: 150px;
+            object-fit: cover;
+            margin-bottom: 10px;
+        }
+        #header h1 {
             margin: 0;
-            font-size: 2.5rem;
+            font-size: 36px;
+            font-weight: bold;
+            color: #fff;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
         }
-        nav {
-            background: rgba(0, 0, 0, 0.8);
-            padding: 15px;
-            text-align: center;
-        }
-        nav a {
-            color: #00ff88;
-            margin: 0 20px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-        nav a:hover {
-            color: #ff00ff;
-        }
-        section {
-            padding: 40px;
+        #content {
+            margin-top: 20px;
+            width: 80%;
             max-width: 800px;
-            margin: 0 auto;
+            padding: 20px;
+            background-color: #2a2a5d;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
         h2 {
-            color: #00ff88;
-            font-size: 2rem;
-            margin-bottom: 20px;
+            color: #00ffcc;
         }
         p {
             line-height: 1.6;
-            font-size: 1.1rem;
+        }
+        ul {
+            list-style-type: disc;
+            padding-left: 20px;
         }
     </style>
 </head>
 <body>
-    <header>
-        <h1>BlockSnakes Whitepaper</h1>
-    </header>
-    <nav>
-        <a href="index.html">Home</a>
-        <a href="index.html#game">Play Game</a>
-        <a href="index.html#how-to-play">How to Play</a>
-        <a href="index.html#roadmap">Roadmap</a>
-        <a href="#whitepaper">Whitepaper</a>
-    </nav>
+    <div id="header">
+        <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/banner.jpg" alt="Banner" id="header-banner">
+        <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/logo.png" alt="BlockSnakes Logo" id="header-logo">
+        <div>
+            <h1>BlockSnakes - श्वेत पत्र</h1>
+        </div>
+    </div>
+    <div id="content">
+        <h2>परिचय</h2>
+        <p>BlockSnakes एक ब्लॉकचेन-आधारित गेम है जो खिलाड़ियों को BST टोकन अर्जित करने का अवसर प्रदान करता है। यह गेम BNB स्मार्ट चेन टेस्टनेट पर चलता है और खिलाड़ियों को मनोरंजन के साथ-साथ वास्तविक क्रिप्टोकरेंसी कमाने का मौका देता है।</p>
 
-    <section>
-        <h2>Introduction</h2>
-        <p>BlockSnakes is a blockchain-based 3D snake game where players can play, earn, and stake BST tokens. Built on the Binance Smart Chain (BSC), BlockSnakes combines the classic snake game with Web3 technology to create a play-to-earn (P2E) ecosystem.</p>
-    </section>
+        <h2>प्रमुख विशेषताएं</h2>
+        <ul>
+            <li><strong>गेमप्ले:</strong> सांप और बॉक्स गेम, जहां बॉक्स खाने से BST टोकन मिलते हैं।</li>
+            <li><strong>स्वागत बोनस:</strong> नए खिलाड़ियों को 100 BST का स्वागत बोनस।</li>
+            <li><strong>रेफरल कमीशन:</strong> 1% कमीशन दोस्तों को रेफर करने पर।</li>
+            <li><strong>निकासी:</strong> कमाए गए टोकन को वॉलेट में निकालने की सुविधा।</li>
+        </ul>
 
-    <section>
-        <h2>Tokenomics</h2>
-        <p>The BST token is the core of the BlockSnakes ecosystem. Players earn 10 BST tokens for completing each level. They can stake these tokens to earn rewards or unstake them anytime. Total supply: 1,000,000 BST. Token launch date: 1st May 2025.</p>
-    </section>
+        <h2>टोकन अर्थव्यवस्था</h2>
+        <p>BST टोकन गेम के भीतर पुरस्कार के रूप में वितरित किए जाते हैं। कुल 1 मिलियन BST टोकन शुरू में कॉन्ट्रैक्ट में मिंट किए जाते हैं, और मालिक द्वारा अतिरिक्त टोकन मिंट या बर्न किए जा सकते हैं।</p>
 
-    <section>
-        <h2>Game Mechanics</h2>
-        <p>Players control a snake in a 3D environment, collecting food to grow and earn points. Reach a score of 100 to complete a level and earn 10 BST tokens. Use the "Next Level" button to increase difficulty and continue earning rewards.</p>
-    </section>
-
-    <section>
-        <h2>Roadmap</h2>
-        <p>
-            - Q1 2025: Testnet deployment and initial testing.<br>
-            - Q2 2025: Mainnet launch and token sale on 1st May 2025.<br>
-            - Q3 2025: Listing on PancakeSwap and adding multiplayer mode.<br>
-            - Q4 2025: NFT integration for unique snake skins.
-        </p>
-    </section>
-
-    <section>
-        <h2>Team</h2>
-        <p>The BlockSnakes team consists of passionate developers and blockchain enthusiasts dedicated to building a fun and rewarding gaming experience.</p>
-    </section>
+        <h2>भविष्य की योजनाएं</h2>
+        <p>हम BlockSnakes को और बेहतर बनाने की योजना बना रहे हैं, जिसमें नई सुविधाएं और पुरस्कार शामिल होंगे।</p>
+    </div>
 </body>
 </html>
