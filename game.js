@@ -21,112 +21,64 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x97af71Ceb9539963db44B3a4De7AD1D91b36F294"; // नया कॉन्ट्रैक्ट पता
+    const contractAddress = "0x97af71Ceb9539963db44B3a4De7AD1D91b36F294";
     const contractABI = [
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "spender",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "allowance",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "needed",
-                    "type": "uint256"
-                }
+                {"internalType": "address", "name": "spender", "type": "address"},
+                {"internalType": "uint256", "name": "allowance", "type": "uint256"},
+                {"internalType": "uint256", "name": "needed", "type": "uint256"}
             ],
             "name": "ERC20InsufficientAllowance",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "sender",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "balance",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "needed",
-                    "type": "uint256"
-                }
+                {"internalType": "address", "name": "sender", "type": "address"},
+                {"internalType": "uint256", "name": "balance", "type": "uint256"},
+                {"internalType": "uint256", "name": "needed", "type": "uint256"}
             ],
             "name": "ERC20InsufficientBalance",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "approver",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "approver", "type": "address"}
             ],
             "name": "ERC20InvalidApprover",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "receiver",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "receiver", "type": "address"}
             ],
             "name": "ERC20InvalidReceiver",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "sender",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "sender", "type": "address"}
             ],
             "name": "ERC20InvalidSender",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "spender",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "spender", "type": "address"}
             ],
             "name": "ERC20InvalidSpender",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "owner", "type": "address"}
             ],
             "name": "OwnableInvalidOwner",
             "type": "error"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "account",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "account", "type": "address"}
             ],
             "name": "OwnableUnauthorizedAccount",
             "type": "error"
@@ -134,24 +86,9 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "spender",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                }
+                {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
+                {"indexed": true, "internalType": "address", "name": "spender", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}
             ],
             "name": "Approval",
             "type": "event"
@@ -159,18 +96,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "string",
-                    "name": "reason",
-                    "type": "string"
-                }
+                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
+                {"indexed": false, "internalType": "string", "name": "reason", "type": "string"}
             ],
             "name": "ErrorEvent",
             "type": "event"
@@ -178,18 +105,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "oldOracle",
-                    "type": "address"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "newOracle",
-                    "type": "address"
-                }
+                {"indexed": true, "internalType": "address", "name": "oldOracle", "type": "address"},
+                {"indexed": true, "internalType": "address", "name": "newOracle", "type": "address"}
             ],
             "name": "GameOracleUpdated",
             "type": "event"
@@ -197,12 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "newLimit",
-                    "type": "uint256"
-                }
+                {"indexed": false, "internalType": "uint256", "name": "newLimit", "type": "uint256"}
             ],
             "name": "MaxWithdrawalLimitUpdated",
             "type": "event"
@@ -210,18 +122,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "oldWallet",
-                    "type": "address"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "newWallet",
-                    "type": "address"
-                }
+                {"indexed": true, "internalType": "address", "name": "oldWallet", "type": "address"},
+                {"indexed": true, "internalType": "address", "name": "newWallet", "type": "address"}
             ],
             "name": "OwnerWalletUpdated",
             "type": "event"
@@ -229,18 +131,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "previousOwner",
-                    "type": "address"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "newOwner",
-                    "type": "address"
-                }
+                {"indexed": true, "internalType": "address", "name": "previousOwner", "type": "address"},
+                {"indexed": true, "internalType": "address", "name": "newOwner", "type": "address"}
             ],
             "name": "OwnershipTransferred",
             "type": "event"
@@ -248,18 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "referrer",
-                    "type": "address"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "referee",
-                    "type": "address"
-                }
+                {"indexed": true, "internalType": "address", "name": "referrer", "type": "address"},
+                {"indexed": true, "internalType": "address", "name": "referee", "type": "address"}
             ],
             "name": "ReferralAdded",
             "type": "event"
@@ -267,30 +149,10 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "totalReward",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "referrer",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "referrerReward",
-                    "type": "uint256"
-                }
+                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "totalReward", "type": "uint256"},
+                {"indexed": true, "internalType": "address", "name": "referrer", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "referrerReward", "type": "uint256"}
             ],
             "name": "RewardsClaimed",
             "type": "event"
@@ -298,18 +160,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                }
+                {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
             ],
             "name": "TokensBurned",
             "type": "event"
@@ -317,30 +169,10 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "totalAmount",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "ownerAmount",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "contractAmount",
-                    "type": "uint256"
-                }
+                {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "totalAmount", "type": "uint256"},
+                {"indexed": false, "internalType": "uint256", "name": "ownerAmount", "type": "uint256"},
+                {"indexed": false, "internalType": "uint256", "name": "contractAmount", "type": "uint256"}
             ],
             "name": "TokensMinted",
             "type": "event"
@@ -348,30 +180,10 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "fee",
-                    "type": "uint256"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "bool",
-                    "name": "success",
-                    "type": "bool"
-                }
+                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
+                {"indexed": false, "internalType": "uint256", "name": "fee", "type": "uint256"},
+                {"indexed": false, "internalType": "bool", "name": "success", "type": "bool"}
             ],
             "name": "TokensWithdrawn",
             "type": "event"
@@ -379,24 +191,9 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "from",
-                    "type": "address"
-                },
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "to",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                }
+                {"indexed": true, "internalType": "address", "name": "from", "type": "address"},
+                {"indexed": true, "internalType": "address", "name": "to", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}
             ],
             "name": "Transfer",
             "type": "event"
@@ -404,18 +201,8 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": true,
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                },
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                }
+                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
+                {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
             ],
             "name": "WelcomeBonusClaimed",
             "type": "event"
@@ -423,47 +210,24 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "anonymous": false,
             "inputs": [
-                {
-                    "indexed": false,
-                    "internalType": "uint256",
-                    "name": "newFeeInBnbWei",
-                    "type": "uint256"
-                }
+                {"indexed": false, "internalType": "uint256", "name": "newFeeInBnbWei", "type": "uint256"}
             ],
             "name": "WithdrawalFeeUpdated",
             "type": "event"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "spender",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                }
+                {"internalType": "address", "name": "spender", "type": "address"},
+                {"internalType": "uint256", "name": "value", "type": "uint256"}
             ],
             "name": "approve",
-            "outputs": [
-                {
-                    "internalType": "bool",
-                    "name": "",
-                    "type": "bool"
-                }
-            ],
+            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
             "stateMutability": "nonpayable",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "amount", "type": "uint256"}
             ],
             "name": "burnTokens",
             "outputs": [],
@@ -472,21 +236,9 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "totalReward",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                },
-                {
-                    "internalType": "address",
-                    "name": "referrer",
-                    "type": "address"
-                }
+                {"internalType": "uint256", "name": "totalReward", "type": "uint256"},
+                {"internalType": "address", "name": "player", "type": "address"},
+                {"internalType": "address", "name": "referrer", "type": "address"}
             ],
             "name": "claimAllRewards",
             "outputs": [],
@@ -502,11 +254,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "amount", "type": "uint256"}
             ],
             "name": "mintTokens",
             "outputs": [],
@@ -522,64 +270,28 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "to",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                }
+                {"internalType": "address", "name": "to", "type": "address"},
+                {"internalType": "uint256", "name": "value", "type": "uint256"}
             ],
             "name": "transfer",
-            "outputs": [
-                {
-                    "internalType": "bool",
-                    "name": "",
-                    "type": "bool"
-                }
-            ],
+            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
             "stateMutability": "nonpayable",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "from",
-                    "type": "address"
-                },
-                {
-                    "internalType": "address",
-                    "name": "to",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "value",
-                    "type": "uint256"
-                }
+                {"internalType": "address", "name": "from", "type": "address"},
+                {"internalType": "address", "name": "to", "type": "address"},
+                {"internalType": "uint256", "name": "value", "type": "uint256"}
             ],
             "name": "transferFrom",
-            "outputs": [
-                {
-                    "internalType": "bool",
-                    "name": "",
-                    "type": "bool"
-                }
-            ],
+            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
             "stateMutability": "nonpayable",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "newOwner",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "newOwner", "type": "address"}
             ],
             "name": "transferOwnership",
             "outputs": [],
@@ -592,11 +304,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "_newOracle",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "_newOracle", "type": "address"}
             ],
             "name": "updateGameOracle",
             "outputs": [],
@@ -605,11 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "_newLimit",
-                    "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "_newLimit", "type": "uint256"}
             ],
             "name": "updateMaxWithdrawalLimit",
             "outputs": [],
@@ -618,11 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "_newWallet",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "_newWallet", "type": "address"}
             ],
             "name": "updateOwnerWallet",
             "outputs": [],
@@ -631,11 +331,7 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "_newFeeInBnbWei",
-                    "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "_newFeeInBnbWei", "type": "uint256"}
             ],
             "name": "updateWithdrawalFee",
             "outputs": [],
@@ -651,148 +347,72 @@ document.addEventListener("DOMContentLoaded", () => {
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "_gameOracle",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "_gameOracle", "type": "address"}
             ],
             "stateMutability": "nonpayable",
             "type": "constructor"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "owner",
-                    "type": "address"
-                },
-                {
-                    "internalType": "address",
-                    "name": "spender",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "owner", "type": "address"},
+                {"internalType": "address", "name": "spender", "type": "address"}
             ],
             "name": "allowance",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "account",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "account", "type": "address"}
             ],
             "name": "balanceOf",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "contractBalance",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "decimals",
-            "outputs": [
-                {
-                    "internalType": "uint8",
-                    "name": "",
-                    "type": "uint8"
-                }
-            ],
+            "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "gameOracle",
-            "outputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
+            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "player", "type": "address"}
             ],
             "name": "getInternalBalance",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "player",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "player", "type": "address"}
             ],
             "name": "getRewardHistory",
             "outputs": [
                 {
                     "components": [
-                        {
-                            "internalType": "uint256",
-                            "name": "amount",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "uint256",
-                            "name": "timestamp",
-                            "type": "uint256"
-                        },
-                        {
-                            "internalType": "string",
-                            "name": "rewardType",
-                            "type": "string"
-                        },
-                        {
-                            "internalType": "address",
-                            "name": "referee",
-                            "type": "address"
-                        }
+                        {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                        {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+                        {"internalType": "string", "name": "rewardType", "type": "string"},
+                        {"internalType": "address", "name": "referee", "type": "address"}
                     ],
                     "internalType": "struct BlockSnakesGame.Reward[]",
                     "name": "",
@@ -805,108 +425,50 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "inputs": [],
             "name": "maxWithdrawalLimit",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "MINIMUM_WITHDRAWAL",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "name",
-            "outputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
+            "outputs": [{"internalType": "string", "name": "", "type": "string"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "owner",
-            "outputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
+            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "ownerWallet",
-            "outputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
+            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "", "type": "address"}
             ],
             "name": "playerHistory",
             "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "gamesPlayed",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "totalRewards",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "totalReferrals",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "referralRewards",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "bool",
-                    "name": "hasClaimedWelcomeBonus",
-                    "type": "bool"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "internalBalance",
-                    "type": "uint256"
-                }
+                {"internalType": "uint256", "name": "gamesPlayed", "type": "uint256"},
+                {"internalType": "uint256", "name": "totalRewards", "type": "uint256"},
+                {"internalType": "uint256", "name": "totalReferrals", "type": "uint256"},
+                {"internalType": "uint256", "name": "referralRewards", "type": "uint256"},
+                {"internalType": "bool", "name": "hasClaimedWelcomeBonus", "type": "bool"},
+                {"internalType": "uint256", "name": "internalBalance", "type": "uint256"}
             ],
             "stateMutability": "view",
             "type": "function"
@@ -914,70 +476,30 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "inputs": [],
             "name": "REFERRAL_COMMISSION_RATE",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
+                {"internalType": "address", "name": "", "type": "address"}
             ],
             "name": "referrals",
-            "outputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                }
-            ],
+            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [
-                {
-                    "internalType": "address",
-                    "name": "",
-                    "type": "address"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
+                {"internalType": "address", "name": "", "type": "address"},
+                {"internalType": "uint256", "name": "", "type": "uint256"}
             ],
             "name": "rewardHistory",
             "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "amount",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "uint256",
-                    "name": "timestamp",
-                    "type": "uint256"
-                },
-                {
-                    "internalType": "string",
-                    "name": "rewardType",
-                    "type": "string"
-                },
-                {
-                    "internalType": "address",
-                    "name": "referee",
-                    "type": "address"
-                }
+                {"internalType": "uint256", "name": "amount", "type": "uint256"},
+                {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
+                {"internalType": "string", "name": "rewardType", "type": "string"},
+                {"internalType": "address", "name": "referee", "type": "address"}
             ],
             "stateMutability": "view",
             "type": "function"
@@ -985,52 +507,28 @@ document.addEventListener("DOMContentLoaded", () => {
         {
             "inputs": [],
             "name": "symbol",
-            "outputs": [
-                {
-                    "internalType": "string",
-                    "name": "",
-                    "type": "string"
-                }
-            ],
+            "outputs": [{"internalType": "string", "name": "", "type": "string"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "totalSupply",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "WELCOME_BONUS",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         },
         {
             "inputs": [],
             "name": "withdrawalFeeInBnb",
-            "outputs": [
-                {
-                    "internalType": "uint256",
-                    "name": "",
-                    "type": "uint256"
-                }
-            ],
+            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
             "stateMutability": "view",
             "type": "function"
         }
@@ -1040,20 +538,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let gameOracleProvider;
     try {
-        // प्राथमिक JSON-RPC URL (वेबसॉकेट के बजाय)
         gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to primary JSON-RPC provider.");
     } catch (error) {
         console.error("Failed to connect to primary JSON-RPC URL:", error);
         try {
-            // बैकअप वेबसॉकेट URL
-            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
-            console.log("Connected to backup WebSocket provider.");
-        } catch (backupError) {
-            console.error("Failed to connect to backup WebSocket URL:", backupError);
-            // दूसरा बैकअप JSON-RPC URL
             gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
-            console.log("Fallback to secondary JSON-RPC provider.");
+            console.log("Connected to secondary JSON-RPC provider.");
+        } catch (backupError) {
+            console.error("Failed to connect to backup JSON-RPC URL:", backupError);
+            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+            console.log("Fallback to WebSocket provider.");
         }
     }
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
@@ -1094,9 +589,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function enterFullscreen() {
         if (document.fullscreenEnabled && canvas) {
-            canvas.requestFullscreen().catch(err => console.warn("Fullscreen failed:", err));
+            canvas.requestFullscreen().catch(err => {
+                console.warn("Fullscreen failed, continuing without fullscreen:", err);
+                updateCanvasSize();
+            });
+        } else {
+            updateCanvasSize();
         }
-        updateCanvasSize();
     }
 
     function generateBoxes() {
@@ -1116,15 +615,11 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // स्नेक ड्रा करें
         snake.forEach((segment, index) => {
-            // सिर के लिए अलग रंग (पीला) और बॉडी के लिए बैंगनी
-            ctx.fillStyle = index === 0 ? "#ffd700" : "#800080"; // सिर पीला, बॉडी बैंगनी
+            ctx.fillStyle = index === 0 ? "#ffd700" : "#800080";
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
 
-            // सिर पर आँखें जोड़ें (केवल सिर के लिए)
             if (index === 0) {
-                // बाईं आँख
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
                 ctx.fillStyle = "white";
@@ -1134,7 +629,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.fillStyle = "black";
                 ctx.fill();
 
-                // दाईं आँख
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
                 ctx.fillStyle = "white";
@@ -1146,7 +640,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
 
-        // बॉक्सेस ड्रा करें
         boxes.forEach(box => {
             ctx.fillStyle = "#ff5555";
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
@@ -1218,7 +711,7 @@ document.addEventListener("DOMContentLoaded", () => {
         isGameRunning = false;
         document.getElementById("closePopup").onclick = () => {
             popup.style.display = "none";
-            resetGame().catch(err => console.error("Error resetting game:", err));
+            // गेम रीसेट नहीं, सिर्फ पॉपअप बंद करें
         };
     }
 
@@ -1226,9 +719,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
         isGameRunning = false;
         console.log("Resetting game...");
-        showLoading(true); // लोडिंग शुरू करें
+        showLoading(true);
 
-        // रिवॉर्ड सबमिशन केवल तभी करें जब कनेक्शन उपलब्ध हो
         if (gameRewards > 0 && account && gameOracleContract) {
             try {
                 await submitGameReward(gameRewards);
@@ -1239,7 +731,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // गेम स्टेट रीसेट
         playerData.gamesPlayed += 1;
         boxesEaten = 0;
         gameRewards = 0;
@@ -1248,11 +739,7 @@ document.addEventListener("DOMContentLoaded", () => {
         generateBoxes();
         updateCanvasSize();
         draw();
-
-        // गेम शुरू करें
-        isGameRunning = true;
-        animationFrameId = requestAnimationFrame(gameLoop); // गेम लूप तुरंत शुरू करें
-        showLoading(false); // लोडिंग बंद करें
+        showLoading(false);
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
@@ -1311,13 +798,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function claimWelcomeBonus() {
-        if (!contract || !account || playerData.hasClaimedWelcomeBonus) return alert("Bonus already claimed or connect wallet!");
+        if (!contract || !account || playerData.hasClaimedWelcomeBonus) {
+            alert("Bonus already claimed or connect wallet!");
+            return;
+        }
         try {
             showLoading(true);
             const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
             if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
+                return;
+            }
+            // कॉन्ट्रैक्ट से वेलकम बोनस की शर्तें चेक करें
+            const hasClaimed = await contract.playerHistory(account).then(history => history.hasClaimedWelcomeBonus);
+            if (hasClaimed) {
+                alert("Welcome bonus already claimed!");
+                playerData.hasClaimedWelcomeBonus = true;
                 return;
             }
             const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 500000 });
@@ -1330,7 +827,11 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Welcome bonus of 100 BST claimed!");
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
-            alert("Failed to claim bonus: " + error.message);
+            if (error.reason) {
+                alert(`Failed to claim bonus: ${error.reason}`);
+            } else {
+                alert("Failed to claim bonus: Transaction reverted. Check console for details.");
+            }
         } finally {
             showLoading(false);
         }
@@ -1352,6 +853,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "block";
             document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
+            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await provider.getBalance(account), 18)).toFixed(2)} BNB`;
             alert("Wallet connected!");
         } catch (error) {
             console.error("Wallet error:", error);
@@ -1367,6 +869,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("connectWallet").style.display = "block";
         document.getElementById("disconnectWallet").style.display = "none";
         document.getElementById("walletAddress").textContent = "";
+        document.getElementById("walletBalance").textContent = "";
         updatePlayerHistoryUI();
         alert("Wallet disconnected!");
     }
@@ -1406,20 +909,20 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
     }
 
-    // बटन इवेंट्स
     document.getElementById("playGame").addEventListener("click", async () => {
         if (!account) return alert("Connect wallet!");
         showLoading(true);
         enterFullscreen();
-        await resetGame().catch(err => console.error("Error resetting game:", err));
-        showLoading(false); // लोडिंग सुनिश्चित करें कि बंद हो
+        await resetGame();
+        isGameRunning = true;
+        animationFrameId = requestAnimationFrame(gameLoop);
+        showLoading(false);
     });
     document.getElementById("connectWallet").addEventListener("click", connectWallet);
     document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
     document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
 
-    // कंट्रोल
     document.addEventListener("keydown", (event) => {
         if (isGameRunning) {
             if (event.key === "ArrowUp" && direction !== "down") direction = "up";
@@ -1453,6 +956,5 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCanvasSize();
     generateBoxes();
     draw();
-    animationFrameId = requestAnimationFrame(gameLoop);
     updatePlayerHistoryUI();
 });
