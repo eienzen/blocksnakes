@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const contractAddress = "0x97af71Ceb9539963db44B3a4De7AD1D91b36F294";
     const contractABI = [
+        // [
 	{
 		"inputs": [
 			{
@@ -1161,7 +1162,7 @@ document.addEventListener("DOMContentLoaded", () => {
         animationFrameId = requestAnimationFrame(gameLoop);
     }
 
-    function move() {
+    async function move() {
         if (!isGameRunning || !ctx) return;
 
         let head = { x: snake[0].x, y: snake[0].y };
@@ -1170,8 +1171,11 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === "up") head.y--;
         if (direction === "down") head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y && segment !== head)) {
             gameOverSound.play();
+            if (gameRewards > 0 && account && gameOracleContract) {
+                await submitGameReward(gameRewards);
+            }
             showGameOverPopup();
             return;
         }
