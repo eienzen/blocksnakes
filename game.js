@@ -1113,11 +1113,37 @@ document.addEventListener("DOMContentLoaded", () => {
         ctx.fillStyle = "#0a0a23";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+        // स्नेक ड्रा करें
         snake.forEach((segment, index) => {
-            ctx.fillStyle = index === 0 ? "#00ffcc" : "#00ccaa";
+            // सिर के लिए अलग रंग (पीला) और बॉडी के लिए बैंगनी
+            ctx.fillStyle = index === 0 ? "#ffd700" : "#800080"; // सिर पीला, बॉडी बैंगनी
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+
+            // सिर पर आँखें जोड़ें (केवल सिर के लिए)
+            if (index === 0) {
+                // बाईं आँख
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
+                ctx.fillStyle = "white";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.05, 0, Math.PI * 2);
+                ctx.fillStyle = "black";
+                ctx.fill();
+
+                // दाईं आँख
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
+                ctx.fillStyle = "white";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.05, 0, Math.PI * 2);
+                ctx.fillStyle = "black";
+                ctx.fill();
+            }
         });
 
+        // बॉक्सेस ड्रा करें
         boxes.forEach(box => {
             ctx.fillStyle = "#ff5555";
             ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
@@ -1203,7 +1229,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 await submitGameReward(gameRewards);
                 await loadPlayerHistory();
             } catch (error) {
-                console.error("Failed to submit rewards:", error);
+                console.error("Error resetting game:", error);
                 document.getElementById("withdrawalStatus").textContent = `Error: ${error.message}`;
             } finally {
                 showLoading(false);
@@ -1217,8 +1243,8 @@ document.addEventListener("DOMContentLoaded", () => {
         generateBoxes();
         updateCanvasSize();
         draw();
-        isGameRunning = true;
-        animationFrameId = requestAnimationFrame(gameLoop);
+        isGameRunning = true; // गेम शुरू करने के लिए सही सेट
+        animationFrameId = requestAnimationFrame(gameLoop); // गेम लूप शुरू करें
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
