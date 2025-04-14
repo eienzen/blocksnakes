@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0, totalRewards: 0, boxesEaten: 0, pendingRewards: 0,
         totalReferrals: 0, referralRewards: 0, pendingReferral: null,
         pendingReferrerReward: 0, rewardHistory: [], hasClaimedWelcomeBonus: false,
-        walletBalance: 0, walletAddress: null
+        walletBalance: 0, walletAddress: null,
+        isRewardSubmitted: false // नया फ्लैग
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -23,7 +24,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const contractAddress = "0x780b1C8cd6B68B0d51F541D6CA93232c1B4bE37f";
     const contractABI = [
-        // [आपका पूरा contractABI यहाँ कॉपी किया गया है, इसे हटाया नहीं गया]
         {
             "inputs": [
                 {"internalType": "address", "name": "spender", "type": "address"},
@@ -481,7 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
             "inputs": [],
             "name": "ownerWallet",
             "outputs": [
-                {"internalType": "address", "name": "", "type": "uint256"}
+                {"internalType": "address", "name": "", "type": "address"}
             ],
             "stateMutability": "view",
             "type": "function"
@@ -706,8 +706,9 @@ document.addEventListener("DOMContentLoaded", () => {
         // केवल दीवार से टकराने पर गेम ओवर
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             gameOverSound.play();
-            if (gameRewards > 0 && account && gameOracleContract) {
+            if (gameRewards > 0 && account && gameOracleContract && !playerData.isRewardSubmitted) {
                 await submitGameReward(gameRewards);
+                playerData.isRewardSubmitted = true; // फ्लैग सेट करें ताकि दोबारा सबमिट न हो
             }
             showGameOverPopup();
             return;
@@ -764,6 +765,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
         direction = "right";
+        playerData.isRewardSubmitted = false; // फ्लैग रीसेट करें
         generateBoxes();
         updateCanvasSize();
         draw();
@@ -773,21 +775,21 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function submitGameReward(rewardAmount) {
-        if (!account || !gameOracleContract) return;
+        if (!account || !gameOracleContract || playerData.isRewardSubmitted) return;
         try {
             showLoading(true);
-            // Ethers.js v6 के लिए गैस सेटिंग्स, getGasPrice को हटाकर डिफॉल्ट का उपयोग
             const tx = await gameOracleContract.claimAllRewards(
                 ethers.parseUnits(rewardAmount.toString(), 18),
                 account,
                 playerData.pendingReferral || ethers.ZeroAddress,
-                { gasLimit: 300000 } // गैस प्राइस को डायनामिक नहीं, डिफॉल्ट पर छोड़ दें
+                { gasLimit: 300000 } // डायनामिक गैस सेटिंग्स को हटाया
             );
             const receipt = await tx.wait();
             playerData.totalRewards += rewardAmount;
             playerData.pendingRewards += rewardAmount;
             playerData.pendingReferral = null;
             gameRewards = 0;
+            playerData.isRewardSubmitted = true; // ट्रांजैक्शन सफल होने पर फ्लैग सेट करें
             await loadPlayerHistory();
             updatePlayerHistoryUI();
             alert(`${rewardAmount} BST rewards submitted!`);
@@ -795,6 +797,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error submitting rewards:", error);
             document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
             alert("Failed to submit rewards: " + (error.message || error.toString()));
+            playerData.isRewardSubmitted = false; // त्रुटि पर फ्लैग रीसेट करें
         } finally {
             showLoading(false);
         }
@@ -842,6 +845,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const balance = await provider.getBalance(account);
             if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
+                return;
+            }
+            const hasClaimed = await contract.playerHistory(account).then(history => history.hasClaimedWelcomeBonus);
+            if (hasClaimed) {
+                alert("Welcome bonus already claimed!");
+                playerData.hasClaimedWelcomeBonus = true;
                 return;
             }
             const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
