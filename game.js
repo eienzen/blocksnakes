@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0xeaE84F45A984e7F739dE1A7d3561BFc0a97f2832";
+    const contractAddress = "0x97af71Ceb9539963db44B3a4De7AD1D91b36F294";
     const contractABI = [
 	{
 		"inputs": [
@@ -1043,7 +1043,7 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	}
 ];
-    const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032"; // सही पता पुनःस्थापित
+    const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
     const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
 
     let gameOracleProvider;
@@ -1065,7 +1065,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
 
     const canvas = document.getElementById("gameCanvas");
-    if (!canvas) console.error("Canvas element not found!");
     const ctx = canvas ? canvas.getContext("2d") : null;
     const gridWidth = 30;
     const gridHeight = 20;
@@ -1085,7 +1084,6 @@ document.addEventListener("DOMContentLoaded", () => {
     function showLoading(show) {
         const loadingIndicator = document.getElementById("loadingIndicator");
         if (loadingIndicator) loadingIndicator.style.display = show ? "block" : "none";
-        else console.error("Loading indicator not found!");
     }
 
     function updateCanvasSize() {
@@ -1105,8 +1103,6 @@ document.addEventListener("DOMContentLoaded", () => {
             canvas.requestFullscreen({ navigationUI: "hide" }).catch(err => {
                 console.warn("Fullscreen not supported or blocked:", err);
             });
-        } else {
-            console.warn("Fullscreen not supported or canvas unavailable, continuing in normal mode.");
         }
         updateCanvasSize();
     }
@@ -1194,17 +1190,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function gameLoop(currentTime) {
-        console.log(`Game state - Running: ${isGameRunning}, Skipping move: ${!isGameRunning}`);
-        if (isGameRunning) {
-            if (!ctx) {
-                console.error("Canvas context lost, attempting to reinitialize...");
-                const newCanvas = document.getElementById("gameCanvas");
-                if (newCanvas) ctx = newCanvas.getContext("2d");
-                if (!ctx) {
-                    console.error("Failed to reinitialize canvas context, skipping move.");
-                    return;
-                }
-            }
+        console.log(`Game state - Running: ${isGameRunning}, Skipping move: ${!isGameRunning || !ctx}`);
+        if (isGameRunning && ctx) {
             if (currentTime - lastMoveTime >= baseSnakeSpeed) {
                 move();
                 lastMoveTime = currentTime;
@@ -1272,13 +1259,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (closeBtn) {
             closeBtn.onclick = () => {
                 popup.style.display = "none";
-                resetGame().catch(err => {
-                    console.error("Error resetting game:", err);
-                    alert("Failed to reset game. Please try again.");
-                });
+                resetGame().catch(err => console.error("Error resetting game:", err));
             };
-        } else {
-            console.error("Close popup button not found!");
         }
     }
 
@@ -1290,11 +1272,10 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 showLoading(true);
                 await submitGameReward(gameRewards);
+                await loadPlayerHistory(); // Ensure internal balance updates
             } catch (error) {
                 console.error("Failed to submit rewards:", error);
-                const withdrawalStatus = document.getElementById("withdrawalStatus");
-                if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Unknown error submitting rewards."}`;
-                alert("Failed to submit rewards: " + (error.message || "Unknown error. Please check network or contract."));
+                document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Unknown error submitting rewards."}`;
             } finally {
                 showLoading(false);
             }
@@ -1308,10 +1289,9 @@ document.addEventListener("DOMContentLoaded", () => {
         updateCanvasSize();
         draw();
         isGameRunning = true;
-        console.log("Game reset complete, isGameRunning:", isGameRunning);
+        animationFrameId = requestAnimationFrame(gameLoop);
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
-        animationFrameId = requestAnimationFrame(gameLoop); // लूप सुनिश्चित करें
     }
 
     function generateReferralLink() {
@@ -1360,11 +1340,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const contractBalance = await contract.contractBalance();
             const welcomeBonusWei = ethers.parseUnits("100", 18);
             if (ethers.toBigInt(contractBalance) < welcomeBonusWei) {
-                alert("Contract does not have enough BST tokens.");
+                alert("Contract does not have enough BST tokens. Please contact the contract owner.");
                 return;
             }
 
-            const tx = await contract.claimWelcomeBonus({ gasLimit: 500000 });
+            const tx = await contract.claimWelcomeBonus({ value: feeWei, gasLimit: 500000 });
             await tx.wait();
 
             playerData.hasClaimedWelcomeBonus = true;
@@ -1372,6 +1352,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.pendingRewards += 100;
             playerData.rewardHistory.push({ amount: 100, timestamp: Date.now(), rewardType: "Welcome Bonus", referee: "N/A" });
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            await loadPlayerHistory();
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
             alert("Welcome bonus of 100 BST claimed!");
@@ -1398,32 +1379,25 @@ document.addEventListener("DOMContentLoaded", () => {
             showLoading(true);
             console.log("Submitting reward:", rewardAmount, "to contract with oracle:", gameOracleAddress);
 
-            // ऑरेकल वैधता चेक
             const currentOracle = await gameOracleContract.gameOracle();
-            console.log("Current Oracle Address:", currentOracle);
             if (currentOracle.toLowerCase() !== gameOracleAddress.toLowerCase()) {
                 console.error("Game Oracle address mismatch. Expected:", gameOracleAddress, "Found:", currentOracle);
                 alert("Game Oracle address is not authorized. Contact contract owner to update it.");
                 return;
             }
 
-            // BNB बैलेंस चेक
             const oracleBNB = await gameOracleProvider.getBalance(gameOracleAddress);
-            console.log("Game Oracle BNB Balance:", ethers.formatEther(oracleBNB));
             if (oracleBNB < ethers.parseEther("0.01")) {
                 alert("Insufficient BNB in gameOracleAddress. Please fund it with at least 0.01 BNB.");
                 return;
             }
             const contractBNB = await gameOracleProvider.getBalance(contractAddress);
-            console.log("Contract BNB Balance:", ethers.formatEther(contractBNB));
             if (contractBNB < ethers.parseEther("0.005")) {
                 alert("Insufficient BNB in contract. Please fund it with at least 0.005 BNB.");
                 return;
             }
 
-            // कॉन्ट्रैक्ट बैलेंस चेक
             const contractBalance = await gameOracleContract.contractBalance();
-            console.log("Contract Balance:", ethers.formatUnits(contractBalance, 18), "BST");
             const rewardWei = ethers.parseUnits(rewardAmount.toString(), 18);
             if (ethers.toBigInt(contractBalance) < rewardWei) {
                 alert("Insufficient contract balance to process reward.");
@@ -1437,12 +1411,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const tx = await gameOracleContract.claimAllRewards(rewardWei, account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 500000 });
-            console.log("Transaction sent, hash:", tx.hash);
             const receipt = await tx.wait();
-            console.log("Transaction receipt:", receipt);
 
             if (receipt.status === 1) {
-                console.log("Reward submission successful, updating player data...");
                 playerData.totalRewards += rewardAmount;
                 if (playerData.pendingReferral) {
                     const referrerReward = rewardAmount * 0.01;
@@ -1452,19 +1423,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.pendingRewards += rewardAmount;
                 playerData.pendingReferral = null;
                 gameRewards = 0;
+                await loadPlayerHistory();
                 updatePlayerHistoryUI();
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert(`${rewardAmount} BST rewards submitted successfully!`);
             } else {
-                const revertReason = receipt.revertReason || (await provider.call(tx, tx.blockNumber - 1));
-                console.error("Transaction reverted. Reason:", revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown");
-                throw new Error("Transaction failed on blockchain. Revert reason: " + (revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown"));
+                throw new Error("Transaction failed on blockchain.");
             }
         } catch (error) {
             console.error("Error submitting game rewards:", error);
-            const withdrawalStatus = document.getElementById("withdrawalStatus");
-            if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Network issue or insufficient gas. Please check connection and try again."}`;
-            alert("Failed to submit rewards: " + (error.message || "Network issue or insufficient gas. Please check connection and try again."));
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Network issue or insufficient gas."}`;
+            alert("Failed to submit rewards: " + (error.message || "Network issue or insufficient gas."));
         } finally {
             showLoading(false);
         }
@@ -1483,53 +1452,45 @@ document.addEventListener("DOMContentLoaded", () => {
             const balance = await provider.getBalance(account);
             const feeWei = ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18);
             if (balance < feeWei) {
-                const withdrawalStatus = document.getElementById("withdrawalStatus");
-                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient BNB for fee.";
+                document.getElementById("withdrawalStatus").textContent = "Error: Insufficient BNB for fee.";
                 alert(`Insufficient BNB balance. You need at least ${WITHDRAWAL_FEE_BNB} BNB.`);
                 return;
             }
 
             const internalBalance = await contract.getInternalBalance(account);
             const pendingRewardsWei = ethers.parseUnits(playerData.pendingRewards.toString(), 18);
-            if (ethers.toBigInt(internalBalance) < ethers.toBigInt(pendingRewardsWei)) {
-                const withdrawalStatus = document.getElementById("withdrawalStatus");
-                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient internal balance in contract. Please submit rewards first.";
-                alert("Insufficient internal balance. Please ensure rewards are submitted before withdrawal.");
+            if (ethers.toBigInt(internalBalance) < pendingRewardsWei) {
+                document.getElementById("withdrawalStatus").textContent = "Error: Insufficient internal balance. Please submit rewards first.";
+                alert("Insufficient internal balance. Please submit rewards first.");
                 return;
             }
 
             const contractBalance = await contract.contractBalance();
-            if (ethers.toBigInt(contractBalance) < ethers.toBigInt(pendingRewardsWei)) {
-                const withdrawalStatus = document.getElementById("withdrawalStatus");
-                if (withdrawalStatus) withdrawalStatus.textContent = "Error: Insufficient contract balance.";
+            if (ethers.toBigInt(contractBalance) < pendingRewardsWei) {
+                document.getElementById("withdrawalStatus").textContent = "Error: Insufficient contract balance.";
                 alert("Insufficient contract balance. Please try again later.");
                 return;
             }
 
             const tx = await contract.withdrawAllTokens({ value: feeWei, gasLimit: 500000 });
-            console.log("Withdrawal transaction sent, hash:", tx.hash);
             const receipt = await tx.wait();
-            console.log("Withdrawal transaction receipt:", receipt);
 
             if (receipt.status === 1) {
                 playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
                 playerData.pendingRewards = 0;
                 playerData.rewardHistory.push({ amount: playerData.pendingRewards, timestamp: Date.now(), rewardType: "Withdrawal", referee: "N/A" });
+                await loadPlayerHistory();
                 updatePlayerHistoryUI();
-                const withdrawalStatus = document.getElementById("withdrawalStatus");
-                if (withdrawalStatus) withdrawalStatus.textContent = "Success: Rewards withdrawn!";
+                document.getElementById("withdrawalStatus").textContent = "Success: Rewards withdrawn!";
                 localStorage.setItem("playerData", JSON.stringify(playerData));
                 alert("Rewards withdrawn successfully!");
             } else {
-                const revertReason = receipt.revertReason || (await provider.call(tx, tx.blockNumber - 1));
-                console.error("Transaction reverted. Reason:", revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown");
-                throw new Error("Transaction failed on blockchain. Revert reason: " + (revertReason ? ethers.utils.parseRevertReason(revertReason) : "Unknown"));
+                throw new Error("Transaction failed on blockchain.");
             }
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            const withdrawalStatus = document.getElementById("withdrawalStatus");
-            if (withdrawalStatus) withdrawalStatus.textContent = `Error: ${error.message || "Network issue or contract reverted. Please try again."}`;
-            alert("Failed to claim rewards: " + (error.message || "Network issue or contract reverted. Please ensure sufficient BNB and try again."));
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || "Network issue or contract reverted."}`;
+            alert("Failed to claim rewards: " + (error.message || "Network issue or contract reverted."));
         } finally {
             showLoading(false);
         }
@@ -1561,16 +1522,9 @@ document.addEventListener("DOMContentLoaded", () => {
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
 
-            const connectWalletBtn = document.getElementById("connectWallet");
-            const disconnectWalletBtn = document.getElementById("disconnectWallet");
-            const walletAddress = document.getElementById("walletAddress");
-            if (connectWalletBtn && disconnectWalletBtn && walletAddress) {
-                connectWalletBtn.style.display = "none";
-                disconnectWalletBtn.style.display = "block";
-                walletAddress.textContent = `Connected: ${account.slice(0, 6)}...`;
-            } else {
-                console.error("Button or wallet address element not found!");
-            }
+            document.getElementById("connectWallet").style.display = "none";
+            document.getElementById("disconnectWallet").style.display = "block";
+            document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
             alert("Wallet connected successfully!");
         } catch (error) {
             console.error("Wallet connection error:", error);
@@ -1583,16 +1537,9 @@ document.addEventListener("DOMContentLoaded", () => {
     function disconnectWallet() {
         account = null;
         contract = null;
-        const connectWalletBtn = document.getElementById("connectWallet");
-        const disconnectWalletBtn = document.getElementById("disconnectWallet");
-        const walletAddress = document.getElementById("walletAddress");
-        if (connectWalletBtn && disconnectWalletBtn && walletAddress) {
-            connectWalletBtn.style.display = "block";
-            disconnectWalletBtn.style.display = "none";
-            walletAddress.textContent = "";
-        } else {
-            console.error("Button or wallet address element not found!");
-        }
+        document.getElementById("connectWallet").style.display = "block";
+        document.getElementById("disconnectWallet").style.display = "none";
+        document.getElementById("walletAddress").textContent = "";
         updatePlayerHistoryUI();
         alert("Wallet disconnected!");
     }
@@ -1647,7 +1594,6 @@ document.addEventListener("DOMContentLoaded", () => {
         for (const [id, value] of Object.entries(elements)) {
             const element = document.getElementById(id);
             if (element) element.textContent = value;
-            else console.error(`Element with id '${id}' not found!`);
         }
 
         const historyList = document.getElementById("rewardHistoryList");
@@ -1658,73 +1604,34 @@ document.addEventListener("DOMContentLoaded", () => {
                 li.textContent = `${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp).toLocaleString()}${entry.referee !== "N/A" ? ` (Referee: ${entry.referee.slice(0, 6)}...)` : ""}`;
                 historyList.appendChild(li);
             });
-        } else {
-            console.error("Reward history list not found!");
         }
     }
 
     // बटन इवेंट लिसनर्स
-    const playGameBtn = document.getElementById("playGame");
-    if (playGameBtn) {
-        playGameBtn.addEventListener("click", async () => {
-            console.log("Play game button clicked.");
-            if (!account) {
-                alert("Please connect your wallet!");
-                return;
+    document.getElementById("playGame").addEventListener("click", async () => {
+        if (!account) {
+            alert("Please connect your wallet!");
+            return;
+        }
+        try {
+            showLoading(true);
+            enterFullscreen();
+            if (!isGameRunning) {
+                await resetGame();
             }
-            playGameBtn.disabled = true;
-            try {
-                showLoading(true);
-                enterFullscreen();
-                if (!isGameRunning) {
-                    await resetGame();
-                }
-            } catch (err) {
-                console.error("Error starting game:", err);
-                alert("Failed to start game. Please try again.");
-            } finally {
-                showLoading(false);
-                playGameBtn.disabled = false;
-            }
-        });
-    } else {
-        console.error("Play game button not found!");
-    }
+        } catch (err) {
+            console.error("Error starting game:", err);
+            alert("Failed to start game. Please try again.");
+        } finally {
+            showLoading(false);
+        }
+    });
 
-    const connectWalletBtn = document.getElementById("connectWallet");
-    if (connectWalletBtn) {
-        connectWalletBtn.addEventListener("click", connectWallet);
-    } else {
-        console.error("Connect wallet button not found!");
-    }
-
-    const disconnectWalletBtn = document.getElementById("disconnectWallet");
-    if (disconnectWalletBtn) {
-        disconnectWalletBtn.addEventListener("click", disconnectWallet);
-    } else {
-        console.error("Disconnect wallet button not found!");
-    }
-
-    const getReferralLinkBtn = document.getElementById("getReferralLink");
-    if (getReferralLinkBtn) {
-        getReferralLinkBtn.addEventListener("click", generateReferralLink);
-    } else {
-        console.error("Get referral link button not found!");
-    }
-
-    const claimGameRewardsBtn = document.getElementById("claimGameRewards");
-    if (claimGameRewardsBtn) {
-        claimGameRewardsBtn.addEventListener("click", claimPendingRewards);
-    } else {
-        console.error("Claim game rewards button not found!");
-    }
-
-    const welcomeBonusBtn = document.getElementById("welcomeBonusButton");
-    if (welcomeBonusBtn) {
-        welcomeBonusBtn.addEventListener("click", claimWelcomeBonus);
-    } else {
-        console.error("Welcome bonus button not found!");
-    }
+    document.getElementById("connectWallet").addEventListener("click", connectWallet);
+    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
+    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
+    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
+    document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
 
     // गेम कंट्रोल
     document.addEventListener("keydown", (event) => {
@@ -1738,11 +1645,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let touchStartX = 0;
     let touchStartY = 0;
-    const touchThreshold = 50; // थ्रेशहोल्ड बढ़ाया गया
+    const touchThreshold = 50;
+    let lastTouchTime = 0;
 
     if (canvas) {
         canvas.addEventListener("touchstart", (event) => {
-            event.preventDefault();
             const touch = event.touches[0];
             touchStartX = touch.clientX;
             touchStartY = touch.clientY;
@@ -1750,14 +1657,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         canvas.addEventListener("touchmove", (event) => {
-            event.preventDefault();
             if (!isGameRunning) return;
             const touch = event.touches[0];
             const deltaX = touch.clientX - touchStartX;
             const deltaY = touch.clientY - touchStartY;
             const now = Date.now();
 
-            if (now - lastMoveTime < 100) return; // Debounce
+            if (now - lastTouchTime < 150) return; // Debounce
 
             if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > touchThreshold) {
                 if (deltaX > 0 && direction !== "left") direction = "right";
@@ -1766,26 +1672,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (deltaY > 0 && direction !== "up") direction = "down";
                 else if (deltaY < 0 && direction !== "down") direction = "up";
             }
-            lastMoveTime = now;
+            lastTouchTime = now;
             console.log("Touch move detected, new direction:", direction);
         });
 
         canvas.addEventListener("touchend", (event) => {
-            event.preventDefault();
             console.log("Touch ended, game should continue.");
         });
-    } else {
-        console.error("Canvas not found for touch events!");
     }
 
     window.addEventListener("resize", updateCanvasSize);
     window.addEventListener("orientationchange", updateCanvasSize);
-
-    // CSP हेडर (HTML में जोड़ें)
-    const meta = document.createElement("meta");
-    meta.httpEquiv = "Content-Security-Policy";
-    meta.content = "default-src 'self'; script-src 'self' 'unsafe-eval'; connect-src 'self' wss://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-2-s1.binance.org:8545/ https://data-seed-prebsc-1-s1.binance.org:8545/ https://data-seed-prebsc-2-s1.binance.org:8545/; img-src 'self' https://raw.githubusercontent.com;";
-    document.head.appendChild(meta);
 
     updateCanvasSize();
     generateBoxes();
