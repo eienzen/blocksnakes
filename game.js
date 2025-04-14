@@ -1040,15 +1040,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     let gameOracleProvider;
     try {
-        gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        // प्राथमिक वेबसॉकेट URL
+        gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to primary WebSocket provider.");
     } catch (error) {
         console.error("Failed to connect to primary WebSocket URL:", error);
         try {
-            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+            // बैकअप वेबसॉकेट URL
+            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-2-s2.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
             console.log("Connected to backup WebSocket provider.");
         } catch (backupError) {
             console.error("Failed to connect to backup WebSocket URL:", backupError);
+            // फॉलबैक JSON-RPC HTTP URL
             gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
             console.log("Fallback to JSON-RPC provider.");
         }
@@ -1223,18 +1226,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (animationFrameId) cancelAnimationFrame(animationFrameId);
         isGameRunning = false;
         console.log("Resetting game...");
+        showLoading(true); // लोडिंग शुरू करें
+
+        // रिवॉर्ड सबमिशन केवल तभी करें जब कनेक्शन उपलब्ध हो
         if (gameRewards > 0 && account && gameOracleContract) {
             try {
-                showLoading(true);
                 await submitGameReward(gameRewards);
                 await loadPlayerHistory();
             } catch (error) {
-                console.error("Error resetting game:", error);
+                console.error("Error submitting rewards during reset:", error);
                 document.getElementById("withdrawalStatus").textContent = `Error: ${error.message}`;
-            } finally {
-                showLoading(false);
             }
         }
+
+        // गेम स्टेट रीसेट
         playerData.gamesPlayed += 1;
         boxesEaten = 0;
         gameRewards = 0;
@@ -1243,8 +1248,11 @@ document.addEventListener("DOMContentLoaded", () => {
         generateBoxes();
         updateCanvasSize();
         draw();
-        isGameRunning = true; // गेम शुरू करने के लिए सही सेट
-        animationFrameId = requestAnimationFrame(gameLoop); // गेम लूप शुरू करें
+
+        // गेम शुरू करें
+        isGameRunning = true;
+        animationFrameId = requestAnimationFrame(gameLoop); // गेम लूप तुरंत शुरू करें
+        showLoading(false); // लोडिंग बंद करें
         updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
@@ -1403,8 +1411,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!account) return alert("Connect wallet!");
         showLoading(true);
         enterFullscreen();
-        await resetGame();
-        showLoading(false);
+        await resetGame().catch(err => console.error("Error resetting game:", err));
+        showLoading(false); // लोडिंग सुनिश्चित करें कि बंद हो
     });
     document.getElementById("connectWallet").addEventListener("click", connectWallet);
     document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
