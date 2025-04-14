@@ -21,9 +21,8 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x97af71Ceb9539963db44B3a4De7AD1D91b36F294";
+    const contractAddress = "0x780b1C8cd6B68B0d51F541D6CA93232c1B4bE37f";
     const contractABI = [
-        // [
 	{
 		"inputs": [
 			{
@@ -1045,14 +1044,8 @@ document.addEventListener("DOMContentLoaded", () => {
         console.log("Connected to primary JSON-RPC provider.");
     } catch (error) {
         console.error("Failed to connect to primary JSON-RPC URL:", error);
-        try {
-            gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
-            console.log("Connected to secondary JSON-RPC provider.");
-        } catch (backupError) {
-            console.error("Failed to connect to backup JSON-RPC URL:", backupError);
-            gameOracleProvider = new ethers.WebSocketProvider("wss://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
-            console.log("Fallback to WebSocket provider.");
-        }
+        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        console.log("Connected to secondary JSON-RPC provider.");
     }
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
     const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
@@ -1171,7 +1164,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (direction === "up") head.y--;
         if (direction === "down") head.y++;
 
-        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight || snake.some(segment => segment.x === head.x && segment.y === head.y && segment !== head)) {
+        // केवल दीवार से टकराने पर गेम ओवर
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             gameOverSound.play();
             if (gameRewards > 0 && account && gameOracleContract) {
                 await submitGameReward(gameRewards);
@@ -1243,8 +1237,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!account || !gameOracleContract) return;
         try {
             showLoading(true);
-            const tx = await gameOracleContract.claimAllRewards(ethers.parseUnits(rewardAmount.toString(), 18), account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 500000 });
-            await tx.wait();
+            const tx = await gameOracleContract.claimAllRewards(
+                ethers.parseUnits(rewardAmount.toString(), 18),
+                account,
+                playerData.pendingReferral || ethers.ZeroAddress,
+                { gasLimit: 300000, gasPrice: await gameOracleProvider.getGasPrice() }
+            );
+            const receipt = await tx.wait();
             playerData.totalRewards += rewardAmount;
             playerData.pendingRewards += rewardAmount;
             playerData.pendingReferral = null;
@@ -1254,8 +1253,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert(`${rewardAmount} BST rewards submitted!`);
         } catch (error) {
             console.error("Error submitting rewards:", error);
-            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message}`;
-            alert("Failed to submit rewards: " + error.message);
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
+            alert("Failed to submit rewards: " + (error.message || error.toString()));
         } finally {
             showLoading(false);
         }
@@ -1276,7 +1275,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert("Insufficient internal balance. Please submit game rewards first.");
                 return;
             }
-            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 500000 });
+            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
             await tx.wait();
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             playerData.pendingRewards = 0;
@@ -1285,8 +1284,8 @@ document.addEventListener("DOMContentLoaded", () => {
             alert("Rewards claimed successfully!");
         } catch (error) {
             console.error("Error claiming rewards:", error);
-            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message}`;
-            alert("Failed to claim rewards: " + error.message);
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
+            alert("Failed to claim rewards: " + (error.message || error.toString()));
         } finally {
             showLoading(false);
         }
@@ -1311,7 +1310,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.hasClaimedWelcomeBonus = true;
                 return;
             }
-            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 500000 });
+            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
             await tx.wait();
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
