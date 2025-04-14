@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", () => {
         totalReferrals: 0, referralRewards: 0, pendingReferral: null,
         pendingReferrerReward: 0, rewardHistory: [], hasClaimedWelcomeBonus: false,
         walletBalance: 0, walletAddress: null,
-        isRewardSubmitted: false // नया फ्लैग
+        isRewardSubmitted: false
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -1182,7 +1182,7 @@ document.addEventListener("DOMContentLoaded", () => {
             eatingSound.play();
             boxesEaten++;
             const reward = 0.5;
-            gameRewards += reward; // Accumulate reward, but don't push to history yet
+            gameRewards += reward; // Accumulate reward
             playerData.pendingRewards += reward;
             playerData.totalRewards += reward;
             boxes.splice(eatenBoxIndex, 1);
@@ -1325,12 +1325,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
                 return;
             }
-            const hasClaimed = await contract.playerHistory(account).then(history => history.hasClaimedWelcomeBonus);
-            if (hasClaimed) {
-                alert("Welcome bonus already claimed!");
-                playerData.hasClaimedWelcomeBonus = true;
-                return;
-            }
             const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
             await tx.wait();
             playerData.hasClaimedWelcomeBonus = true;
@@ -1384,7 +1378,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "block";
             document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
-            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await provider.getBalance(account), 18)).toFixed(2)} BNB`;
+            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await contract.balanceOf(account), 18)).toFixed(2)} BST`;
             alert("Wallet connected!");
         } catch (error) {
             console.error("Wallet error:", error);
