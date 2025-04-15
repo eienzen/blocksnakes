@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x780b1C8cd6B68B0d51F541D6CA93232c1B4bE37f";
+    const contractAddress = "0x70d610629594F48c6Ed82F8eEEf87D3785BB1a18";
     const contractABI = [
 	{
 		"inputs": [
@@ -1169,7 +1169,6 @@ document.addEventListener("DOMContentLoaded", () => {
             gameOverSound.play();
             if (gameRewards > 0 && account && gameOracleContract && !playerData.isRewardSubmitted) {
                 await submitGameReward(gameRewards);
-                playerData.isRewardSubmitted = true;
             }
             showGameOverPopup();
             isGameRunning = false;
@@ -1182,7 +1181,7 @@ document.addEventListener("DOMContentLoaded", () => {
             eatingSound.play();
             boxesEaten++;
             const reward = 0.5;
-            gameRewards += reward; // Accumulate reward
+            gameRewards += reward;
             playerData.pendingRewards += reward;
             playerData.totalRewards += reward;
             boxes.splice(eatenBoxIndex, 1);
@@ -1219,7 +1218,7 @@ document.addEventListener("DOMContentLoaded", () => {
         gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
         direction = "right";
-        playerData.isRewardSubmitted = false;
+        playerData.isRewardSubmitted = false; // Reset flag on new game
         generateBoxes();
         updateCanvasSize();
         draw();
@@ -1234,17 +1233,17 @@ document.addEventListener("DOMContentLoaded", () => {
             showLoading(true);
             const provider = new ethers.BrowserProvider(window.ethereum);
             const signer = await provider.getSigner();
-            const nonce = await provider.getTransactionCount(account);
+            const nonce = await provider.getTransactionCount(account); // Ensure fresh nonce
 
             const tx = await gameOracleContract.claimAllRewards(
                 ethers.parseUnits(rewardAmount.toString(), 18),
                 account,
                 playerData.pendingReferral || ethers.ZeroAddress,
-                { gasLimit: 300000, nonce }
+                { gasLimit: 400000, nonce } // Increased gas limit
             );
             const receipt = await tx.wait();
             playerData.totalRewards += rewardAmount;
-            playerData.pendingRewards += rewardAmount;
+            playerData.pendingRewards = 0; // Clear pending after successful claim
             playerData.pendingReferral = null;
             gameRewards = 0;
             playerData.rewardHistory.push({
@@ -1273,7 +1272,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
             alert("Failed to submit rewards: " + (error.message || error.toString()));
             if (error.code === 'NONCE_EXPIRED' || error.code === 'CALL_EXCEPTION') {
-                playerData.isRewardSubmitted = false;
+                playerData.isRewardSubmitted = false; // Reset on specific errors
             }
         } finally {
             showLoading(false);
@@ -1295,7 +1294,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert("Insufficient internal balance. Please submit game rewards first.");
                 return;
             }
-            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
+            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000 });
             await tx.wait();
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             playerData.pendingRewards = 0;
@@ -1325,7 +1324,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
                 return;
             }
-            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
+            const hasClaimed = await contract.playerHistory(account).then(history => history.hasClaimedWelcomeBonus);
+            if (hasClaimed) {
+                alert("Welcome bonus already claimed!");
+                playerData.hasClaimedWelcomeBonus = true;
+                return;
+            }
+            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000 });
             await tx.wait();
             playerData.hasClaimedWelcomeBonus = true;
             playerData.totalRewards += 100;
@@ -1343,8 +1348,10 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error claiming welcome bonus:", error);
             if (error.reason) {
                 alert(`Failed to claim bonus: ${error.reason}`);
+            } else if (error.code === 'CALL_EXCEPTION' && error.reason.includes('reverted')) {
+                alert("Bonus claim failed: Contract reverted. Check if 0.0002 BNB is available and contract allows claiming.");
             } else {
-                alert("Failed to claim bonus: Transaction reverted. Check console for details.");
+                alert("Failed to claim bonus: " + (error.message || error.toString()));
             }
         } finally {
             showLoading(false);
