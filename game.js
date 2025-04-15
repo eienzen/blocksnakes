@@ -23,6 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const contractAddress = "0x02397074ce852c20B79C6C2854c61B2058F61fB0";
     const contractABI = [
+        // [
 	{
 		"inputs": [
 			{
@@ -1219,7 +1220,10 @@ document.addEventListener("DOMContentLoaded", () => {
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             gameOverSound.play();
             if (gameRewards > 0 && account && gameOracleContract) {
-                await submitGameReward(gameRewards);
+                await submitGameReward(gameRewards).catch(error => {
+                    console.error("Reward submission failed, continuing game:", error);
+                    document.getElementById("withdrawalStatus").textContent = `Reward submission failed: ${error.message || error.toString()}`;
+                });
             }
             showGameOverPopup();
             return;
@@ -1303,9 +1307,9 @@ document.addEventListener("DOMContentLoaded", () => {
             updatePlayerHistoryUI();
             alert(`${rewardAmount} BST rewards submitted!`);
         } catch (error) {
-            console.error("Error submitting rewards:", error);
-            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
-            alert("Failed to submit rewards: " + (error.message || error.toString()));
+            console.error("Reward submission failed, continuing game:", error);
+            document.getElementById("withdrawalStatus").textContent = `Reward submission failed: ${error.message || error.toString()}`;
+            alert("Failed to submit rewards, but game continues: " + (error.message || error.toString()));
         } finally {
             showLoading(false);
         }
