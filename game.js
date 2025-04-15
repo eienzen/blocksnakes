@@ -12,13 +12,12 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0, totalRewards: 0, boxesEaten: 0, pendingRewards: 0,
         totalReferrals: 0, referralRewards: 0, pendingReferral: null,
         pendingReferrerReward: 0, rewardHistory: [], hasClaimedWelcomeBonus: false,
-        walletBalance: 0, walletAddress: null,
-        isRewardSubmitted: false
+        walletBalance: 0, walletAddress: null
     };
 
     const urlParams = new URLSearchParams(window.location.search);
     const referrerAddress = urlParams.get("ref");
-    if (referrerAddress && !playerData.pendingReferral && ethers.utils.isAddress(referrerAddress)) {
+    if (referrerAddress && !playerData.pendingReferral && ethers.isAddress(referrerAddress)) {
         playerData.pendingReferral = referrerAddress;
     }
 
@@ -1088,17 +1087,16 @@ document.addEventListener("DOMContentLoaded", () => {
 		"type": "function"
 	}
 ];
-
     const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
     const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
 
     let gameOracleProvider;
     try {
-        gameOracleProvider = new ethers.providers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to primary JSON-RPC provider.");
     } catch (error) {
         console.error("Failed to connect to primary JSON-RPC URL:", error);
-        gameOracleProvider = new ethers.providers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to secondary JSON-RPC provider.");
     }
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
@@ -1127,8 +1125,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateCanvasSize() {
         if (!canvas) return console.error("Canvas not available!");
-        const screenWidth = Math.min(window.innerWidth * 0.95, 500);
-        const screenHeight = Math.min(window.innerHeight * 0.8, 400);
+        const screenWidth = window.innerWidth * 0.9;
+        const screenHeight = window.innerHeight * 0.7;
         gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
         canvas.width = gridSize * gridWidth;
         canvas.height = gridSize * gridHeight;
@@ -1168,6 +1166,7 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.forEach((segment, index) => {
             ctx.fillStyle = index === 0 ? "#ffd700" : "#800080";
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+
             if (index === 0) {
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
@@ -1177,6 +1176,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.05, 0, Math.PI * 2);
                 ctx.fillStyle = "black";
                 ctx.fill();
+
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
                 ctx.fillStyle = "white";
@@ -1218,12 +1218,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
             gameOverSound.play();
-            if (gameRewards > 0 && account && gameOracleContract && !playerData.isRewardSubmitted) {
+            if (gameRewards > 0 && account && gameOracleContract) {
                 await submitGameReward(gameRewards);
-                playerData.isRewardSubmitted = true;
             }
             showGameOverPopup();
-            isGameRunning = false;
             return;
         }
 
@@ -1233,9 +1231,17 @@ document.addEventListener("DOMContentLoaded", () => {
             eatingSound.play();
             boxesEaten++;
             const reward = 0.5;
-            gameRewards += reward;
             playerData.pendingRewards += reward;
+            gameRewards += reward;
             playerData.totalRewards += reward;
+            playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
+            if (playerData.pendingReferral) {
+                const referrerReward = (reward * (await contract.referralCommissionRate())) / 10000;
+                playerData.pendingReferrerReward += referrerReward;
+                playerData.referralRewards += referrerReward;
+                playerData.totalReferrals += 1;
+                playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
+            }
             boxes.splice(eatenBoxIndex, 1);
             if (boxes.length < 5) generateBoxes();
             if (boxesEaten % 10 === 0 || boxesEaten % 20 === 0 || boxesEaten % 30 === 0) victorySound.play();
@@ -1243,6 +1249,7 @@ document.addEventListener("DOMContentLoaded", () => {
             snake.pop();
         }
         draw();
+        updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
@@ -1269,7 +1276,6 @@ document.addEventListener("DOMContentLoaded", () => {
         gameRewards = 0;
         snake = [{ x: 10, y: 10 }];
         direction = "right";
-        playerData.isRewardSubmitted = false;
         generateBoxes();
         updateCanvasSize();
         draw();
@@ -1279,43 +1285,20 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function submitGameReward(rewardAmount) {
-        if (!account || !gameOracleContract || playerData.isRewardSubmitted) return;
+        if (!account || !gameOracleContract) return;
         try {
             showLoading(true);
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = await provider.getSigner();
-            const nonce = await provider.getTransactionCount(account, "latest");
-
             const tx = await gameOracleContract.claimAllRewards(
-                ethers.utils.parseUnits(rewardAmount.toString(), 18),
+                ethers.parseUnits(rewardAmount.toString(), 18),
                 account,
-                playerData.pendingReferral || ethers.constants.AddressZero,
-                { gasLimit: 400000, nonce }
+                playerData.pendingReferral || ethers.ZeroAddress,
+                { gasLimit: 300000 }
             );
             const receipt = await tx.wait();
             playerData.totalRewards += rewardAmount;
-            playerData.pendingRewards = 0;
+            playerData.pendingRewards += rewardAmount;
             playerData.pendingReferral = null;
             gameRewards = 0;
-            playerData.rewardHistory.push({
-                amount: rewardAmount,
-                timestamp: Date.now(),
-                rewardType: "Game",
-                referee: playerData.pendingReferral || "N/A"
-            });
-            if (playerData.pendingReferral) {
-                const referralCommissionRate = (await contract.REFERRAL_COMMISSION_RATE()) / 10000;
-                const referrerReward = rewardAmount * referralCommissionRate;
-                playerData.pendingReferrerReward += referrerReward;
-                playerData.referralRewards += referrerReward;
-                playerData.rewardHistory.push({
-                    amount: referrerReward,
-                    timestamp: Date.now(),
-                    rewardType: "Referral",
-                    referee: playerData.pendingReferral
-                });
-            }
-            playerData.isRewardSubmitted = true;
             await loadPlayerHistory();
             updatePlayerHistoryUI();
             alert(`${rewardAmount} BST rewards submitted!`);
@@ -1323,9 +1306,6 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Error submitting rewards:", error);
             document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
             alert("Failed to submit rewards: " + (error.message || error.toString()));
-            if (error.code === 'NONCE_EXPIRED' || error.code === 'CALL_EXCEPTION') {
-                playerData.isRewardSubmitted = false;
-            }
         } finally {
             showLoading(false);
         }
@@ -1335,21 +1315,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect wallet first!");
         try {
             showLoading(true);
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
-            if (balance < ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
+            if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
                 return;
             }
             const internalBalance = await contract.getInternalBalance(account);
-            if (ethers.BigNumber.from(internalBalance).lt(ethers.utils.parseUnits(playerData.pendingRewards.toString(), 18))) {
+            if (ethers.toBigInt(internalBalance) < ethers.parseUnits(playerData.pendingRewards.toString(), 18)) {
                 alert("Insufficient internal balance. Please submit game rewards first.");
                 return;
             }
-            const nonce = await provider.getTransactionCount(account, "latest");
-            const tx = await contract.withdrawAllTokens({ value: ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000, nonce });
-            const receipt = await tx.wait();
-            playerData.walletBalance = Number(ethers.utils.formatUnits(await contract.balanceOf(account), 18));
+            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
+            await tx.wait();
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             playerData.pendingRewards = 0;
             await loadPlayerHistory();
             updatePlayerHistoryUI();
@@ -1370,54 +1349,42 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             showLoading(true);
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = await provider.getSigner();
+            const provider = new ethers.BrowserProvider(window.ethereum);
             const balance = await provider.getBalance(account);
-            if (balance < ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
+            if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
                 return;
             }
-            const welcomeBonus = await contract.welcomeBonus();
-            const nonce = await provider.getTransactionCount(account, "latest");
-            const tx = await contract.claimWelcomeBonus({ value: ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000, nonce });
+            const welcomeBonus = Number(ethers.formatUnits(await contract.welcomeBonus(), 18));
+            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
             await tx.wait();
             playerData.hasClaimedWelcomeBonus = true;
-            playerData.totalRewards += Number(ethers.utils.formatUnits(welcomeBonus, 18));
-            playerData.pendingRewards += Number(ethers.utils.formatUnits(welcomeBonus, 18));
-            playerData.rewardHistory.push({
-                amount: Number(ethers.utils.formatUnits(welcomeBonus, 18)),
-                timestamp: Date.now(),
-                rewardType: "Welcome Bonus",
-                referee: "N/A"
-            });
+            playerData.totalRewards += welcomeBonus;
+            playerData.pendingRewards += welcomeBonus;
             await loadPlayerHistory();
             updatePlayerHistoryUI();
-            alert(`${Number(ethers.utils.formatUnits(welcomeBonus, 18))} BST welcome bonus claimed!`);
+            alert(`Welcome bonus of ${welcomeBonus} BST claimed!`);
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
             if (error.reason) {
                 alert(`Failed to claim bonus: ${error.reason}`);
             } else {
-                alert("Failed to claim bonus: " + (error.message || error.toString()));
+                alert("Failed to claim bonus: Transaction reverted. Check console for details.");
             }
         } finally {
             showLoading(false);
         }
     }
 
-    async function setWelcomeBonus(newBonus) {
-        if (!contract || !account || !(await contract.owner() === account)) {
-            alert("Only owner can set welcome bonus!");
-            return;
-        }
+    async function setWelcomeBonus() {
+        if (!contract || !account) return alert("Connect wallet first!");
         try {
             showLoading(true);
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = await provider.getSigner();
-            const nonce = await provider.getTransactionCount(account, "latest");
-            const tx = await contract.setWelcomeBonus(newBonus, { gasLimit: 400000, nonce });
+            const newBonus = prompt("Enter new welcome bonus amount in BST (e.g., 100):");
+            if (!newBonus || isNaN(newBonus) || newBonus <= 0) return alert("Invalid bonus amount!");
+            const tx = await contract.setWelcomeBonus(ethers.parseUnits(newBonus.toString(), 18), { gasLimit: 300000 });
             await tx.wait();
-            alert(`Welcome bonus set to ${newBonus} BST!`);
+            alert(`Welcome bonus updated to ${newBonus} BST!`);
         } catch (error) {
             console.error("Error setting welcome bonus:", error);
             alert("Failed to set welcome bonus: " + (error.message || error.toString()));
@@ -1426,19 +1393,15 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    async function setReferralCommissionRate(newRate) {
-        if (!contract || !account || !(await contract.owner() === account)) {
-            alert("Only owner can set referral commission rate!");
-            return;
-        }
+    async function setReferralCommissionRate() {
+        if (!contract || !account) return alert("Connect wallet first!");
         try {
             showLoading(true);
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const signer = await provider.getSigner();
-            const nonce = await provider.getTransactionCount(account, "latest");
-            const tx = await contract.setReferralCommissionRate(newRate, { gasLimit: 400000, nonce });
+            const newRate = prompt("Enter new referral commission rate in basis points (e.g., 100 for 1%):");
+            if (!newRate || isNaN(newRate) || newRate < 0 || newRate > 1000) return alert("Invalid rate! Must be 0-1000 (max 10%).");
+            const tx = await contract.setReferralCommissionRate(newRate, { gasLimit: 300000 });
             await tx.wait();
-            alert(`Referral commission rate set to ${newRate}%!`);
+            alert(`Referral commission rate updated to ${newRate / 100}%!`);
         } catch (error) {
             console.error("Error setting referral commission rate:", error);
             alert("Failed to set referral commission rate: " + (error.message || error.toString()));
@@ -1462,22 +1425,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!window.ethereum) return alert("Install MetaMask!");
         try {
             showLoading(true);
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             const network = await provider.getNetwork();
             if (network.chainId !== 97) await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
             account = (await provider.send("eth_requestAccounts", []))[0];
             playerData.walletAddress = account;
             contract = new ethers.Contract(contractAddress, contractABI, await provider.getSigner());
-            if (!playerData.hasClaimedWelcomeBonus) {
-                await claimWelcomeBonus();
-            }
             await loadPlayerHistory();
             updatePlayerHistoryUI();
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "block";
             document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
-            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.utils.formatUnits(await contract.balanceOf(account), 18)).toFixed(2)} BST`;
+            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await provider.getBalance(account), 18)).toFixed(2)} BNB`;
             alert("Wallet connected!");
         } catch (error) {
             console.error("Wallet error:", error);
@@ -1504,12 +1464,12 @@ document.addEventListener("DOMContentLoaded", () => {
             showLoading(true);
             const history = await contract.playerHistory(account);
             playerData.gamesPlayed = Number(history.gamesPlayed);
-            playerData.totalRewards = Number(ethers.utils.formatUnits(history.totalRewards, 18));
+            playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
             playerData.totalReferrals = Number(history.totalReferrals);
-            playerData.referralRewards = Number(ethers.utils.formatUnits(history.referralRewards, 18));
+            playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
-            playerData.pendingRewards = Number(ethers.utils.formatUnits(await contract.getInternalBalance(account), 18));
-            playerData.walletBalance = Number(ethers.utils.formatUnits(await contract.balanceOf(account), 18));
+            playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
@@ -1546,8 +1506,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
     document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
-    document.getElementById("setWelcomeBonus").addEventListener("click", () => setWelcomeBonus(prompt("Enter new welcome bonus in BST:")));
-    document.getElementById("setReferralCommission").addEventListener("click", () => setReferralCommissionRate(prompt("Enter new referral commission rate (e.g., 1 for 1%):")));
+    document.getElementById("setWelcomeBonus").addEventListener("click", setWelcomeBonus);
+    document.getElementById("setReferralCommission").addEventListener("click", setReferralCommissionRate);
     document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
 
     document.addEventListener("keydown", (event) => {
@@ -1567,16 +1527,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const touch = event.touches[0];
             const deltaX = touch.clientX - touchStartX;
             const deltaY = touch.clientY - touchStartY;
-            if (Date.now() - lastTouchTime < 200) return;
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
+            if (Date.now() - lastTouchTime < 150) return;
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
                 if (deltaX > 0 && direction !== "left") direction = "right";
                 else if (deltaX < 0 && direction !== "right") direction = "left";
-            } else if (Math.abs(deltaY) > 100) {
+            } else if (Math.abs(deltaY) > 50) {
                 if (deltaY > 0 && direction !== "up") direction = "down";
                 else if (deltaY < 0 && direction !== "down") direction = "up";
             }
-            touchStartX = touch.clientX;
-            touchStartY = touch.clientY;
             lastTouchTime = Date.now();
         });
     }
