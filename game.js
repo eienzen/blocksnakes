@@ -18,534 +18,199 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const urlParams = new URLSearchParams(window.location.search);
     const referrerAddress = urlParams.get("ref");
-    if (referrerAddress && !playerData.pendingReferral && ethers.isAddress(referrerAddress)) {
+    if (referrerAddress && !playerData.pendingReferral && ethers.utils.isAddress(referrerAddress)) {
         playerData.pendingReferral = referrerAddress;
     }
 
     const contractAddress = "0x780b1C8cd6B68B0d51F541D6CA93232c1B4bE37f";
     const contractABI = [
-        // [Your existing ABI remains unchanged - copied as provided]
+        // ABI from Solidity contract above
         {
-            "inputs": [
-                {"internalType": "address", "name": "spender", "type": "address"},
-                {"internalType": "uint256", "name": "allowance", "type": "uint256"},
-                {"internalType": "uint256", "name": "needed", "type": "uint256"}
-            ],
-            "name": "ERC20InsufficientAllowance",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "sender", "type": "address"},
-                {"internalType": "uint256", "name": "balance", "type": "uint256"},
-                {"internalType": "uint256", "name": "needed", "type": "uint256"}
-            ],
-            "name": "ERC20InsufficientBalance",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "approver", "type": "address"}
-            ],
-            "name": "ERC20InvalidApprover",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "receiver", "type": "address"}
-            ],
-            "name": "ERC20InvalidReceiver",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "sender", "type": "address"}
-            ],
-            "name": "ERC20InvalidSender",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "spender", "type": "address"}
-            ],
-            "name": "ERC20InvalidSpender",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "owner", "type": "address"}
-            ],
-            "name": "OwnableInvalidOwner",
-            "type": "error"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "account", "type": "address"}
-            ],
-            "name": "OwnableUnauthorizedAccount",
-            "type": "error"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
-                {"indexed": true, "internalType": "address", "name": "spender", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}
-            ],
-            "name": "Approval",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
-                {"indexed": false, "internalType": "string", "name": "reason", "type": "string"}
-            ],
-            "name": "ErrorEvent",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "oldOracle", "type": "address"},
-                {"indexed": true, "internalType": "address", "name": "newOracle", "type": "address"}
-            ],
-            "name": "GameOracleUpdated",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": false, "internalType": "uint256", "name": "newLimit", "type": "uint256"}
-            ],
-            "name": "MaxWithdrawalLimitUpdated",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "oldWallet", "type": "address"},
-                {"indexed": true, "internalType": "address", "name": "newWallet", "type": "address"}
-            ],
-            "name": "OwnerWalletUpdated",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "previousOwner", "type": "address"},
-                {"indexed": true, "internalType": "address", "name": "newOwner", "type": "address"}
-            ],
-            "name": "OwnershipTransferred",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "referrer", "type": "address"},
-                {"indexed": true, "internalType": "address", "name": "referee", "type": "address"}
-            ],
-            "name": "ReferralAdded",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "totalReward", "type": "uint256"},
-                {"indexed": true, "internalType": "address", "name": "referrer", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "referrerReward", "type": "uint256"}
-            ],
-            "name": "RewardsClaimed",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-            ],
-            "name": "TokensBurned",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "owner", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "totalAmount", "type": "uint256"},
-                {"indexed": false, "internalType": "uint256", "name": "ownerAmount", "type": "uint256"},
-                {"indexed": false, "internalType": "uint256", "name": "contractAmount", "type": "uint256"}
-            ],
-            "name": "TokensMinted",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"},
-                {"indexed": false, "internalType": "uint256", "name": "fee", "type": "uint256"},
-                {"indexed": false, "internalType": "bool", "name": "success", "type": "bool"}
-            ],
-            "name": "TokensWithdrawn",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "from", "type": "address"},
-                {"indexed": true, "internalType": "address", "name": "to", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}
-            ],
-            "name": "Transfer",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": true, "internalType": "address", "name": "player", "type": "address"},
-                {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}
-            ],
-            "name": "WelcomeBonusClaimed",
-            "type": "event"
-        },
-        {
-            "anonymous": false,
-            "inputs": [
-                {"indexed": false, "internalType": "uint256", "name": "newFeeInBnbWei", "type": "uint256"}
-            ],
-            "name": "WithdrawalFeeUpdated",
-            "type": "event"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "spender", "type": "address"},
-                {"internalType": "uint256", "name": "value", "type": "uint256"}
-            ],
-            "name": "approve",
-            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "uint256", "name": "amount", "type": "uint256"}
-            ],
-            "name": "burnTokens",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "uint256", "name": "totalReward", "type": "uint256"},
-                {"internalType": "address", "name": "player", "type": "address"},
-                {"internalType": "address", "name": "referrer", "type": "address"}
-            ],
-            "name": "claimAllRewards",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
+            "inputs": [{"internalType": "address", "name": "_gameOracle", "type": "address"}],
+            "stateMutability": "nonpayable", "type": "constructor"
+        }, {
+            "inputs": [{"internalType": "address", "name": "spender", "type": "address"}, {"internalType": "uint256", "name": "allowance", "type": "uint256"}, {"internalType": "uint256", "name": "needed", "type": "uint256"}],
+            "name": "ERC20InsufficientAllowance", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "sender", "type": "address"}, {"internalType": "uint256", "name": "balance", "type": "uint256"}, {"internalType": "uint256", "name": "needed", "type": "uint256"}],
+            "name": "ERC20InsufficientBalance", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "approver", "type": "address"}],
+            "name": "ERC20InvalidApprover", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "receiver", "type": "address"}],
+            "name": "ERC20InvalidReceiver", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "sender", "type": "address"}],
+            "name": "ERC20InvalidSender", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "spender", "type": "address"}],
+            "name": "ERC20InvalidSpender", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "owner", "type": "address"}],
+            "name": "OwnableInvalidOwner", "type": "error"
+        }, {
+            "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+            "name": "OwnableUnauthorizedAccount", "type": "error"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "owner", "type": "address"}, {"indexed": true, "internalType": "address", "name": "spender", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}],
+            "name": "Approval", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "player", "type": "address"}, {"indexed": false, "internalType": "string", "name": "reason", "type": "string"}],
+            "name": "ErrorEvent", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "oldOracle", "type": "address"}, {"indexed": true, "internalType": "address", "name": "newOracle", "type": "address"}],
+            "name": "GameOracleUpdated", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": false, "internalType": "uint256", "name": "newLimit", "type": "uint256"}],
+            "name": "MaxWithdrawalLimitUpdated", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "oldWallet", "type": "address"}, {"indexed": true, "internalType": "address", "name": "newWallet", "type": "address"}],
+            "name": "OwnerWalletUpdated", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "previousOwner", "type": "address"}, {"indexed": true, "internalType": "address", "name": "newOwner", "type": "address"}],
+            "name": "OwnershipTransferred", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "referrer", "type": "address"}, {"indexed": true, "internalType": "address", "name": "referee", "type": "address"}],
+            "name": "ReferralAdded", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "player", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "totalReward", "type": "uint256"}, {"indexed": true, "internalType": "address", "name": "referrer", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "referrerReward", "type": "uint256"}],
+            "name": "RewardsClaimed", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "owner", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}],
+            "name": "TokensBurned", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "owner", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "totalAmount", "type": "uint256"}, {"indexed": false, "internalType": "uint256", "name": "ownerAmount", "type": "uint256"}, {"indexed": false, "internalType": "uint256", "name": "contractAmount", "type": "uint256"}],
+            "name": "TokensMinted", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "player", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}, {"indexed": false, "internalType": "uint256", "name": "fee", "type": "uint256"}, {"indexed": false, "internalType": "bool", "name": "success", "type": "bool"}],
+            "name": "TokensWithdrawn", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "from", "type": "address"}, {"indexed": true, "internalType": "address", "name": "to", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "value", "type": "uint256"}],
+            "name": "Transfer", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": true, "internalType": "address", "name": "player", "type": "address"}, {"indexed": false, "internalType": "uint256", "name": "amount", "type": "uint256"}],
+            "name": "WelcomeBonusClaimed", "type": "event"
+        }, {
+            "anonymous": false, "inputs": [{"indexed": false, "internalType": "uint256", "name": "newFeeInBnbWei", "type": "uint256"}],
+            "name": "WithdrawalFeeUpdated", "type": "event"
+        }, {
+            "inputs": [{"internalType": "address", "name": "spender", "type": "address"}, {"internalType": "uint256", "name": "value", "type": "uint256"}],
+            "name": "approve", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+            "name": "burnTokens", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "uint256", "name": "totalReward", "type": "uint256"}, {"internalType": "address", "name": "player", "type": "address"}, {"internalType": "address", "name": "referrer", "type": "address"}],
+            "name": "claimAllRewards", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
             "inputs": [],
-            "name": "claimWelcomeBonus",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "uint256", "name": "amount", "type": "uint256"}
-            ],
-            "name": "mintTokens",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
+            "name": "claimWelcomeBonus", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}],
+            "name": "mintTokens", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
             "inputs": [],
-            "name": "renounceOwnership",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "to", "type": "address"},
-                {"internalType": "uint256", "name": "value", "type": "uint256"}
-            ],
-            "name": "transfer",
-            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "from", "type": "address"},
-                {"internalType": "address", "name": "to", "type": "address"},
-                {"internalType": "uint256", "name": "value", "type": "uint256"}
-            ],
-            "name": "transferFrom",
-            "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "newOwner", "type": "address"}
-            ],
-            "name": "transferOwnership",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "stateMutability": "payable",
-            "type": "receive"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "_newOracle", "type": "address"}
-            ],
-            "name": "updateGameOracle",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "uint256", "name": "_newLimit", "type": "uint256"}
-            ],
-            "name": "updateMaxWithdrawalLimit",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "_newWallet", "type": "address"}
-            ],
-            "name": "updateOwnerWallet",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "uint256", "name": "_newFeeInBnbWei", "type": "uint256"}
-            ],
-            "name": "updateWithdrawalFee",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        },
-        {
+            "name": "renounceOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "to", "type": "address"}, {"internalType": "uint256", "name": "value", "type": "uint256"}],
+            "name": "transfer", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "from", "type": "address"}, {"internalType": "address", "name": "to", "type": "address"}, {"internalType": "uint256", "name": "value", "type": "uint256"}],
+            "name": "transferFrom", "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "newOwner", "type": "address"}],
+            "name": "transferOwnership", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "stateMutability": "payable", "type": "receive"
+        }, {
+            "inputs": [{"internalType": "address", "name": "_newOracle", "type": "address"}],
+            "name": "updateGameOracle", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "uint256", "name": "_newLimit", "type": "uint256"}],
+            "name": "updateMaxWithdrawalLimit", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "_newWallet", "type": "address"}],
+            "name": "updateOwnerWallet", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "uint256", "name": "_newFeeInBnbWei", "type": "uint256"}],
+            "name": "updateWithdrawalFee", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+        }, {
             "inputs": [],
-            "name": "withdrawAllTokens",
-            "outputs": [],
-            "stateMutability": "payable",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "_gameOracle", "type": "address"}
-            ],
-            "stateMutability": "nonpayable",
-            "type": "constructor"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "owner", "type": "address"},
-                {"internalType": "address", "name": "spender", "type": "address"}
-            ],
-            "name": "allowance",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "account", "type": "address"}
-            ],
-            "name": "balanceOf",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "withdrawAllTokens", "outputs": [], "stateMutability": "payable", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "owner", "type": "address"}, {"internalType": "address", "name": "spender", "type": "address"}],
+            "name": "allowance", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "account", "type": "address"}],
+            "name": "balanceOf", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "contractBalance",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "contractBalance", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "decimals",
-            "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "decimals", "outputs": [{"internalType": "uint8", "name": "", "type": "uint8"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "gameOracle",
-            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "player", "type": "address"}
-            ],
-            "name": "getInternalBalance",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "player", "type": "address"}
-            ],
-            "name": "getRewardHistory",
-            "outputs": [
-                {
-                    "components": [
-                        {"internalType": "uint256", "name": "amount", "type": "uint256"},
-                        {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
-                        {"internalType": "string", "name": "rewardType", "type": "string"},
-                        {"internalType": "address", "name": "referee", "type": "address"}
-                    ],
-                    "internalType": "struct BlockSnakesGame.Reward[]",
-                    "name": "",
-                    "type": "tuple[]"
-                }
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "gameOracle", "outputs": [{"internalType": "address", "name": "", "type": "address"}], "stateMutability": "view", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "player", "type": "address"}],
+            "name": "getInternalBalance", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "player", "type": "address"}],
+            "name": "getRewardHistory", "outputs": [{"components": [{"internalType": "uint256", "name": "amount", "type": "uint256"}, {"internalType": "uint256", "name": "timestamp", "type": "uint256"}, {"internalType": "string", "name": "rewardType", "type": "string"}, {"internalType": "address", "name": "referee", "type": "address"}], "internalType": "struct BlockSnakesGame.Reward[]", "name": "", "type": "tuple[]"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "maxWithdrawalLimit",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "maxWithdrawalLimit", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "MINIMUM_WITHDRAWAL",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "MINIMUM_WITHDRAWAL", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "name",
-            "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "name", "outputs": [{"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "owner",
-            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "owner", "outputs": [{"internalType": "address", "name": "", "type": "address"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "ownerWallet",
-            "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "", "type": "address"}
-            ],
-            "name": "playerHistory",
-            "outputs": [
-                {"internalType": "uint256", "name": "gamesPlayed", "type": "uint256"},
-                {"internalType": "uint256", "name": "totalRewards", "type": "uint256"},
-                {"internalType": "uint256", "name": "totalReferrals", "type": "uint256"},
-                {"internalType": "uint256", "name": "referralRewards", "type": "uint256"},
-                {"internalType": "bool", "name": "hasClaimedWelcomeBonus", "type": "bool"},
-                {"internalType": "uint256", "name": "internalBalance", "type": "uint256"}
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "ownerWallet", "outputs": [{"internalType": "address", "name": "", "type": "address"}], "stateMutability": "view", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+            "name": "playerHistory", "outputs": [{"internalType": "uint256", "name": "gamesPlayed", "type": "uint256"}, {"internalType": "uint256", "name": "totalRewards", "type": "uint256"}, {"internalType": "uint256", "name": "totalReferrals", "type": "uint256"}, {"internalType": "uint256", "name": "referralRewards", "type": "uint256"}, {"internalType": "bool", "name": "hasClaimedWelcomeBonus", "type": "bool"}, {"internalType": "uint256", "name": "internalBalance", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "REFERRAL_COMMISSION_RATE",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "", "type": "address"}
-            ],
-            "name": "referrals",
-            "outputs": [{"internalType": "address", "name": "", "type": "type"}
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
-            "inputs": [
-                {"internalType": "address", "name": "", "type": "address"},
-                {"internalType": "uint256", "name": "", "type": "uint256"}
-            ],
-            "name": "rewardHistory",
-            "outputs": [
-                {"internalType": "uint256", "name": "amount", "type": "uint256"},
-                {"internalType": "uint256", "name": "timestamp", "type": "uint256"},
-                {"internalType": "string", "name": "rewardType", "type": "string"},
-                {"internalType": "address", "name": "referee", "type": "address"}
-            ],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "REFERRAL_COMMISSION_RATE", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+            "name": "referrals", "outputs": [{"internalType": "address", "name": "", "type": "address"}], "stateMutability": "view", "type": "function"
+        }, {
+            "inputs": [{"internalType": "address", "name": "", "type": "address"}, {"internalType": "uint256", "name": "", "type": "uint256"}],
+            "name": "rewardHistory", "outputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"}, {"internalType": "uint256", "name": "timestamp", "type": "uint256"}, {"internalType": "string", "name": "rewardType", "type": "string"}, {"internalType": "address", "name": "referee", "type": "address"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "symbol",
-            "outputs": [{"internalType": "string", "name": "", "type": "string"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "symbol", "outputs": [{"internalType": "string", "name": "", "type": "string"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "totalSupply",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "totalSupply", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "WELCOME_BONUS",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
-        },
-        {
+            "name": "WELCOME_BONUS", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
+        }, {
             "inputs": [],
-            "name": "withdrawalFeeInBnb",
-            "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}],
-            "stateMutability": "view",
-            "type": "function"
+            "name": "withdrawalFeeInBnb", "outputs": [{"internalType": "uint256", "name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"
         }
     ];
+
     const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
     const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
 
     let gameOracleProvider;
     try {
-        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        gameOracleProvider = new ethers.providers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to primary JSON-RPC provider.");
     } catch (error) {
         console.error("Failed to connect to primary JSON-RPC URL:", error);
-        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        gameOracleProvider = new ethers.providers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to secondary JSON-RPC provider.");
     }
     const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
@@ -574,8 +239,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateCanvasSize() {
         if (!canvas) return console.error("Canvas not available!");
-        const screenWidth = window.innerWidth * 0.9;
-        const screenHeight = window.innerHeight * 0.7;
+        const screenWidth = Math.min(window.innerWidth * 0.95, 500);
+        const screenHeight = Math.min(window.innerHeight * 0.8, 400);
         gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
         canvas.width = gridSize * gridWidth;
         canvas.height = gridSize * gridHeight;
@@ -615,7 +280,6 @@ document.addEventListener("DOMContentLoaded", () => {
         snake.forEach((segment, index) => {
             ctx.fillStyle = index === 0 ? "#ffd700" : "#800080";
             ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
-
             if (index === 0) {
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
@@ -625,7 +289,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.05, 0, Math.PI * 2);
                 ctx.fillStyle = "black";
                 ctx.fill();
-
                 ctx.beginPath();
                 ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
                 ctx.fillStyle = "white";
@@ -682,7 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
             eatingSound.play();
             boxesEaten++;
             const reward = 0.5;
-            gameRewards += reward; // Accumulate reward
+            gameRewards += reward;
             playerData.pendingRewards += reward;
             playerData.totalRewards += reward;
             boxes.splice(eatenBoxIndex, 1);
@@ -692,7 +355,6 @@ document.addEventListener("DOMContentLoaded", () => {
             snake.pop();
         }
         draw();
-        updatePlayerHistoryUI();
         localStorage.setItem("playerData", JSON.stringify(playerData));
     }
 
@@ -732,19 +394,19 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!account || !gameOracleContract || playerData.isRewardSubmitted) return;
         try {
             showLoading(true);
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = await provider.getSigner();
-            const nonce = await provider.getTransactionCount(account, "latest"); // Use 'latest' to get current nonce
+            const nonce = await provider.getTransactionCount(account, "latest");
 
             const tx = await gameOracleContract.claimAllRewards(
-                ethers.parseUnits(rewardAmount.toString(), 18),
+                ethers.utils.parseUnits(rewardAmount.toString(), 18),
                 account,
-                playerData.pendingReferral || ethers.ZeroAddress,
+                playerData.pendingReferral || ethers.constants.AddressZero,
                 { gasLimit: 400000, nonce }
             );
             const receipt = await tx.wait();
             playerData.totalRewards += rewardAmount;
-            playerData.pendingRewards = 0; // Clear pending rewards after successful submission
+            playerData.pendingRewards = 0;
             playerData.pendingReferral = null;
             gameRewards = 0;
             playerData.rewardHistory.push({
@@ -754,7 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 referee: playerData.pendingReferral || "N/A"
             });
             if (playerData.pendingReferral) {
-                const referrerReward = rewardAmount * 0.01;
+                const referralCommissionRate = (await contract.REFERRAL_COMMISSION_RATE()) / 10000;
+                const referrerReward = rewardAmount * referralCommissionRate;
                 playerData.pendingReferrerReward += referrerReward;
                 playerData.referralRewards += referrerReward;
                 playerData.rewardHistory.push({
@@ -773,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
             alert("Failed to submit rewards: " + (error.message || error.toString()));
             if (error.code === 'NONCE_EXPIRED' || error.code === 'CALL_EXCEPTION') {
-                playerData.isRewardSubmitted = false; // Reset on nonce or call failure
+                playerData.isRewardSubmitted = false;
             }
         } finally {
             showLoading(false);
@@ -784,22 +447,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!contract || !account) return alert("Connect wallet first!");
         try {
             showLoading(true);
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
             const balance = await provider.getBalance(account);
-            if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
+            if (balance < ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
                 return;
             }
             const internalBalance = await contract.getInternalBalance(account);
-            if (ethers.toBigInt(internalBalance) < ethers.parseUnits(playerData.pendingRewards.toString(), 18)) {
+            if (ethers.BigNumber.from(internalBalance).lt(ethers.utils.parseUnits(playerData.pendingRewards.toString(), 18))) {
                 alert("Insufficient internal balance. Please submit game rewards first.");
                 return;
             }
             const nonce = await provider.getTransactionCount(account, "latest");
-            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000, nonce });
+            const tx = await contract.withdrawAllTokens({ value: ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000, nonce });
             const receipt = await tx.wait();
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            playerData.pendingRewards = 0; // Clear only after successful withdrawal
+            playerData.walletBalance = Number(ethers.utils.formatUnits(await contract.balanceOf(account), 18));
+            playerData.pendingRewards = 0;
             await loadPlayerHistory();
             updatePlayerHistoryUI();
             alert("Rewards claimed successfully!");
@@ -819,43 +482,78 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         try {
             showLoading(true);
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = await provider.getSigner();
             const balance = await provider.getBalance(account);
-            if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
+            if (balance < ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
                 alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
                 return;
             }
-            const hasClaimed = await contract.playerHistory(account).then(history => history.hasClaimedWelcomeBonus);
-            if (hasClaimed) {
-                alert("Welcome bonus already claimed!");
-                playerData.hasClaimedWelcomeBonus = true;
-                return;
-            }
+            const welcomeBonus = await contract.welcomeBonus();
             const nonce = await provider.getTransactionCount(account, "latest");
-            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000, nonce });
+            const tx = await contract.claimWelcomeBonus({ value: ethers.utils.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 400000, nonce });
             await tx.wait();
             playerData.hasClaimedWelcomeBonus = true;
-            playerData.totalRewards += 100;
-            playerData.pendingRewards += 100;
+            playerData.totalRewards += Number(ethers.utils.formatUnits(welcomeBonus, 18));
+            playerData.pendingRewards += Number(ethers.utils.formatUnits(welcomeBonus, 18));
             playerData.rewardHistory.push({
-                amount: 100,
+                amount: Number(ethers.utils.formatUnits(welcomeBonus, 18)),
                 timestamp: Date.now(),
                 rewardType: "Welcome Bonus",
                 referee: "N/A"
             });
             await loadPlayerHistory();
             updatePlayerHistoryUI();
-            alert("Welcome bonus of 100 BST claimed!");
+            alert(`${Number(ethers.utils.formatUnits(welcomeBonus, 18))} BST welcome bonus claimed!`);
         } catch (error) {
             console.error("Error claiming welcome bonus:", error);
             if (error.reason) {
                 alert(`Failed to claim bonus: ${error.reason}`);
-            } else if (error.code === 'CALL_EXCEPTION' && error.reason.includes('reverted')) {
-                alert("Bonus claim failed: Contract reverted. Check if 0.0002 BNB is available and contract allows claiming.");
             } else {
                 alert("Failed to claim bonus: " + (error.message || error.toString()));
             }
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function setWelcomeBonus(newBonus) {
+        if (!contract || !account || !(await contract.owner() === account)) {
+            alert("Only owner can set welcome bonus!");
+            return;
+        }
+        try {
+            showLoading(true);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = await provider.getSigner();
+            const nonce = await provider.getTransactionCount(account, "latest");
+            const tx = await contract.setWelcomeBonus(newBonus, { gasLimit: 400000, nonce });
+            await tx.wait();
+            alert(`Welcome bonus set to ${newBonus} BST!`);
+        } catch (error) {
+            console.error("Error setting welcome bonus:", error);
+            alert("Failed to set welcome bonus: " + (error.message || error.toString()));
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function setReferralCommissionRate(newRate) {
+        if (!contract || !account || !(await contract.owner() === account)) {
+            alert("Only owner can set referral commission rate!");
+            return;
+        }
+        try {
+            showLoading(true);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = await provider.getSigner();
+            const nonce = await provider.getTransactionCount(account, "latest");
+            const tx = await contract.setReferralCommissionRate(newRate, { gasLimit: 400000, nonce });
+            await tx.wait();
+            alert(`Referral commission rate set to ${newRate}%!`);
+        } catch (error) {
+            console.error("Error setting referral commission rate:", error);
+            alert("Failed to set referral commission rate: " + (error.message || error.toString()));
         } finally {
             showLoading(false);
         }
@@ -876,19 +574,22 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!window.ethereum) return alert("Install MetaMask!");
         try {
             showLoading(true);
-            const provider = new ethers.BrowserProvider(window.ethereum);
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             const network = await provider.getNetwork();
             if (network.chainId !== 97) await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x61" }] });
             account = (await provider.send("eth_requestAccounts", []))[0];
             playerData.walletAddress = account;
             contract = new ethers.Contract(contractAddress, contractABI, await provider.getSigner());
+            if (!playerData.hasClaimedWelcomeBonus) {
+                await claimWelcomeBonus();
+            }
             await loadPlayerHistory();
             updatePlayerHistoryUI();
             document.getElementById("connectWallet").style.display = "none";
             document.getElementById("disconnectWallet").style.display = "block";
             document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
-            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await contract.balanceOf(account), 18)).toFixed(2)} BST`;
+            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.utils.formatUnits(await contract.balanceOf(account), 18)).toFixed(2)} BST`;
             alert("Wallet connected!");
         } catch (error) {
             console.error("Wallet error:", error);
@@ -915,12 +616,12 @@ document.addEventListener("DOMContentLoaded", () => {
             showLoading(true);
             const history = await contract.playerHistory(account);
             playerData.gamesPlayed = Number(history.gamesPlayed);
-            playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
+            playerData.totalRewards = Number(ethers.utils.formatUnits(history.totalRewards, 18));
             playerData.totalReferrals = Number(history.totalReferrals);
-            playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
+            playerData.referralRewards = Number(ethers.utils.formatUnits(history.referralRewards, 18));
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
-            playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
-            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.pendingRewards = Number(ethers.utils.formatUnits(await contract.getInternalBalance(account), 18));
+            playerData.walletBalance = Number(ethers.utils.formatUnits(await contract.balanceOf(account), 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
@@ -957,6 +658,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
     document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
+    document.getElementById("setWelcomeBonus").addEventListener("click", () => setWelcomeBonus(prompt("Enter new welcome bonus in BST:")));
+    document.getElementById("setReferralCommission").addEventListener("click", () => setReferralCommissionRate(prompt("Enter new referral commission rate (e.g., 1 for 1%):")));
     document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
 
     document.addEventListener("keydown", (event) => {
@@ -976,14 +679,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const touch = event.touches[0];
             const deltaX = touch.clientX - touchStartX;
             const deltaY = touch.clientY - touchStartY;
-            if (Date.now() - lastTouchTime < 150) return;
-            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+            if (Date.now() - lastTouchTime < 200) return;
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 100) {
                 if (deltaX > 0 && direction !== "left") direction = "right";
                 else if (deltaX < 0 && direction !== "right") direction = "left";
-            } else if (Math.abs(deltaY) > 50) {
+            } else if (Math.abs(deltaY) > 100) {
                 if (deltaY > 0 && direction !== "up") direction = "down";
                 else if (deltaY < 0 && direction !== "down") direction = "up";
             }
+            touchStartX = touch.clientX;
+            touchStartY = touch.clientY;
             lastTouchTime = Date.now();
         });
     }
