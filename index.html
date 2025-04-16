@@ -1,219 +1,617 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>BlockSnakes Game</title>
-    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/eienzen/blocksnakes/main/favicon.ico">
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background: linear-gradient(135deg, #0a0a23, #1a1a3d);
-            color: #fff;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            overflow-x: hidden;
-            min-height: 100vh;
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM fully loaded, initializing game...");
+
+    let account = null;
+    let contract = null;
+    let animationFrameId = null;
+    const TARGET_NETWORK_ID = "97";
+    let WITHDRAWAL_FEE_BNB = "0.0002";
+    let isGameRunning = false;
+
+    let playerData = JSON.parse(localStorage.getItem("playerData")) || {
+        gamesPlayed: 0,
+        totalRewards: 0,
+        boxesEaten: 0,
+        pendingRewards: 0,
+        totalReferrals: 0,
+        referralRewards: 0,
+        pendingReferral: null,
+        pendingReferrerReward: 0,
+        rewardHistory: [],
+        hasClaimedWelcomeBonus: false,
+        walletBalance: 0,
+        walletAddress: null,
+        isRewardSubmitted: false
+    };
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const referrerAddress = urlParams.get("ref");
+    if (referrerAddress && !playerData.pendingReferral && ethers.isAddress(referrerAddress)) {
+        playerData.pendingReferral = referrerAddress;
+    }
+
+    const contractAddress = "0x780b1C8cd6B68B0d51F541D6CA93232c1B4bE37f";
+    const contractABI = [/* ABI from BlockSnakesGame.sol, to be generated after compilation */];
+    const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
+    const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
+
+    let gameOracleProvider;
+    try {
+        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        console.log("Connected to primary JSON-RPC provider.");
+    } catch (error) {
+        console.error("Failed to connect to primary JSON-RPC URL:", error);
+        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        console.log("Connected to secondary JSON-RPC provider.");
+    }
+    const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
+    const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
+
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas ? canvas.getContext("2d") : null;
+    const gridWidth = 30;
+    const gridHeight = 20;
+    let gridSize;
+    let snake = [{ x: 10, y: 10 }];
+    let boxes = [];
+    let direction = "right";
+    let boxesEaten = 0;
+    let gameRewards = 0;
+    const baseSnakeSpeed = 150;
+    let lastMoveTime = 0;
+
+    const eatingSound = document.getElementById("eatingSound");
+    const gameOverSound = document.getElementById("gameOverSound");
+    const victorySound = document.getElementById("victorySound");
+
+    function showLoading(show) {
+        document.getElementById("loadingIndicator").style.display = show ? "block" : "none";
+    }
+
+    function updateCanvasSize() {
+        if (!canvas) return console.error("Canvas not available!");
+        const screenWidth = window.innerWidth * 0.9;
+        const screenHeight = window.innerHeight * 0.7;
+        gridSize = Math.min(screenWidth / gridWidth, screenHeight / gridHeight);
+        canvas.width = gridSize * gridWidth;
+        canvas.height = gridSize * gridHeight;
+        canvas.style.width = `${canvas.width}px`;
+        canvas.style.height = `${canvas.height}px`;
+        draw();
+    }
+
+    function enterFullscreen() {
+        if (document.fullscreenEnabled && canvas) {
+            canvas.requestFullscreen().catch(err => {
+                console.warn("Fullscreen failed, continuing without fullscreen:", err);
+                updateCanvasSize();
+            });
+        } else {
+            updateCanvasSize();
         }
-        #header {
-            width: 100%;
-            background: linear-gradient(90deg, #2a2a5d, #00ffcc);
-            padding: 20px;
-            text-align: center;
-            z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-wrap: wrap;
+    }
+
+    function generateBoxes() {
+        boxes = [];
+        const numBoxes = 10;
+        for (let i = 0; i < numBoxes; i++) {
+            let newBox;
+            do {
+                newBox = { x: Math.floor(Math.random() * gridWidth), y: Math.floor(Math.random() * gridHeight) };
+            } while (snake.some(segment => segment.x === newBox.x && segment.y === newBox.y) || boxes.some(b => b.x === newBox.x && b.y === newBox.y));
+            boxes.push(newBox);
         }
-        #header-banner {
-            width: 100%;
-            max-height: 150px;
-            object-fit: cover;
-            margin-bottom: 10px;
+    }
+
+    function draw() {
+        if (!ctx) return console.error("Canvas context not available!");
+        ctx.fillStyle = "#0a0a23";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        snake.forEach((segment, index) => {
+            ctx.fillStyle = index === 0 ? "#ffd700" : "#800080";
+            ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
+
+            if (index === 0) {
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
+                ctx.fillStyle = "white";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.25, segment.y * gridSize + gridSize * 0.3, gridSize * 0.05, 0, Math.PI * 2);
+                ctx.fillStyle = "black";
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.1, 0, Math.PI * 2);
+                ctx.fillStyle = "white";
+                ctx.fill();
+                ctx.beginPath();
+                ctx.arc(segment.x * gridSize + gridSize * 0.75, segment.y * gridSize + gridSize * 0.3, gridSize * 0.05, 0, Math.PI * 2);
+                ctx.fillStyle = "black";
+                ctx.fill();
+            }
+        });
+
+        boxes.forEach(box => {
+            ctx.fillStyle = "#ff5555";
+            ctx.fillRect(box.x * gridSize, box.y * gridSize, gridSize - 2, gridSize - 2);
+        });
+
+        document.getElementById("boxesEaten").textContent = `Boxes Eaten: ${boxesEaten}`;
+        document.getElementById("pendingRewards").textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
+        document.getElementById("pendingRewardsText").textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
+    }
+
+    function gameLoop(currentTime) {
+        if (isGameRunning && ctx) {
+            if (currentTime - lastMoveTime >= baseSnakeSpeed) {
+                move();
+                lastMoveTime = currentTime;
+            }
         }
-        #header h1 {
-            margin: 0;
-            font-size: 36px;
-            font-weight: bold;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        animationFrameId = requestAnimationFrame(gameLoop);
+    }
+
+    async function move() {
+        if (!isGameRunning || !ctx) return;
+
+        let head = { x: snake[0].x, y: snake[0].y };
+        if (direction === "right") head.x++;
+        if (direction === "left") head.x--;
+        if (direction === "up") head.y--;
+        if (direction === "down") head.y++;
+
+        if (head.x < 0 || head.x >= gridWidth || head.y < 0 || head.y >= gridHeight) {
+            gameOverSound.play();
+            if (gameRewards > 0 && account && gameOracleContract && !playerData.isRewardSubmitted) {
+                await submitGameReward(gameRewards);
+                playerData.isRewardSubmitted = true;
+            }
+            showGameOverPopup();
+            return;
         }
-        #header p {
-            margin: 5px;
-            font-size: 18px;
+
+        snake.unshift(head);
+        const eatenBoxIndex = boxes.findIndex(box => box.x === head.x && box.y === head.y);
+        if (eatenBoxIndex !== -1) {
+            eatingSound.play();
+            boxesEaten++;
+            const reward = 0.5;
+            playerData.pendingRewards += reward;
+            gameRewards += reward;
+            playerData.totalRewards += reward;
+            playerData.rewardHistory.push({ amount: reward, timestamp: Date.now(), rewardType: "Game", referee: "N/A" });
+            if (playerData.pendingReferral) {
+                const referrerReward = reward * 0.01;
+                playerData.pendingReferrerReward += referrerReward;
+                playerData.referralRewards += referrerReward;
+                playerData.totalReferrals += 1;
+                playerData.rewardHistory.push({ amount: referrerReward, timestamp: Date.now(), rewardType: "Referral", referee: playerData.pendingReferral });
+            }
+            boxes.splice(eatenBoxIndex, 1);
+            if (boxes.length < 5) generateBoxes();
+            if (boxesEaten % 10 === 0 || boxesEaten % 20 === 0 || boxesEaten % 30 === 0) victorySound.play();
+        } else {
+            snake.pop();
         }
-        #content {
-            margin-top: 20px;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+        draw();
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+    }
+
+    function showGameOverPopup() {
+        const popup = document.getElementById("gameOverPopup");
+        if (!popup) return;
+        document.getElementById("finalBoxesEaten").textContent = `Boxes Eaten: ${boxesEaten}`;
+        document.getElementById("finalRewards").textContent = `Earned BST: ${gameRewards.toFixed(2)} BST`;
+        popup.style.display = "block";
+        isGameRunning = false;
+        document.getElementById("closePopup").onclick = () => {
+            popup.style.display = "none";
+        };
+    }
+
+    async function resetGame() {
+        if (animationFrameId) cancelAnimationFrame(animationFrameId);
+        isGameRunning = false;
+        console.log("Resetting game...");
+        showLoading(true);
+
+        playerData.gamesPlayed += 1;
+        boxesEaten = 0;
+        gameRewards = 0;
+        snake = [{ x: 10, y: 10 }];
+        direction = "right";
+        playerData.isRewardSubmitted = false;
+        generateBoxes();
+        updateCanvasSize();
+        draw();
+        showLoading(false);
+        updatePlayerHistoryUI();
+        localStorage.setItem("playerData", JSON.stringify(playerData));
+    }
+
+    async function submitGameReward(rewardAmount) {
+        if (!account || !gameOracleContract || playerData.isRewardSubmitted) return;
+        try {
+            showLoading(true);
+            const tx = await gameOracleContract.claimAllRewards(
+                ethers.parseUnits(rewardAmount.toString(), 18),
+                account,
+                playerData.pendingReferral || ethers.ZeroAddress,
+                { gasLimit: 300000 }
+            );
+            const receipt = await tx.wait();
+            playerData.totalRewards += rewardAmount;
+            playerData.pendingRewards += rewardAmount;
+            playerData.pendingReferral = null;
+            gameRewards = 0;
+            playerData.isRewardSubmitted = true;
+            await loadPlayerHistory();
+            updatePlayerHistoryUI();
+            alert(`${rewardAmount} BST rewards submitted!`);
+        } catch (error) {
+            console.error("Error submitting rewards:", error);
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
+            alert("Failed to submit rewards: " + (error.message || error.toString()));
+            playerData.isRewardSubmitted = false;
+        } finally {
+            showLoading(false);
         }
-        canvas {
-            border: 2px solid #00ffcc;
-            background: linear-gradient(45deg, #0a0a23, #1a1a3d);
-            border-radius: 5px;
-            margin: 20px 0;
-            max-width: 90vw;
-            max-height: 70vh;
+    }
+
+    async function claimPendingRewards() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        try {
+            showLoading(true);
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(account);
+            if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
+                alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
+                return;
+            }
+            const internalBalance = await contract.getInternalBalance(account);
+            if (BigInt(internalBalance) < ethers.parseUnits(playerData.pendingRewards.toString(), 18)) {
+                alert("Insufficient internal balance. Please submit game rewards first.");
+                return;
+            }
+            const tx = await contract.withdrawAllTokens({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
+            await tx.wait();
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.pendingRewards = 0;
+            await loadPlayerHistory();
+            updatePlayerHistoryUI();
+            alert("Rewards claimed successfully!");
+        } catch (error) {
+            console.error("Error claiming rewards:", error);
+            document.getElementById("withdrawalStatus").textContent = `Error: ${error.message || error.toString()}`;
+            alert("Failed to claim rewards: " + (error.message || error.toString()));
+        } finally {
+            showLoading(false);
         }
-        #gameInfo, #playerHistory {
-            margin-top: 20px;
-            padding: 15px;
-            background: linear-gradient(135deg, #2a2a5d, #3a3a7d);
-            border-radius: 10px;
-            width: 80%;
-            max-width: 600px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    async function claimWelcomeBonus() {
+        if (!contract || !account || playerData.hasClaimedWelcomeBonus) {
+            alert("Bonus already claimed or connect wallet!");
+            return;
         }
-        #withdrawalStatus {
-            color: #ff5555;
-            margin-top: 5px;
-            font-size: 14px;
+        try {
+            showLoading(true);
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const balance = await provider.getBalance(account);
+            if (balance < ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18)) {
+                alert(`Need ${WITHDRAWAL_FEE_BNB} BNB for fee.`);
+                return;
+            }
+            const tx = await contract.claimWelcomeBonus({ value: ethers.parseUnits(WITHDRAWAL_FEE_BNB, 18), gasLimit: 300000 });
+            await tx.wait();
+            playerData.hasClaimedWelcomeBonus = true;
+            playerData.totalRewards += 100;
+            playerData.pendingRewards += 100;
+            await loadPlayerHistory();
+            updatePlayerHistoryUI();
+            alert("Welcome bonus of 100 BST claimed!");
+        } catch (error) {
+            console.error("Error claiming welcome bonus:", error);
+            if (error.reason) {
+                alert(`Failed to claim bonus: ${error.reason}`);
+            } else {
+                alert("Failed to claim bonus: Transaction reverted. Check console for details.");
+            }
+        } finally {
+            showLoading(false);
         }
-        #loadingIndicator {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0, 0, 0, 0.7);
-            color: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            display: none;
-            z-index: 2000;
+    }
+
+    function generateReferralLink() {
+        if (!account) return alert("Connect wallet first!");
+        const baseUrl = window.location.origin + window.location.pathname;
+        const referralLink = `${baseUrl}?ref=${account}`;
+        navigator.clipboard.writeText(referralLink).then(() => {
+            alert("Referral link copied to clipboard: " + referralLink);
+        }).catch(err => {
+            alert("Failed to copy referral link: " + err.message);
+        });
+    }
+
+    async function connectWallet() {
+        if (!window.ethereum) return alert("Install MetaMask!");
+        try {
+            showLoading(true);
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            const network = await provider.getNetwork();
+            if (network.chainId.toString() !== TARGET_NETWORK_ID) {
+                await window.ethereum.request({
+                    method: "wallet_switchEthereumChain",
+                    params: [{ chainId: "0x61" }]
+                });
+            }
+            account = (await provider.send("eth_requestAccounts", []))[0];
+            playerData.walletAddress = account;
+            contract = new ethers.Contract(contractAddress, contractABI, await provider.getSigner());
+            await loadPlayerHistory();
+            updatePlayerHistoryUI();
+            document.getElementById("connectWallet").style.display = "none";
+            document.getElementById("disconnectWallet").style.display = "block";
+            document.getElementById("walletAddress").textContent = `Connected: ${account.slice(0, 6)}...`;
+            document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await provider.getBalance(account), 18)).toFixed(2)} BNB`;
+            alert("Wallet connected!");
+        } catch (error) {
+            console.error("Wallet error:", error);
+            alert("Failed to connect: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #00ffcc;
-            color: #000;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background-color 0.3s;
+    }
+
+    function disconnectWallet() {
+        account = null;
+        contract = null;
+        document.getElementById("connectWallet").style.display = "block";
+        document.getElementById("disconnectWallet").style.display = "none";
+        document.getElementById("walletAddress").textContent = "";
+        document.getElementById("walletBalance").textContent = "";
+        document.getElementById("ownerPanel").style.display = "none";
+        document.getElementById("ownerFunctions").style.display = "none";
+        updatePlayerHistoryUI();
+        alert("Wallet disconnected!");
+    }
+
+    async function loadPlayerHistory() {
+        if (!contract || !account) return updatePlayerHistoryUI();
+        try {
+            showLoading(true);
+            const history = await contract.playerHistory(account);
+            playerData.gamesPlayed = Number(history.gamesPlayed);
+            playerData.totalRewards = Number(ethers.formatUnits(history.totalRewards, 18));
+            playerData.totalReferrals = Number(history.totalReferrals);
+            playerData.referralRewards = Number(ethers.formatUnits(history.referralRewards, 18));
+            playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
+            playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
+            playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.rewardHistory = []; // Clear local history to sync with contract
+            const events = await contract.queryFilter("RewardClaimed", 0, "latest");
+            events.forEach(event => {
+                if (event.args.player === account) {
+                    playerData.rewardHistory.push({
+                        amount: Number(ethers.formatUnits(event.args.amount, 18)),
+                        timestamp: Number(event.args.timestamp),
+                        rewardType: "Claimed",
+                        referee: ethers.ZeroAddress
+                    });
+                }
+            });
+            updatePlayerHistoryUI();
+            localStorage.setItem("playerData", JSON.stringify(playerData));
+        } catch (error) {
+            console.error("History error:", error);
+            alert("Failed to load history: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        button:hover {
-            background-color: #00ccaa;
+    }
+
+    function updatePlayerHistoryUI() {
+        document.getElementById("gamesPlayed").textContent = `Games Played: ${playerData.gamesPlayed}`;
+        document.getElementById("totalGameRewards").textContent = `Total Game Rewards: ${playerData.totalRewards.toFixed(2)} BST`;
+        document.getElementById("totalReferrals").textContent = `Total Referrals: ${playerData.totalReferrals}`;
+        document.getElementById("referralRewards").textContent = `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`;
+        document.getElementById("pendingRewardsText").textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
+        document.getElementById("walletBalance").textContent = `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`;
+        document.getElementById("walletAddress").textContent = account ? `Connected: ${account.slice(0, 6)}...` : "";
+        document.getElementById("rewardHistoryList").innerHTML = playerData.rewardHistory.map(entry =>
+            `<li>${entry.rewardType}: ${entry.amount.toFixed(2)} BST on ${new Date(entry.timestamp * 1000).toLocaleString()}${entry.referee !== ethers.ZeroAddress ? ` (Referee: ${entry.referee.slice(0, 6)}...)` : ""}</li>`
+        ).join("");
+    }
+
+    // Owner Panel Functions
+    async function verifyOwner() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        try {
+            showLoading(true);
+            const owner = await contract.owner();
+            if (account.toLowerCase() !== owner.toLowerCase()) {
+                alert("You are not the contract owner!");
+                return;
+            }
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const signer = await provider.getSigner();
+            const message = "Verify ownership for BlockSnakesGame";
+            const signature = await signer.signMessage(message);
+            const recoveredAddress = ethers.verifyMessage(message, signature);
+            if (recoveredAddress.toLowerCase() === account.toLowerCase()) {
+                document.getElementById("ownerPanel").style.display = "block";
+                document.getElementById("ownerFunctions").style.display = "block";
+                alert("Owner verified successfully!");
+            } else {
+                alert("Signature verification failed!");
+            }
+        } catch (error) {
+            console.error("Owner verification error:", error);
+            alert("Failed to verify owner: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        button:disabled {
-            background-color: #666;
-            cursor: not-allowed;
+    }
+
+    async function updateGameOracle() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const newOracleAddress = document.getElementById("newOracleAddress").value;
+        if (!ethers.isAddress(newOracleAddress)) return alert("Invalid address!");
+        try {
+            showLoading(true);
+            const tx = await contract.updateGameOracle(newOracleAddress, { gasLimit: 200000 });
+            await tx.wait();
+            alert("Game oracle updated successfully!");
+        } catch (error) {
+            console.error("Error updating game oracle:", error);
+            alert("Failed to update game oracle: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        ul {
-            list-style-type: none;
-            padding: 0;
+    }
+
+    async function updateOwnerWallet() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const newOwnerWallet = document.getElementById("newOwnerWallet").value;
+        if (!ethers.isAddress(newOwnerWallet)) return alert("Invalid address!");
+        try {
+            showLoading(true);
+            const tx = await contract.updateOwnerWallet(newOwnerWallet, { gasLimit: 200000 });
+            await tx.wait();
+            alert("Owner wallet updated successfully!");
+        } catch (error) {
+            console.error("Error updating owner wallet:", error);
+            alert("Failed to update owner wallet: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        li {
-            margin: 5px 0;
-            background-color: #3a3a7d;
-            padding: 5px;
-            border-radius: 3px;
+    }
+
+    async function updateWithdrawalFee() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const newFee = document.getElementById("newWithdrawalFee").value;
+        if (newFee <= 0) return alert("Invalid fee!");
+        try {
+            showLoading(true);
+            const tx = await contract.updateWithdrawalFee(newFee, { gasLimit: 200000 });
+            await tx.wait();
+            WITHDRAWAL_FEE_BNB = ethers.formatUnits(newFee, 18);
+            alert("Withdrawal fee updated successfully!");
+        } catch (error) {
+            console.error("Error updating withdrawal fee:", error);
+            alert("Failed to update withdrawal fee: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        h2, h3 {
-            color: #00ffcc;
+    }
+
+    async function updateMaxWithdrawalLimit() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const newLimit = document.getElementById("newMaxWithdrawalLimit").value;
+        if (newLimit <= 0) return alert("Invalid limit!");
+        try {
+            showLoading(true);
+            const tx = await contract.updateMaxWithdrawalLimit(ethers.parseUnits(newLimit, 18), { gasLimit: 200000 });
+            await tx.wait();
+            alert("Max withdrawal limit updated successfully!");
+        } catch (error) {
+            console.error("Error updating max withdrawal limit:", error);
+            alert("Failed to update max withdrawal limit: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        #gameOverPopup {
-            display: none;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: linear-gradient(135deg, #2a2a5d, #3a3a7d);
-            padding: 20px;
-            border: 2px solid #00ffcc;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
-            z-index: 2000;
-            text-align: center;
-            max-width: 90%;
-            max-height: 90vh;
-            overflow-y: auto;
+    }
+
+    async function mintTokens() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const amount = document.getElementById("mintAmount").value;
+        if (amount <= 0) return alert("Invalid amount!");
+        try {
+            showLoading(true);
+            const tx = await contract.mintTokens(ethers.parseUnits(amount, 18), { gasLimit: 300000 });
+            await tx.wait();
+            alert("Tokens minted successfully!");
+        } catch (error) {
+            console.error("Error minting tokens:", error);
+            alert("Failed to mint tokens: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        #gameOverPopup h2 {
-            margin: 0 0 10px;
-            color: #00ffcc;
+    }
+
+    async function burnTokens() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const amount = document.getElementById("burnAmount").value;
+        if (amount <= 0) return alert("Invalid amount!");
+        try {
+            showLoading(true);
+            const tx = await contract.burnTokens(ethers.parseUnits(amount, 18), { gasLimit: 300000 });
+            await tx.wait();
+            alert("Tokens burned successfully!");
+        } catch (error) {
+            console.error("Error burning tokens:", error);
+            alert("Failed to burn tokens: " + error.message);
+        } finally {
+            showLoading(false);
         }
-        #gameOverPopup p {
-            margin: 5px 0;
+    }
+
+    // Event Listeners
+    document.getElementById("playGame").addEventListener("click", async () => {
+        if (!account) return alert("Connect wallet!");
+        showLoading(true);
+        enterFullscreen();
+        await resetGame();
+        isGameRunning = true;
+        animationFrameId = requestAnimationFrame(gameLoop);
+        showLoading(false);
+    });
+    document.getElementById("connectWallet").addEventListener("click", connectWallet);
+    document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
+    document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
+    document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
+    document.getElementById("getReferralLink").addEventListener("click", generateReferralLink);
+    document.getElementById("verifyOwner").addEventListener("click", verifyOwner);
+
+    document.addEventListener("keydown", (event) => {
+        if (isGameRunning) {
+            if (event.key === "ArrowUp" && direction !== "down") direction = "up";
+            if (event.key === "ArrowDown" && direction !== "up") direction = "down";
+            if (event.key === "ArrowLeft" && direction !== "right") direction = "left";
+            if (event.key === "ArrowRight" && direction !== "left") direction = "right";
         }
-        #closePopup {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 0;
-            line-height: 1;
-        }
-        @media (orientation: portrait) {
-            canvas { max-height: 60vh; }
-            #header { padding: 10px; }
-            #header h1 { font-size: 28px; }
-        }
-        @media (orientation: landscape) {
-            canvas { max-width: 80vw; }
-        }
-    </style>
-</head>
-<body>
-    <div id="header">
-        <img src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/banner.jpg" alt="Banner" id="header-banner">
-        <div>
-            <h1>BlockSnakes: Play and Earn BST Token</h1>
-            <p id="walletAddress"></p>
-            <p id="walletBalance">Wallet Balance: 0 BST</p>
-        </div>
-    </div>
-    <div id="content">
-        <div id="gameInfo">
-            <h2>Game Info</h2>
-            <p id="boxesEaten">Boxes Eaten: 0</p>
-            <p id="pendingRewards">Pending Rewards: 0 BST</p>
-            <button id="playGame">Play Game</button>
-            <button id="connectWallet">Connect Wallet</button>
-            <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-        <div id="playerHistory">
-            <h2>Player History</h2>
-            <p id="gamesPlayed">Games Played: 0</p>
-            <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
-            <p id="totalReferrals">Total Referrals: 0</p>
-            <p id="referralRewards">Referral Rewards: 0 BST</p>
-            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
-            <button id="claimGameRewards">Claim Rewards</button>
-            <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-            <button id="getReferralLink">Get Referral Link</button>
-            <p id="withdrawalStatus"></p>
-            <h3>Reward History</h3>
-            <ul id="rewardHistoryList"></ul>
-        </div>
-    </div>
-    <div id="gameOverPopup">
-        <h2>Game Over!</h2>
-        <p id="finalBoxesEaten">Boxes Eaten: 0</p>
-        <p id="finalRewards">Earned BST: 0 BST</p>
-        <button id="closePopup">X</button>
-    </div>
-    <div id="loadingIndicator">Loading...</div>
-    <audio id="eatingSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/eating-sound-effect-36186.mp3"></audio>
-    <audio id="gameOverSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/game-over-arcade-6435.mp3"></audio>
-    <audio id="victorySound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/victory-sound-101319.mp3"></audio>
-    <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
-    <script src="game.js"></script>
-</body>
-</html>
+    });
+
+    let touchStartX = 0, touchStartY = 0, lastTouchTime = 0;
+    if (canvas) {
+        canvas.addEventListener("touchstart", (event) => {
+            touchStartX = event.touches[0].clientX;
+            touchStartY = event.touches[0].clientY;
+        });
+        canvas.addEventListener("touchmove", (event) => {
+            if (!isGameRunning) return;
+            const touch = event.touches[0];
+            const deltaX = touch.clientX - touchStartX;
+            const deltaY = touch.clientY - touchStartY;
+            if (Date.now() - lastTouchTime < 150) return;
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 50) {
+                if (deltaX > 0 && direction !== "left") direction = "right";
+                else if (deltaX < 0 && direction !== "right") direction = "left";
+            } else if (Math.abs(deltaY) > 50) {
+                if (deltaY > 0 && direction !== "up") direction = "down";
+                else if (deltaY < 0 && direction !== "down") direction = "up";
+            }
+            lastTouchTime = Date.now();
+        });
+    }
+
+    window.addEventListener("resize", updateCanvasSize);
+    updateCanvasSize();
+    generateBoxes();
+    draw();
+    updatePlayerHistoryUI();
+});
