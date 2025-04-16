@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -66,7 +66,7 @@
             max-width: 90vw;
             max-height: 70vh;
         }
-        #gameInfo, #playerHistory, #ownerPanel {
+        #gameInfo, #userPanel, #ownerPanel {
             margin-top: 20px;
             padding: 15px;
             background: linear-gradient(135deg, #2a2a5d, #3a3a7d);
@@ -200,8 +200,8 @@
             <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
         </div>
         <canvas id="gameCanvas"></canvas>
-        <div id="playerHistory">
-            <h2>Player History</h2>
+        <div id="userPanel">
+            <h2>User Panel</h2>
             <p id="gamesPlayed">Games Played: 0</p>
             <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
             <p id="totalReferrals">Total Referrals: 0</p>
@@ -214,13 +214,11 @@
             <h3>Reward History</h3>
             <ul id="rewardHistoryList"></ul>
         </div>
-        <!-- Owner Panel -->
         <div id="ownerPanel">
             <h2>Owner Panel</h2>
-            <p>Only contract owner can access this panel. Verify with signature.</p>
-            <input type="text" id="signatureMessage" placeholder="Enter message to sign" />
-            <input type="text" id="signatureInput" placeholder="Enter signature (hex)" />
-            <button id="verifyOwner">Verify Owner</button>
+            <p>Enter password to access owner functions.</p>
+            <input type="password" id="ownerPassword" placeholder="Enter password" />
+            <button id="verifyOwner">Verify</button>
             <div id="ownerFunctions" style="display: none;">
                 <h3>Owner Functions</h3>
                 <div>
