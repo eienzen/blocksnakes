@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://data-seed-prebsc-2-s1.binance.org:8545/ wss://data-seed-prebsc-2-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -175,14 +175,14 @@
         <div>
             <h1>BlockSnakes: Play and Earn BST Token</h1>
             <p id="walletAddress"></p>
-            <p id="walletBalance">Wallet Balance: 0.00 BST</p>
+            <p id="walletBalance">Wallet Balance: 0 BST</p>
         </div>
     </div>
     <div id="content">
         <div id="gameInfo">
             <h2>Game Info</h2>
             <p id="boxesEaten">Boxes Eaten: 0</p>
-            <p>Pending Rewards: <span id="pendingRewards">0.00 BST</span></p>
+            <p id="pendingRewards">Pending Rewards: 0 BST</p>
             <button id="playGame">Play Game</button>
             <button id="connectWallet">Connect Wallet</button>
             <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
@@ -190,15 +190,13 @@
         <canvas id="gameCanvas"></canvas>
         <div id="playerHistory">
             <h2>Player History</h2>
-            <p>Games Played: <span id="gamesPlayed">0</span></p>
-            <p>Total Game Rewards: <span id="totalGameRewards">0.00 BST</span></p>
-            <p>Total Referrals: <span id="totalReferrals">0</span></p>
-            <p>Referral Rewards: <span id="referralRewards">0.00 BST</span></p>
-            <p>Pending Rewards: <span id="pendingRewardsText">0.00 BST</span></p>
+            <p id="gamesPlayed">Games Played: 0</p>
+            <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
+            <p id="totalReferrals">Total Referrals: 0</p>
+            <p id="referralRewards">Referral Rewards: 0 BST</p>
+            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
             <button id="claimGameRewards">Claim Rewards</button>
             <button id="welcomeBonusButton">Claim Welcome Bonus</button>
-            <button id="setWelcomeBonus">Set Welcome Bonus</button>
-            <button id="setReferralCommission">Set Referral Commission</button>
             <button id="getReferralLink">Get Referral Link</button>
             <p id="withdrawalStatus"></p>
             <h3>Reward History</h3>
@@ -207,8 +205,8 @@
     </div>
     <div id="gameOverPopup">
         <h2>Game Over!</h2>
-        <p>Boxes Eaten: <span id="finalBoxesEaten">0</span></p>
-        <p>Earned BST: <span id="finalRewards">0.00 BST</span></p>
+        <p id="finalBoxesEaten">Boxes Eaten: 0</p>
+        <p id="finalRewards">Earned BST: 0 BST</p>
         <button id="closePopup">X</button>
     </div>
     <div id="loadingIndicator">Loading...</div>
