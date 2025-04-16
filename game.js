@@ -30,8 +30,35 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x42156A5D1C8E0ADFa21451C26e90eA360d173b39";
+    const contractAddress = "0x54F6319447297b8b8B8AD7dA227D9fC43bE9A80d";
     const contractABI = [
+	{
+		"inputs": [],
+		"name": "ECDSAInvalidSignature",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "length",
+				"type": "uint256"
+			}
+		],
+		"name": "ECDSAInvalidSignatureLength",
+		"type": "error"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "bytes32",
+				"name": "s",
+				"type": "bytes32"
+			}
+		],
+		"name": "ECDSAInvalidSignatureS",
+		"type": "error"
+	},
 	{
 		"inputs": [
 			{
@@ -327,6 +354,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "burnTokens",
@@ -370,6 +407,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "amount",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "mintTokens",
@@ -456,6 +503,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "_newOracle",
 				"type": "address"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "updateGameOracle",
@@ -469,6 +526,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "_newLimit",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "updateMaxWithdrawalLimit",
@@ -482,6 +549,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "address",
 				"name": "_newOwner",
 				"type": "address"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "updateOwnerWallet",
@@ -495,6 +572,16 @@ document.addEventListener("DOMContentLoaded", () => {
 				"internalType": "uint256",
 				"name": "_newFee",
 				"type": "uint256"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "messageHash",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes",
+				"name": "signature",
+				"type": "bytes"
 			}
 		],
 		"name": "updateWithdrawalFee",
@@ -759,6 +846,7 @@ document.addEventListener("DOMContentLoaded", () => {
 	}
 ];
     const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
+    const OWNER_PASSWORD = "secret123"; // Change this to a secure password
     const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
 
     let gameOracleProvider;
@@ -968,7 +1056,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 playerData.pendingReferral || ethers.ZeroAddress,
                 { gasLimit: 300000 }
             );
-            const receipt = await tx.wait();
+            await tx.wait();
             playerData.totalRewards += rewardAmount;
             playerData.pendingRewards += rewardAmount;
             playerData.pendingReferral = null;
@@ -1063,17 +1151,33 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function connectWallet() {
-        if (!window.ethereum) return alert("Install MetaMask!");
+        if (!window.ethereum) return alert("Please install MetaMask!");
         try {
             showLoading(true);
             const provider = new ethers.BrowserProvider(window.ethereum);
             await provider.send("eth_requestAccounts", []);
             const network = await provider.getNetwork();
             if (network.chainId.toString() !== TARGET_NETWORK_ID) {
-                await window.ethereum.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: "0x61" }]
-                });
+                try {
+                    await window.ethereum.request({
+                        method: "wallet_switchEthereumChain",
+                        params: [{ chainId: "0x61" }]
+                    });
+                } catch (switchError) {
+                    if (switchError.code === 4902) {
+                        await window.ethereum.request({
+                            method: "wallet_addEthereumChain",
+                            params: [{
+                                chainId: "0x61",
+                                chainName: "BNB Smart Chain Testnet",
+                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
+                                nativeCurrency: { symbol: "BNB", decimals: 18 }
+                            }]
+                        });
+                    } else {
+                        throw switchError;
+                    }
+                }
             }
             account = (await provider.send("eth_requestAccounts", []))[0];
             playerData.walletAddress = account;
@@ -1086,8 +1190,8 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("walletBalance").textContent = `Wallet Balance: ${Number(ethers.formatUnits(await provider.getBalance(account), 18)).toFixed(2)} BNB`;
             alert("Wallet connected!");
         } catch (error) {
-            console.error("Wallet error:", error);
-            alert("Failed to connect: " + error.message);
+            console.error("Wallet connection error:", error);
+            alert("Failed to connect wallet: " + (error.message || "Please ensure MetaMask is configured for BNB Testnet."));
         } finally {
             showLoading(false);
         }
@@ -1118,7 +1222,7 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
-            playerData.rewardHistory = []; // Clear local history to sync with contract
+            playerData.rewardHistory = [];
             const events = await contract.queryFilter("RewardClaimed", 0, "latest");
             events.forEach(event => {
                 if (event.args.player === account) {
@@ -1153,33 +1257,15 @@ document.addEventListener("DOMContentLoaded", () => {
         ).join("");
     }
 
-    // Owner Panel Functions
-    async function verifyOwner() {
-        if (!contract || !account) return alert("Connect wallet first!");
-        try {
-            showLoading(true);
-            const owner = await contract.owner();
-            if (account.toLowerCase() !== owner.toLowerCase()) {
-                alert("You are not the contract owner!");
-                return;
-            }
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            const signer = await provider.getSigner();
-            const message = "Verify ownership for BlockSnakesGame";
-            const signature = await signer.signMessage(message);
-            const recoveredAddress = ethers.verifyMessage(message, signature);
-            if (recoveredAddress.toLowerCase() === account.toLowerCase()) {
-                document.getElementById("ownerPanel").style.display = "block";
-                document.getElementById("ownerFunctions").style.display = "block";
-                alert("Owner verified successfully!");
-            } else {
-                alert("Signature verification failed!");
-            }
-        } catch (error) {
-            console.error("Owner verification error:", error);
-            alert("Failed to verify owner: " + error.message);
-        } finally {
-            showLoading(false);
+    function verifyOwner() {
+        if (!account) return alert("Connect wallet first!");
+        const password = document.getElementById("ownerPassword").value;
+        if (password === OWNER_PASSWORD) {
+            document.getElementById("ownerPanel").style.display = "block";
+            document.getElementById("ownerFunctions").style.display = "block";
+            alert("Owner verified successfully!");
+        } else {
+            alert("Incorrect password!");
         }
     }
 
