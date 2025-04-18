@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM fully loaded, initializing game...");
 
@@ -5,7 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let contract = null;
     let animationFrameId = null;
     const TARGET_NETWORK_ID = "97";
-    let WITHDRAWAL_FEE_BNB = "0.0002";
+    let WITHDRAWAL_FEE_BNB = process.env.WITHDRAWAL_FEE_BNB || "0.0002";
     let isGameRunning = false;
 
     let playerData = JSON.parse(localStorage.getItem("playerData")) || {
@@ -30,7 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    const contractAddress = "0x1d256Dfcb8Ec7A443402AA49B765B3014C4d59a7";
+    const contractAddress = process.env.CONTRACT_ADDRESS;
     const contractABI = [
 	{
 		"inputs": [],
@@ -844,22 +846,18 @@ document.addEventListener("DOMContentLoaded", () => {
 		"stateMutability": "view",
 		"type": "function"
 	}
-]
-    const gameOracleAddress = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
-    const OWNER_PASSWORD = "Anil@1985"; // Change this to a secure password
-    const gameOraclePrivateKey = "e4594c8a3cd798aed0c2b1276012e87cce67c4a21142cf0b3467d8815bf37544";
+];
+    const gameOracleAddress = process.env.GAME_ORACLE_ADDRESS;
 
     let gameOracleProvider;
     try {
-        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-1-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        gameOracleProvider = new ethers.JsonRpcProvider(process.env.GAME_ORACLE_RPC_URL, { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to primary JSON-RPC provider.");
     } catch (error) {
         console.error("Failed to connect to primary JSON-RPC URL:", error);
-        gameOracleProvider = new ethers.JsonRpcProvider("https://data-seed-prebsc-2-s1.binance.org:8545/", { chainId: 97, name: "BNB Testnet" });
+        gameOracleProvider = new ethers.JsonRpcProvider(process.env.GAME_ORACLE_RPC_URL_SECONDARY, { chainId: 97, name: "BNB Testnet" });
         console.log("Connected to secondary JSON-RPC provider.");
     }
-    const gameOracleWallet = new ethers.Wallet(gameOraclePrivateKey, gameOracleProvider);
-    const gameOracleContract = new ethers.Contract(contractAddress, contractABI, gameOracleWallet);
 
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas ? canvas.getContext("2d") : null;
@@ -1175,7 +1173,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             params: [{
                                 chainId: "0x61",
                                 chainName: "BNB Smart Chain Testnet",
-                                rpcUrls: ["https://data-seed-prebsc-1-s1.binance.org:8545/"],
+                                rpcUrls: [process.env.GAME_ORACLE_RPC_URL],
                                 nativeCurrency: { symbol: "BNB", decimals: 18 }
                             }]
                         });
@@ -1265,7 +1263,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function verifyOwner() {
         if (!account) return alert("Connect wallet first!");
         const password = document.getElementById("ownerPassword").value;
-        if (password === OWNER_PASSWORD) {
+        if (password === process.env.OWNER_PASSWORD) {
             document.getElementById("ownerPanel").style.display = "block";
             document.getElementById("ownerFunctions").style.display = "block";
             alert("Owner verified successfully!");
