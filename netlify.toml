@@ -1,6 +1,0 @@
-[build]
-publish = "public"  # अपनी फाइल्स की लोकेशन, अगर अलग है तो अपडेट करें
-functions = "netlify/functions"
-
-[dev]
-functions = "netlify/functions"
