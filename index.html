@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' https://unpkg.com; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://raw.githubusercontent.com; connect-src 'self' https://data-seed-prebsc-1-s1.binance.org:8545/ wss://data-seed-prebsc-1-s1.binance.org:8545/ https://data-seed-prebsc-2-s1.binance.org:8545/ wss://data-seed-prebsc-2-s1.binance.org:8545/ https://*.binance.org wss://*.binance.org; media-src 'self' https://github.com https://raw.githubusercontent.com;">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -66,7 +66,7 @@
             max-width: 90vw;
             max-height: 70vh;
         }
-        #gameInfo, #userPanel, #ownerPanel {
+        #gameInfo, #playerHistory {
             margin-top: 20px;
             padding: 15px;
             background: linear-gradient(135deg, #2a2a5d, #3a3a7d);
@@ -74,9 +74,6 @@
             width: 80%;
             max-width: 600px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-        }
-        #ownerPanel {
-            display: none;
         }
         #withdrawalStatus {
             color: #ff5555;
@@ -112,15 +109,6 @@
         button:disabled {
             background-color: #666;
             cursor: not-allowed;
-        }
-        input {
-            padding: 8px;
-            margin: 5px;
-            border-radius: 5px;
-            border: 1px solid #00ffcc;
-            background: #0a0a23;
-            color: #fff;
-            width: calc(100% - 20px);
         }
         ul {
             list-style-type: none;
@@ -187,90 +175,47 @@
         <div>
             <h1>BlockSnakes: Play and Earn BST Token</h1>
             <p id="walletAddress"></p>
-            <p id="walletBalance">Wallet Balance: 0 BST</p>
+            <p id="walletBalance">Wallet Balance: 0.00 BST</p>
         </div>
     </div>
     <div id="content">
         <div id="gameInfo">
             <h2>Game Info</h2>
             <p id="boxesEaten">Boxes Eaten: 0</p>
-            <p id="pendingRewards">Pending Rewards: 0 BST</p>
+            <p>Pending Rewards: <span id="pendingRewards">0.00 BST</span></p>
             <button id="playGame">Play Game</button>
             <button id="connectWallet">Connect Wallet</button>
             <button id="disconnectWallet" style="display: none;">Disconnect Wallet</button>
         </div>
         <canvas id="gameCanvas"></canvas>
-        <div id="userPanel">
-            <h2>User Panel</h2>
-            <p id="gamesPlayed">Games Played: 0</p>
-            <p id="totalGameRewards">Total Game Rewards: 0 BST</p>
-            <p id="totalReferrals">Total Referrals: 0</p>
-            <p id="referralRewards">Referral Rewards: 0 BST</p>
-            <p id="pendingRewardsText">Pending Rewards: 0 BST</p>
+        <div id="playerHistory">
+            <h2>Player History</h2>
+            <p>Games Played: <span id="gamesPlayed">0</span></p>
+            <p>Total Game Rewards: <span id="totalGameRewards">0.00 BST</span></p>
+            <p>Total Referrals: <span id="totalReferrals">0</span></p>
+            <p>Referral Rewards: <span id="referralRewards">0.00 BST</span></p>
+            <p>Pending Rewards: <span id="pendingRewardsText">0.00 BST</span></p>
             <button id="claimGameRewards">Claim Rewards</button>
             <button id="welcomeBonusButton">Claim Welcome Bonus</button>
+            <button id="setWelcomeBonus">Set Welcome Bonus</button>
+            <button id="setReferralCommission">Set Referral Commission</button>
             <button id="getReferralLink">Get Referral Link</button>
             <p id="withdrawalStatus"></p>
             <h3>Reward History</h3>
             <ul id="rewardHistoryList"></ul>
         </div>
-        <div id="ownerPanel">
-            <h2>Owner Panel</h2>
-            <p>Enter password to access owner functions.</p>
-            <input type="password" id="ownerPassword" placeholder="Enter password" />
-            <button id="verifyOwner">Verify</button>
-            <div id="ownerFunctions" style="display: none;">
-                <h3>Owner Functions</h3>
-                <div>
-                    <h4>Update Game Oracle</h4>
-                    <input type="text" id="newOracleAddress" placeholder="New Oracle Address" />
-                    <button onclick="updateGameOracle()">Update</button>
-                </div>
-                <div>
-                    <h4>Update Owner Wallet</h4>
-                    <input type="text" id="newOwnerWallet" placeholder="New Wallet Address" />
-                    <button onclick="updateOwnerWallet()">Update</button>
-                </div>
-                <div>
-                    <h4>Update Withdrawal Fee</h4>
-                    <input type="number" id="newWithdrawalFee" placeholder="Fee in Wei" />
-                    <button onclick="updateWithdrawalFee()">Update</button>
-                </div>
-                <div>
-                    <h4>Update Max Withdrawal Limit</h4>
-                    <input type="number" id="newMaxWithdrawalLimit" placeholder="Limit in BST" />
-                    <button onclick="updateMaxWithdrawalLimit()">Update</button>
-                </div>
-                <div>
-                    <h4>Mint Tokens</h4>
-                    <input type="number" id="mintAmount" placeholder="Amount in BST" />
-                    <button onclick="mintTokens()">Mint</button>
-                </div>
-                <div>
-                    <h4>Burn Tokens</h4>
-                    <input type="number" id="burnAmount" placeholder="Amount in BST" />
-                    <button onclick="burnTokens()">Burn</button>
-                </div>
-            </div>
-        </div>
     </div>
     <div id="gameOverPopup">
         <h2>Game Over!</h2>
-        <p id="finalBoxesEaten">Boxes Eaten: 0</p>
-        <p id="finalRewards">Earned BST: 0 BST</p>
+        <p>Boxes Eaten: <span id="finalBoxesEaten">0</span></p>
+        <p>Earned BST: <span id="finalRewards">0.00 BST</span></p>
         <button id="closePopup">X</button>
     </div>
     <div id="loadingIndicator">Loading...</div>
     <audio id="eatingSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/eating-sound-effect-36186.mp3"></audio>
     <audio id="gameOverSound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/game-over-arcade-6435.mp3"></audio>
     <audio id="victorySound" src="https://raw.githubusercontent.com/eienzen/blocksnakes/main/victory-sound-101319.mp3"></audio>
-    <script type="importmap">
-        {
-            "imports": {
-                "ethers": "https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"
-            }
-        }
-    </script>
-    <script type="module" src="/src/game.js"></script>
+    <script src="https://unpkg.com/ethers@6.13.2/dist/ethers.umd.min.js"></script>
+    <script src="game.js"></script>
 </body>
 </html>
