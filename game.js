@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", () => {
         gamesPlayed: 0, totalRewards: 0, boxesEaten: 0, pendingRewards: 0,
         totalReferrals: 0, referralRewards: 0, pendingReferral: null,
         pendingReferrerReward: 0, rewardHistory: [], hasClaimedWelcomeBonus: false,
-        walletBalance: 0, walletAddress: null
+        walletBalance: 0, walletAddress: null, flexibleStakeBalance: 0,
+        lockedStakeBalances: { 1: 0, 2: 0, 3: 0 }, lockedStakeStartTimes: { 1: 0, 2: 0, 3: 0 }
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -21,9 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
         playerData.pendingReferral = referrerAddress;
     }
 
-    // कॉन्फ़िगरेशन को .env से लोड करें (यहां डमी मान हैं, असली मान .env में रखें)
-    const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS || "0xE979bF973184233Ef13873459AE74d618Cb18b65";
-    const GAME_ORACLE_ADDRESS = process.env.GAME_ORACLE_ADDRESS || "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032";
+    const CONTRACT_ADDRESS = "0xE979bF973184233Ef13873459AE74d618Cb18b65"; // नया कॉन्ट्रैक्ट एड्रेस यहाँ अपडेट करें
+    const GAME_ORACLE_ADDRESS = "0x6C12d2802cCF7072e9ED33b3bdBB0ce4230d5032"; // नया गेम ओरेकल एड्रेस
     const CONTRACT_ABI = [
 	{
 		"inputs": [
@@ -1537,7 +1537,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!account || !contract) return;
         try {
             showLoading(true);
-            const tx = await contract.claimAllRewards(ethers.parseUnits(rewardAmount.toString(), 18), account, playerData.pendingReferral || ethers.ZeroAddress, { gasLimit: 500000 });
+            const tx = await contract.claimAllRewards(ethers.parseUnits(rewardAmount.toString(), 18), account, playerData.pendingReferral || ethers.ZeroAddress);
             await tx.wait();
             playerData.totalRewards += rewardAmount;
             playerData.pendingRewards += rewardAmount;
@@ -1612,6 +1612,60 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    async function stakeTokens() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const amount = parseFloat(document.getElementById("stakeAmount").value) || 0;
+        const lockPeriod = parseInt(document.getElementById("lockPeriod").value);
+        if (amount <= 0) return alert("Enter a valid amount!");
+        try {
+            showLoading(true);
+            const tx = await contract.stakeTokens(ethers.parseUnits(amount.toString(), 18), lockPeriod, { gasLimit: 500000 });
+            await tx.wait();
+            playerData.pendingRewards -= amount;
+            if (lockPeriod === 0) {
+                playerData.flexibleStakeBalance += amount;
+            } else {
+                playerData.lockedStakeBalances[lockPeriod] += amount;
+                playerData.lockedStakeStartTimes[lockPeriod] = Date.now() / 1000;
+            }
+            await loadPlayerHistory();
+            updatePlayerHistoryUI();
+            alert(`${amount} BST staked successfully!`);
+            document.getElementById("stakeAmount").value = "";
+        } catch (error) {
+            console.error("Error staking tokens:", error);
+            alert("Failed to stake: " + error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function unstakeTokens() {
+        if (!contract || !account) return alert("Connect wallet first!");
+        const amount = parseFloat(document.getElementById("unstakeAmount").value) || 0;
+        const lockPeriod = parseInt(document.getElementById("unlockPeriod").value);
+        if (amount <= 0) return alert("Enter a valid amount!");
+        try {
+            showLoading(true);
+            const tx = await contract.unstakeTokens(ethers.parseUnits(amount.toString(), 18), lockPeriod, { gasLimit: 500000 });
+            await tx.wait();
+            if (lockPeriod === 0) {
+                playerData.flexibleStakeBalance -= amount;
+            } else {
+                playerData.lockedStakeBalances[lockPeriod] -= amount;
+            }
+            await loadPlayerHistory();
+            updatePlayerHistoryUI();
+            alert(`${amount} BST unstaked successfully!`);
+            document.getElementById("unstakeAmount").value = "";
+        } catch (error) {
+            console.error("Error unstaking tokens:", error);
+            alert("Failed to unstake: " + error.message);
+        } finally {
+            showLoading(false);
+        }
+    }
+
     async function connectWallet() {
         if (!window.ethereum) return alert("Install MetaMask!");
         try {
@@ -1659,6 +1713,10 @@ document.addEventListener("DOMContentLoaded", () => {
             playerData.hasClaimedWelcomeBonus = history.hasClaimedWelcomeBonus;
             playerData.pendingRewards = Number(ethers.formatUnits(await contract.getInternalBalance(account), 18));
             playerData.walletBalance = Number(ethers.formatUnits(await contract.balanceOf(account), 18));
+            playerData.flexibleStakeBalance = Number(ethers.formatUnits(history.flexibleStakeBalance, 18));
+            playerData.lockedStakeBalances[1] = Number(ethers.formatUnits(history.lockedStakeBalances[1], 18));
+            playerData.lockedStakeBalances[2] = Number(ethers.formatUnits(history.lockedStakeBalances[2], 18));
+            playerData.lockedStakeBalances[3] = Number(ethers.formatUnits(history.lockedStakeBalances[3], 18));
             updatePlayerHistoryUI();
             localStorage.setItem("playerData", JSON.stringify(playerData));
         } catch (error) {
@@ -1675,6 +1733,10 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("totalReferrals").textContent = `Total Referrals: ${playerData.totalReferrals}`;
         document.getElementById("referralRewards").textContent = `Referral Rewards: ${playerData.referralRewards.toFixed(2)} BST`;
         document.getElementById("pendingRewardsText").textContent = `Pending Rewards: ${playerData.pendingRewards.toFixed(2)} BST`;
+        document.getElementById("flexibleStakeBalance").textContent = `Flexible Stake Balance: ${playerData.flexibleStakeBalance.toFixed(2)} BST`;
+        document.getElementById("lockedStakeBalance3M").textContent = `Locked Stake Balance (3M): ${playerData.lockedStakeBalances[1].toFixed(2)} BST`;
+        document.getElementById("lockedStakeBalance6M").textContent = `Locked Stake Balance (6M): ${playerData.lockedStakeBalances[2].toFixed(2)} BST`;
+        document.getElementById("lockedStakeBalance12M").textContent = `Locked Stake Balance (12M): ${playerData.lockedStakeBalances[3].toFixed(2)} BST`;
         document.getElementById("walletBalance").textContent = `Wallet Balance: ${playerData.walletBalance.toFixed(2)} BST`;
         document.getElementById("walletAddress").textContent = account ? `Connected: ${account.slice(0, 6)}...` : "";
         document.getElementById("rewardHistoryList").innerHTML = playerData.rewardHistory.map(entry =>
@@ -1693,6 +1755,8 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("disconnectWallet").addEventListener("click", disconnectWallet);
     document.getElementById("claimGameRewards").addEventListener("click", claimPendingRewards);
     document.getElementById("welcomeBonusButton").addEventListener("click", claimWelcomeBonus);
+    document.getElementById("stakeTokens").addEventListener("click", stakeTokens);
+    document.getElementById("unstakeTokens").addEventListener("click", unstakeTokens);
 
     document.addEventListener("keydown", (event) => {
         if (isGameRunning) {
